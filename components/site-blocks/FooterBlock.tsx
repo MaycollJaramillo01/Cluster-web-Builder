@@ -1,6 +1,6 @@
 import type { BlockProps } from "./types";
 
-export function FooterBlock({ section, theme, preset, site }: BlockProps) {
+export function FooterBlock({ section, theme, site }: BlockProps) {
   const year = new Date().getFullYear();
   return (
     <footer className="px-6 py-14" style={{ backgroundColor: theme.text, color: "#e2e8f0" }}>

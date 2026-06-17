@@ -330,12 +330,17 @@ const EXTRA_PALETTES: Record<string, Palette[]> = {
   ],
 };
 
+const ALL_PALETTES: Record<string, Palette[]> = {
+  ...PALETTES,
+  ...EXTRA_PALETTES,
+};
+
 /** Deterministic palette for a given style + seed (business name). */
 export function getPalette(
   visualStyle: string | null | undefined,
   seed: string
 ): Palette {
-  const list = PALETTES[visualStyle ?? "modern_clean"] ?? PALETTES.modern_clean;
+  const list = ALL_PALETTES[visualStyle ?? "modern_clean"] ?? PALETTES.modern_clean;
   let hash = 0;
   for (let i = 0; i < seed.length; i++) {
     hash = (hash * 31 + seed.charCodeAt(i)) >>> 0;
