@@ -1,0 +1,85 @@
+// Prisma 6 schema for Neon PostgreSQL.
+// `url` uses the pooled connection (runtime), `directUrl` the direct one (migrations).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String?
+  email     String?  @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  sites Site[]
+}
+
+model Site {
+  id           String   @id @default(cuid())
+  // Optional for now — auth comes in a later phase.
+  userId       String?
+  user         User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  businessName String
+  businessType String
+  goal         String?
+  visualStyle  String?
+  structureType String?
+  location     String?
+  phone        String?
+  email        String?
+  domain       String?
+  language     String?  @default("es")
+  status       SiteStatus @default(DRAFT)
+
+  primaryColor   String?
+  secondaryColor String?
+  accentColor    String?
+
+  // Full AI blueprint (site + seo + visualStyle + pages) as returned by the model.
+  blueprintJson Json?
+
+  // Ordered nav pages for multipage sites: [{ slug, name }]. Null/empty = single page.
+  navPages Json?
+
+  sections  SiteSection[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model SiteSection {
+  id           String   @id @default(cuid())
+  siteId       String
+  site         Site     @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  type         String
+  // Which page this section belongs to (multipage). "home" for single-page sites.
+  pageSlug     String   @default("home")
+  title        String?
+  // Flexible content payload for the block (subtitle, body, items, ctas, etc.).
+  content      Json?
+  order        Int      @default(0)
+  isVisible    Boolean  @default(true)
+  settingsJson Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([siteId])
+}
+
+enum SiteStatus {
+  DRAFT
+  GENERATED
+  PUBLISHED
+}
