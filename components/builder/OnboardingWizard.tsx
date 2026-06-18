@@ -42,7 +42,13 @@ import {
   type OnboardingInput,
 } from "@/lib/validators/site-onboarding";
 
-const BUSINESS_OPTIONS: { value: string; label: string; icon: LucideIcon }[] = [
+type BusinessType = OnboardingInput["businessType"];
+type Goal = OnboardingInput["goal"];
+type VisualStyle = OnboardingInput["visualStyle"];
+type StructureType = OnboardingInput["structureType"];
+type Language = OnboardingInput["language"];
+
+const BUSINESS_OPTIONS: { value: BusinessType; label: string; icon: LucideIcon }[] = [
   { value: "roofing", label: "Techos", icon: Home },
   { value: "painting", label: "Pintura", icon: Paintbrush },
   { value: "landscaping", label: "Jardinería", icon: Trees },
@@ -57,7 +63,7 @@ const BUSINESS_OPTIONS: { value: string; label: string; icon: LucideIcon }[] = [
 ];
 
 const GOAL_OPTIONS: {
-  value: string;
+  value: Goal;
   label: string;
   desc: string;
   icon: LucideIcon;
@@ -70,7 +76,7 @@ const GOAL_OPTIONS: {
   { value: "professional_presence", label: "Presencia profesional", desc: "Proyecta imagen y confianza", icon: BadgeCheck },
 ];
 
-const STYLE_OPTIONS: { value: string; label: string; desc: string }[] = [
+const STYLE_OPTIONS: { value: VisualStyle; label: string; desc: string }[] = [
   { value: "modern_clean", label: "Moderno y limpio", desc: "Diseño actual con espacios amplios" },
   { value: "premium_elegant", label: "Premium / elegante", desc: "Sofisticado, con tipografía serif" },
   { value: "local_trustworthy", label: "Local y confiable", desc: "Cercano, ideal para negocios de barrio" },
@@ -81,7 +87,7 @@ const STYLE_OPTIONS: { value: string; label: string; desc: string }[] = [
 ];
 
 const STRUCTURE_OPTIONS: {
-  value: string;
+  value: StructureType;
   label: string;
   desc: string;
   icon: LucideIcon;
@@ -93,7 +99,7 @@ const STRUCTURE_OPTIONS: {
   { value: "ai_decide", label: "Que la IA decida", desc: "Elegimos la mejor estructura por ti", icon: Wand2 },
 ];
 
-const LANGUAGE_OPTIONS = [
+const LANGUAGE_OPTIONS: { value: Language; label: string }[] = [
   { value: "es", label: "Español" },
   { value: "en", label: "Inglés" },
   { value: "bilingual", label: "Bilingüe" },
