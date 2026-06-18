@@ -2,57 +2,96 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, ArrowRight, Sparkles } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  Sparkles,
+  Check,
+  Home,
+  Paintbrush,
+  Trees,
+  SprayCan,
+  UtensilsCrossed,
+  Scale,
+  Building2,
+  Stethoscope,
+  Scissors,
+  Dumbbell,
+  MoreHorizontal,
+  Phone,
+  FileText,
+  LayoutList,
+  ShoppingBag,
+  CalendarCheck,
+  BadgeCheck,
+  File,
+  Files,
+  LayoutGrid,
+  Globe,
+  Wand2,
+  type LucideIcon,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
+import { getPalette } from "@/lib/site/design";
 import {
   onboardingSchema,
   type OnboardingInput,
 } from "@/lib/validators/site-onboarding";
 
-const BUSINESS_OPTIONS = [
-  { value: "roofing", label: "Roofing / Techos", emoji: "🏠" },
-  { value: "painting", label: "Painting / Pintura", emoji: "🎨" },
-  { value: "landscaping", label: "Landscaping / Jardinería", emoji: "🌿" },
-  { value: "cleaning", label: "Cleaning / Limpieza", emoji: "🧽" },
-  { value: "restaurant", label: "Restaurant / Restaurante", emoji: "🍽️" },
-  { value: "law_firm", label: "Law Firm / Abogados", emoji: "⚖️" },
-  { value: "real_estate", label: "Real Estate / Bienes raíces", emoji: "🏢" },
-  { value: "medical", label: "Medical / Clínica", emoji: "🏥" },
-  { value: "beauty", label: "Beauty / Belleza", emoji: "💅" },
-  { value: "fitness", label: "Fitness / Gimnasio", emoji: "💪" },
-  { value: "other", label: "Otro", emoji: "✨" },
-] as const;
+const BUSINESS_OPTIONS: { value: string; label: string; icon: LucideIcon }[] = [
+  { value: "roofing", label: "Techos", icon: Home },
+  { value: "painting", label: "Pintura", icon: Paintbrush },
+  { value: "landscaping", label: "Jardinería", icon: Trees },
+  { value: "cleaning", label: "Limpieza", icon: SprayCan },
+  { value: "restaurant", label: "Restaurante", icon: UtensilsCrossed },
+  { value: "law_firm", label: "Abogados", icon: Scale },
+  { value: "real_estate", label: "Bienes raíces", icon: Building2 },
+  { value: "medical", label: "Clínica", icon: Stethoscope },
+  { value: "beauty", label: "Belleza", icon: Scissors },
+  { value: "fitness", label: "Gimnasio", icon: Dumbbell },
+  { value: "other", label: "Otro", icon: MoreHorizontal },
+];
 
-const GOAL_OPTIONS = [
-  { value: "calls", label: "Conseguir llamadas" },
-  { value: "quote_forms", label: "Conseguir formularios de cotización" },
-  { value: "show_services", label: "Mostrar servicios" },
-  { value: "sell_products", label: "Vender productos" },
-  { value: "book_appointments", label: "Agendar citas" },
-  { value: "professional_presence", label: "Mejorar presencia profesional" },
-] as const;
+const GOAL_OPTIONS: {
+  value: string;
+  label: string;
+  desc: string;
+  icon: LucideIcon;
+}[] = [
+  { value: "calls", label: "Conseguir llamadas", desc: "Que los clientes te contacten por teléfono", icon: Phone },
+  { value: "quote_forms", label: "Formularios de cotización", desc: "Recibe solicitudes de presupuesto", icon: FileText },
+  { value: "show_services", label: "Mostrar servicios", desc: "Presenta lo que ofreces con claridad", icon: LayoutList },
+  { value: "sell_products", label: "Vender productos", desc: "Impulsa ventas en línea", icon: ShoppingBag },
+  { value: "book_appointments", label: "Agendar citas", desc: "Permite reservar de forma sencilla", icon: CalendarCheck },
+  { value: "professional_presence", label: "Presencia profesional", desc: "Proyecta imagen y confianza", icon: BadgeCheck },
+];
 
-const STYLE_OPTIONS = [
-  { value: "modern_clean", label: "Moderno y limpio" },
-  { value: "premium_elegant", label: "Premium / elegante" },
-  { value: "local_trustworthy", label: "Local y confiable" },
-  { value: "corporate", label: "Corporativo" },
-  { value: "creative", label: "Creativo" },
-  { value: "minimalist", label: "Minimalista" },
-  { value: "bold", label: "Fuerte y llamativo" },
-] as const;
+const STYLE_OPTIONS: { value: string; label: string; desc: string }[] = [
+  { value: "modern_clean", label: "Moderno y limpio", desc: "Diseño actual con espacios amplios" },
+  { value: "premium_elegant", label: "Premium / elegante", desc: "Sofisticado, con tipografía serif" },
+  { value: "local_trustworthy", label: "Local y confiable", desc: "Cercano, ideal para negocios de barrio" },
+  { value: "corporate", label: "Corporativo", desc: "Serio y orientado a empresas" },
+  { value: "creative", label: "Creativo", desc: "Audaz, colorido y con personalidad" },
+  { value: "minimalist", label: "Minimalista", desc: "Esencial, sin distracciones" },
+  { value: "bold", label: "Fuerte y llamativo", desc: "Alto contraste e impacto visual" },
+];
 
-const STRUCTURE_OPTIONS = [
-  { value: "one_page", label: "Una sola página (todo en Inicio)" },
-  { value: "pages_3", label: "3 páginas · Inicio, Servicios, Contacto" },
-  { value: "pages_4", label: "4 páginas · Inicio, Servicios, Nosotros, Contacto" },
-  { value: "pages_full", label: "Sitio completo · + Proyectos" },
-  { value: "ai_decide", label: "No sé, que la IA decida" },
-] as const;
+const STRUCTURE_OPTIONS: {
+  value: string;
+  label: string;
+  desc: string;
+  icon: LucideIcon;
+}[] = [
+  { value: "one_page", label: "Una sola página", desc: "Todo en Inicio · ideal para conversión rápida", icon: File },
+  { value: "pages_3", label: "3 páginas", desc: "Inicio · Servicios · Contacto", icon: Files },
+  { value: "pages_4", label: "4 páginas", desc: "Inicio · Servicios · Nosotros · Contacto", icon: LayoutGrid },
+  { value: "pages_full", label: "Sitio completo", desc: "Incluye página de Proyectos / portafolio", icon: Globe },
+  { value: "ai_decide", label: "Que la IA decida", desc: "Elegimos la mejor estructura por ti", icon: Wand2 },
+];
 
 const LANGUAGE_OPTIONS = [
   { value: "es", label: "Español" },
@@ -60,6 +99,7 @@ const LANGUAGE_OPTIONS = [
   { value: "bilingual", label: "Bilingüe" },
 ] as const;
 
+const STEP_LABELS = ["Negocio", "Objetivo", "Estilo", "Páginas", "Detalles"];
 const TOTAL_STEPS = 5;
 export const ONBOARDING_STORAGE_KEY = "ai-builder:onboarding";
 
@@ -139,36 +179,20 @@ export function OnboardingWizard() {
       setError(parsed.error.errors[0]?.message ?? "Revisa los datos.");
       return;
     }
-    sessionStorage.setItem(
-      ONBOARDING_STORAGE_KEY,
-      JSON.stringify(parsed.data)
-    );
+    sessionStorage.setItem(ONBOARDING_STORAGE_KEY, JSON.stringify(parsed.data));
     router.push("/builder/generating");
   };
 
-  const progress = (step / TOTAL_STEPS) * 100;
-
   return (
     <div className="mx-auto w-full max-w-3xl">
-      {/* Progress */}
-      <div className="mb-8">
-        <div className="mb-2 flex items-center justify-between text-sm text-slate-500">
-          <span>
-            Paso {step} de {TOTAL_STEPS}
-          </span>
-          <span>{Math.round(progress)}%</span>
-        </div>
-        <div className="h-2 w-full overflow-hidden rounded-full bg-slate-200">
-          <div
-            className="h-full rounded-full bg-primary transition-all duration-300"
-            style={{ width: `${progress}%` }}
-          />
-        </div>
-      </div>
+      <Stepper step={step} />
 
-      <div className="rounded-2xl border bg-white p-6 shadow-sm sm:p-8">
+      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_8px_24px_-12px_rgba(15,23,42,0.12)] sm:p-9">
         {step === 1 && (
-          <Step title="¿Cuál es el tipo de negocio?">
+          <Step
+            title="¿Cuál es tu negocio?"
+            subtitle="Esto nos ayuda a generar contenido específico para tu industria."
+          >
             <div className="space-y-2">
               <Label htmlFor="businessName">Nombre del negocio</Label>
               <Input
@@ -176,32 +200,32 @@ export function OnboardingWizard() {
                 placeholder="Ej: Techos Pro Monterrey"
                 value={form.businessName ?? ""}
                 onChange={(e) => update({ businessName: e.target.value })}
+                className="h-11"
               />
             </div>
-            <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3">
-              {BUSINESS_OPTIONS.map((opt) => (
-                <OptionCard
-                  key={opt.value}
-                  active={form.businessType === opt.value}
-                  onClick={() => update({ businessType: opt.value })}
-                >
-                  <span className="text-xl">{opt.emoji}</span>
-                  <span className="text-sm font-medium">{opt.label}</span>
-                </OptionCard>
-              ))}
+            <div className="mt-6">
+              <Label className="mb-3 block">Tipo de negocio</Label>
+              <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
+                {BUSINESS_OPTIONS.map((opt) => (
+                  <IconTile
+                    key={opt.value}
+                    icon={opt.icon}
+                    label={opt.label}
+                    active={form.businessType === opt.value}
+                    onClick={() => update({ businessType: opt.value })}
+                  />
+                ))}
+              </div>
             </div>
             {form.businessType === "other" && (
-              <div className="mt-4 space-y-2">
-                <Label htmlFor="customBusinessType">
-                  Describe tu tipo de negocio
-                </Label>
+              <div className="mt-5 space-y-2">
+                <Label htmlFor="customBusinessType">Describe tu negocio</Label>
                 <Input
                   id="customBusinessType"
                   placeholder="Ej: Taller de motocicletas"
                   value={form.customBusinessType ?? ""}
-                  onChange={(e) =>
-                    update({ customBusinessType: e.target.value })
-                  }
+                  onChange={(e) => update({ customBusinessType: e.target.value })}
+                  className="h-11"
                 />
               </div>
             )}
@@ -209,14 +233,19 @@ export function OnboardingWizard() {
         )}
 
         {step === 2 && (
-          <Step title="¿Cuál es el objetivo principal del sitio?">
-            <div className="grid gap-3 sm:grid-cols-2">
+          <Step
+            title="¿Cuál es el objetivo del sitio?"
+            subtitle="Optimizaremos el diseño y los textos para lograrlo."
+          >
+            <div className="grid gap-2.5 sm:grid-cols-2">
               {GOAL_OPTIONS.map((opt) => (
-                <OptionRow
+                <OptionCard
                   key={opt.value}
+                  icon={opt.icon}
+                  label={opt.label}
+                  desc={opt.desc}
                   active={form.goal === opt.value}
                   onClick={() => update({ goal: opt.value })}
-                  label={opt.label}
                 />
               ))}
             </div>
@@ -224,14 +253,19 @@ export function OnboardingWizard() {
         )}
 
         {step === 3 && (
-          <Step title="¿Qué estilo visual quiere?">
-            <div className="grid gap-3 sm:grid-cols-2">
+          <Step
+            title="¿Qué estilo visual prefieres?"
+            subtitle="Define la tipografía, los colores y la personalidad del sitio."
+          >
+            <div className="grid gap-2.5 sm:grid-cols-2">
               {STYLE_OPTIONS.map((opt) => (
-                <OptionRow
+                <OptionCard
                   key={opt.value}
+                  label={opt.label}
+                  desc={opt.desc}
                   active={form.visualStyle === opt.value}
                   onClick={() => update({ visualStyle: opt.value })}
-                  label={opt.label}
+                  swatch={<Swatch style={opt.value} />}
                 />
               ))}
             </div>
@@ -239,14 +273,19 @@ export function OnboardingWizard() {
         )}
 
         {step === 4 && (
-          <Step title="¿Cuántas páginas necesita tu sitio?">
-            <div className="grid gap-3">
+          <Step
+            title="¿Cuántas páginas necesitas?"
+            subtitle="Puedes ajustar las secciones más adelante en el editor."
+          >
+            <div className="grid gap-2.5">
               {STRUCTURE_OPTIONS.map((opt) => (
-                <OptionRow
+                <OptionCard
                   key={opt.value}
+                  icon={opt.icon}
+                  label={opt.label}
+                  desc={opt.desc}
                   active={form.structureType === opt.value}
                   onClick={() => update({ structureType: opt.value })}
-                  label={opt.label}
                 />
               ))}
             </div>
@@ -254,13 +293,17 @@ export function OnboardingWizard() {
         )}
 
         {step === 5 && (
-          <Step title="Datos básicos para publicar">
+          <Step
+            title="Datos de contacto"
+            subtitle="Aparecerán en tu sitio. Puedes dejar campos vacíos si aún no los tienes."
+          >
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Ubicación / zona">
                 <Input
                   placeholder="Ej: Monterrey, NL"
                   value={form.location ?? ""}
                   onChange={(e) => update({ location: e.target.value })}
+                  className="h-11"
                 />
               </Field>
               <Field label="Teléfono">
@@ -268,6 +311,7 @@ export function OnboardingWizard() {
                   placeholder="Ej: +52 81 1234 5678"
                   value={form.phone ?? ""}
                   onChange={(e) => update({ phone: e.target.value })}
+                  className="h-11"
                 />
               </Field>
               <Field label="Email">
@@ -276,6 +320,7 @@ export function OnboardingWizard() {
                   placeholder="contacto@negocio.com"
                   value={form.email ?? ""}
                   onChange={(e) => update({ email: e.target.value })}
+                  className="h-11"
                 />
               </Field>
               <Field label="Dominio (opcional)">
@@ -283,22 +328,23 @@ export function OnboardingWizard() {
                   placeholder="negocio.com"
                   value={form.domain ?? ""}
                   onChange={(e) => update({ domain: e.target.value })}
+                  className="h-11"
                 />
               </Field>
             </div>
             <div className="mt-6">
-              <Label className="mb-2 block">Idioma del sitio</Label>
-              <div className="flex flex-wrap gap-3">
+              <Label className="mb-2.5 block">Idioma del sitio</Label>
+              <div className="inline-flex rounded-lg border border-slate-200 bg-slate-50 p-1">
                 {LANGUAGE_OPTIONS.map((opt) => (
                   <button
                     key={opt.value}
                     type="button"
                     onClick={() => update({ language: opt.value })}
                     className={cn(
-                      "rounded-full border px-5 py-2 text-sm font-medium transition-colors",
+                      "rounded-md px-5 py-2 text-sm font-medium transition-all",
                       form.language === opt.value
-                        ? "border-primary bg-primary text-primary-foreground"
-                        : "border-slate-200 bg-white text-slate-700 hover:border-primary/50"
+                        ? "bg-white text-slate-900 shadow-sm"
+                        : "text-slate-500 hover:text-slate-800"
                     )}
                   >
                     {opt.label}
@@ -310,13 +356,12 @@ export function OnboardingWizard() {
         )}
 
         {error && (
-          <p className="mt-4 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          <p className="mt-5 rounded-lg border border-destructive/20 bg-destructive/5 px-3.5 py-2.5 text-sm text-destructive">
             {error}
           </p>
         )}
 
-        {/* Nav */}
-        <div className="mt-8 flex items-center justify-between">
+        <div className="mt-8 flex items-center justify-between border-t border-slate-100 pt-6">
           <Button
             variant="ghost"
             onClick={back}
@@ -327,11 +372,11 @@ export function OnboardingWizard() {
           </Button>
 
           {step < TOTAL_STEPS ? (
-            <Button onClick={next}>
-              Siguiente <ArrowRight className="h-4 w-4" />
+            <Button onClick={next} size="lg" className="px-6">
+              Continuar <ArrowRight className="h-4 w-4" />
             </Button>
           ) : (
-            <Button onClick={generate}>
+            <Button onClick={generate} size="lg" className="px-6">
               <Sparkles className="h-4 w-4" /> Generar mi sitio
             </Button>
           )}
@@ -341,19 +386,71 @@ export function OnboardingWizard() {
   );
 }
 
+function Stepper({ step }: { step: number }) {
+  return (
+    <div className="mb-8">
+      <ol className="flex items-center">
+        {STEP_LABELS.map((label, i) => {
+          const num = i + 1;
+          const done = num < step;
+          const current = num === step;
+          return (
+            <li
+              key={label}
+              className={cn("flex items-center", i < STEP_LABELS.length - 1 && "flex-1")}
+            >
+              <div className="flex items-center gap-2.5">
+                <span
+                  className={cn(
+                    "flex h-8 w-8 shrink-0 items-center justify-center rounded-full border text-sm font-semibold transition-colors",
+                    done && "border-primary bg-primary text-primary-foreground",
+                    current && "border-primary bg-primary/10 text-primary",
+                    !done && !current && "border-slate-200 bg-white text-slate-400"
+                  )}
+                >
+                  {done ? <Check className="h-4 w-4" /> : num}
+                </span>
+                <span
+                  className={cn(
+                    "hidden text-sm font-medium sm:block",
+                    current ? "text-slate-900" : "text-slate-400"
+                  )}
+                >
+                  {label}
+                </span>
+              </div>
+              {i < STEP_LABELS.length - 1 && (
+                <span
+                  className={cn(
+                    "mx-3 h-px flex-1 transition-colors",
+                    done ? "bg-primary/40" : "bg-slate-200"
+                  )}
+                />
+              )}
+            </li>
+          );
+        })}
+      </ol>
+    </div>
+  );
+}
+
 function Step({
   title,
+  subtitle,
   children,
 }: {
   title: string;
+  subtitle?: string;
   children: React.ReactNode;
 }) {
   return (
     <div>
-      <h2 className="text-xl font-semibold text-slate-900 sm:text-2xl">
+      <h2 className="text-2xl font-semibold tracking-tight text-slate-900">
         {title}
       </h2>
-      <div className="mt-6">{children}</div>
+      {subtitle && <p className="mt-1.5 text-sm text-slate-500">{subtitle}</p>}
+      <div className="mt-7">{children}</div>
     </div>
   );
 }
@@ -373,60 +470,112 @@ function Field({
   );
 }
 
-function OptionCard({
+/** Compact icon tile (business types). */
+function IconTile({
+  icon: Icon,
+  label,
   active,
   onClick,
-  children,
 }: {
+  icon: LucideIcon;
+  label: string;
   active: boolean;
   onClick: () => void;
-  children: React.ReactNode;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
       className={cn(
-        "flex flex-col items-center gap-2 rounded-xl border p-4 text-center transition-all",
+        "group flex flex-col items-center gap-2 rounded-xl border p-4 text-center transition-all",
         active
-          ? "border-primary bg-primary/5 ring-2 ring-primary/30"
-          : "border-slate-200 bg-white hover:border-primary/40"
+          ? "border-primary bg-primary/[0.04] shadow-sm ring-1 ring-primary"
+          : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50"
       )}
     >
-      {children}
+      <span
+        className={cn(
+          "flex h-10 w-10 items-center justify-center rounded-lg transition-colors",
+          active ? "bg-primary text-primary-foreground" : "bg-slate-100 text-slate-600 group-hover:bg-slate-200"
+        )}
+      >
+        <Icon className="h-5 w-5" />
+      </span>
+      <span className={cn("text-sm font-medium", active ? "text-slate-900" : "text-slate-700")}>
+        {label}
+      </span>
     </button>
   );
 }
 
-function OptionRow({
+/** Rich option row with icon/swatch, label, description and a check. */
+function OptionCard({
+  icon: Icon,
+  label,
+  desc,
   active,
   onClick,
-  label,
+  swatch,
 }: {
+  icon?: LucideIcon;
+  label: string;
+  desc?: string;
   active: boolean;
   onClick: () => void;
-  label: string;
+  swatch?: React.ReactNode;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
       className={cn(
-        "flex items-center justify-between rounded-xl border p-4 text-left text-sm font-medium transition-all",
+        "flex items-center gap-3.5 rounded-xl border p-4 text-left transition-all",
         active
-          ? "border-primary bg-primary/5 ring-2 ring-primary/30"
-          : "border-slate-200 bg-white hover:border-primary/40"
+          ? "border-primary bg-primary/[0.04] shadow-sm ring-1 ring-primary"
+          : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50"
       )}
     >
-      <span>{label}</span>
+      {Icon && (
+        <span
+          className={cn(
+            "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg transition-colors",
+            active ? "bg-primary text-primary-foreground" : "bg-slate-100 text-slate-600"
+          )}
+        >
+          <Icon className="h-5 w-5" />
+        </span>
+      )}
+      {swatch}
+      <span className="min-w-0 flex-1">
+        <span className={cn("block text-sm font-semibold", active ? "text-slate-900" : "text-slate-800")}>
+          {label}
+        </span>
+        {desc && <span className="mt-0.5 block text-xs leading-snug text-slate-500">{desc}</span>}
+      </span>
       <span
         className={cn(
-          "flex h-5 w-5 items-center justify-center rounded-full border",
-          active ? "border-primary bg-primary text-white" : "border-slate-300"
+          "flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition-colors",
+          active ? "border-primary bg-primary text-white" : "border-slate-300 bg-white"
         )}
       >
-        {active ? "✓" : ""}
+        {active && <Check className="h-3 w-3" />}
       </span>
     </button>
+  );
+}
+
+/** Three color dots previewing a style's real palette. */
+function Swatch({ style }: { style: string }) {
+  const p = getPalette(style, "preview");
+  return (
+    <span className="flex shrink-0 items-center gap-1">
+      {[p.primary, p.secondary, p.accent].map((c, i) => (
+        <span
+          key={i}
+          className="h-6 w-6 rounded-md ring-1 ring-black/5"
+          style={{ backgroundColor: c }}
+        />
+      ))}
+    </span>
   );
 }

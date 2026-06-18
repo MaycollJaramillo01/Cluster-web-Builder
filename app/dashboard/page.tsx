@@ -24,6 +24,9 @@ export default async function DashboardPage() {
       businessType: true,
       status: true,
       createdAt: true,
+      primaryColor: true,
+      secondaryColor: true,
+      accentColor: true,
     },
   });
 
@@ -33,6 +36,9 @@ export default async function DashboardPage() {
     businessType: s.businessType,
     status: s.status,
     createdAt: s.createdAt.toISOString(),
+    primaryColor: s.primaryColor ?? "#1d4ed8",
+    secondaryColor: s.secondaryColor ?? "#0f172a",
+    accentColor: s.accentColor ?? "#f59e0b",
   }));
 
   return (
