@@ -21,7 +21,7 @@ const RECIPES: Record<string, PageDef[]> = {
   one_page: [{
     slug: "home",
     name: "Inicio",
-    types: ["hero", "services", "about", "location", "cta", "contact"],
+    types: ["hero", "services", "about", "faq", "location", "cta", "contact"],
   }],
   pages_3: [
     { slug: "home", name: "Inicio", types: ["hero", "about", "cta"] },
@@ -53,8 +53,9 @@ export function applyPageStructure(
   ctx: { businessName: string }
 ): StructuredSite {
   const allowedTypes = new Set([
-    "hero", "services", "about", "location", "cta", "contact", "footer",
+    "hero", "services", "about", "faq", "location", "cta", "contact", "footer",
   ]);
+  const optionalTypes = new Set(["faq"]);
   const byType = new Map<string, NormalizedSection>();
 
   for (const section of aiSections) {
@@ -72,6 +73,7 @@ export function applyPageStructure(
     navPages.push({ slug: page.slug, name: page.name });
     for (const type of page.types) {
       const source = byType.get(type);
+      if (!source && optionalTypes.has(type)) continue;
       const resolved = source ?? synthesizeSection(type, ctx);
       sections.push({
         ...resolved,

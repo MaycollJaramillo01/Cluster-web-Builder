@@ -1,10 +1,12 @@
 import { getItems } from "@/lib/site/section";
 import { stockImageUrl } from "@/lib/site/images";
+import { getThemeSurface } from "@/lib/site/theme-surface";
 import { SectionHeading } from "./shared";
 import type { BlockProps } from "./types";
 
 export function ServicesBlock({ section, theme, preset, site }: BlockProps) {
   const items = getItems(section);
+  const surface = getThemeSurface(theme);
   return (
     <section className="px-6 py-20 sm:py-24" style={{ backgroundColor: theme.background }}>
       <div className="mx-auto max-w-6xl">
@@ -18,8 +20,8 @@ export function ServicesBlock({ section, theme, preset, site }: BlockProps) {
           {items.map((item, i) => (
             <div
               key={i}
-              className={`overflow-hidden border bg-white transition-colors duration-200 hover:border-slate-300 ${preset.cardShadow}`}
-              style={{ borderRadius: "var(--site-radius)" }}
+              className={`overflow-hidden border transition-colors duration-200 ${preset.cardShadow}`}
+              style={{ backgroundColor: surface.panel, borderColor: `${theme.text}1f`, borderRadius: "var(--site-radius)" }}
             >
               <div className="relative h-40 overflow-hidden">
                 <img
@@ -43,7 +45,7 @@ export function ServicesBlock({ section, theme, preset, site }: BlockProps) {
                   {String(item.name ?? item.title ?? "Servicio")}
                 </h3>
                 {item.description ? (
-                  <p className="mt-2 text-sm leading-relaxed text-slate-600">
+                  <p className="mt-2 text-sm leading-relaxed" style={{ color: surface.muted }}>
                     {String(item.description)}
                   </p>
                 ) : null}

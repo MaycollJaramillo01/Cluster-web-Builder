@@ -1,9 +1,11 @@
 import { sectionImageUrl } from "@/lib/site/images";
+import { getThemeSurface } from "@/lib/site/theme-surface";
 import type { BlockProps } from "./types";
 
 export function AboutBlock({ section, theme, preset, site }: BlockProps) {
+  const surface = getThemeSurface(theme);
   return (
-    <section className="px-6 py-20 sm:py-24" style={{ backgroundColor: "#f8fafc" }}>
+    <section className="px-6 py-20 sm:py-24" style={{ backgroundColor: surface.section }}>
       <div className="mx-auto grid max-w-6xl items-center gap-12 md:grid-cols-2">
         <div>
           {section.title && (
@@ -26,7 +28,7 @@ export function AboutBlock({ section, theme, preset, site }: BlockProps) {
             </p>
           )}
           {section.body && (
-            <p className="mt-5 leading-relaxed text-slate-600">{section.body}</p>
+            <p className="mt-5 leading-relaxed" style={{ color: surface.muted }}>{section.body}</p>
           )}
         </div>
         {preset.useImages ? (

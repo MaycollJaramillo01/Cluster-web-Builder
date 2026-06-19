@@ -1,10 +1,12 @@
 import type { BlockProps } from "./types";
+import { getThemeSurface } from "@/lib/site/theme-surface";
 
 export function ContactBlock({ section, theme, preset, site }: BlockProps) {
   const inputStyle = { borderRadius: "var(--site-btn-radius)" };
+  const surface = getThemeSurface(theme);
 
   return (
-    <section id="contact" className="px-6 py-20 sm:py-24" style={{ backgroundColor: "#f8fafc" }}>
+    <section id="contact" className="px-6 py-20 sm:py-24" style={{ backgroundColor: surface.section }}>
       <div className="mx-auto grid max-w-5xl gap-12 md:grid-cols-2">
         <div>
           {section.title && (
@@ -20,8 +22,8 @@ export function ContactBlock({ section, theme, preset, site }: BlockProps) {
               {section.title}
             </h2>
           )}
-          {section.body && <p className="mt-4 text-slate-600">{section.body}</p>}
-          <ul className="mt-7 space-y-4 text-slate-700">
+          {section.body && <p className="mt-4" style={{ color: surface.muted }}>{section.body}</p>}
+          <ul className="mt-7 space-y-4" style={{ color: surface.muted }}>
             {site.phone && (
               <li className="flex items-start gap-3">
                 <Dot color={theme.primary} />

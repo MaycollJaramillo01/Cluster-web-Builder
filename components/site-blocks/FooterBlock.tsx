@@ -3,7 +3,7 @@ import type { BlockProps } from "./types";
 export function FooterBlock({ section, theme, site }: BlockProps) {
   const year = new Date().getFullYear();
   return (
-    <footer className="px-6 py-14" style={{ backgroundColor: theme.text, color: "#e2e8f0" }}>
+    <footer className="px-6 py-14" style={{ backgroundColor: theme.secondary, color: "#e2e8f0" }}>
       <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 sm:flex-row">
         <div>
           <p

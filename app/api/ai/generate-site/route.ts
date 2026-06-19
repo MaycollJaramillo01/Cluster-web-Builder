@@ -14,6 +14,13 @@ import { normalizeSiteBlueprint } from "@/lib/site/normalize-site-blueprint";
 import { applyPageStructure } from "@/lib/site/structure";
 import { getPalette } from "@/lib/site/design";
 import {
+  buildLandingDesignBrief,
+  mapLandingStyleToPaletteId,
+  mapLandingStyleToVisualStyle,
+  selectRandomLandingStyle,
+  type LandingDesignStyle,
+} from "@/lib/site/landing-design-brief";
+import {
   onboardingSchema,
   promptToOnboardingInput,
   resolveBusinessTypeLabel,
@@ -43,12 +50,21 @@ export async function POST(req: NextRequest) {
   // Parse + validate onboarding input.
   let input: OnboardingInput;
   let originalRequest: string | undefined;
+  let selectedDesignStyle: LandingDesignStyle | undefined;
+  let designBrief: string | undefined;
   try {
     const body = await req.json();
     if (typeof body === "object" && body !== null && "prompt" in body) {
       const request = sitePromptSchema.parse(body);
       originalRequest = request.prompt;
       input = promptToOnboardingInput(request.prompt);
+      selectedDesignStyle = selectRandomLandingStyle();
+      designBrief = buildLandingDesignBrief(selectedDesignStyle, request.prompt);
+      input = {
+        ...input,
+        structureType: "one_page",
+        visualStyle: mapLandingStyleToVisualStyle(selectedDesignStyle),
+      };
     } else {
       input = onboardingSchema.parse(body);
     }
@@ -65,7 +81,11 @@ export async function POST(req: NextRequest) {
     return jsonError("No se pudo leer la solicitud.", 400);
   }
 
-  const { system, user } = buildSiteGenerationPrompt(input, originalRequest);
+  const { system, user } = buildSiteGenerationPrompt(
+    input,
+    originalRequest,
+    designBrief
+  );
 
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
@@ -76,7 +96,9 @@ export async function POST(req: NextRequest) {
       const statusStages = [
         "Analizando negocio...",
         "Definiendo estructura del sitio...",
-        "Creando propuesta visual...",
+        selectedDesignStyle
+          ? `Explorando estilo ${selectedDesignStyle}...`
+          : "Creando propuesta visual...",
         "Generando copy comercial...",
         "Preparando SEO local...",
         "Construyendo secciones...",
@@ -148,9 +170,20 @@ export async function POST(req: NextRequest) {
 
         // Colors come from curated palettes (not the LLM, which often returns
         // the same colors). Varies by style and business name.
-        const theme = getPalette(input.visualStyle, input.businessName);
+        const theme = getPalette(
+          selectedDesignStyle
+            ? mapLandingStyleToPaletteId(selectedDesignStyle)
+            : input.visualStyle,
+          input.businessName
+        );
         blueprint.site.visualStyle = {
           ...(blueprint.site.visualStyle ?? {}),
+          name:
+            selectedDesignStyle ??
+            blueprint.site.visualStyle?.name ??
+            input.visualStyle,
+          designNotes:
+            designBrief ?? blueprint.site.visualStyle?.designNotes ?? "",
           colors: { ...theme },
         };
 
