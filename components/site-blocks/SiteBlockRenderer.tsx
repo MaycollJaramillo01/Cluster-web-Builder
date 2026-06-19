@@ -135,7 +135,7 @@ export function SiteBlockRenderer({
       {showPageHeader && (
         <section
           className="px-6 py-16 text-center"
-          style={{ background: `linear-gradient(135deg, ${theme.primary}, ${theme.secondary})`, color: "#fff" }}
+          style={{ backgroundColor: theme.secondary, color: "#fff" }}
         >
           <h1
             className="text-3xl font-bold sm:text-5xl"

@@ -1,0 +1,235 @@
+import { z } from "zod";
+
+export const BUSINESS_TYPES = [
+  "roofing", "painting", "landscaping", "cleaning", "restaurant",
+  "law_firm", "real_estate", "medical", "beauty", "fitness", "other",
+] as const;
+
+export const GOALS = [
+  "calls", "quote_forms", "show_services", "sell_products",
+  "book_appointments", "professional_presence",
+] as const;
+
+export const VISUAL_STYLES = [
+  "modern_clean", "premium_elegant", "local_trustworthy", "corporate",
+  "creative", "minimalist", "bold",
+] as const;
+
+export const STRUCTURE_TYPES = [
+  "one_page", "pages_3", "pages_4", "pages_full", "ai_decide",
+] as const;
+
+export const LANGUAGES = ["es", "en", "bilingual"] as const;
+
+export const onboardingSchema = z
+  .object({
+    businessName: z.string().trim().min(2, "Escribe el nombre del negocio.").max(120),
+    businessType: z.enum(BUSINESS_TYPES),
+    customBusinessType: z.string().trim().max(80).optional().or(z.literal("")),
+    location: z.string().trim().min(2, "Escribe la ciudad o zona donde trabajas.").max(160),
+    services: z.string().trim().min(3, "Escribe al menos un servicio o producto real.").max(1200),
+    targetCustomer: z.string().trim().min(3, "Describe brevemente a quien atiendes.").max(240),
+    proofPoints: z.string().trim().max(800).optional().or(z.literal("")),
+    goal: z.enum(GOALS),
+    phone: z.string().trim().max(40).optional().or(z.literal("")),
+    email: z.string().trim().email("Escribe un email valido.").max(160).optional().or(z.literal("")),
+    domain: z.string().trim().max(160).optional().or(z.literal("")),
+    language: z.enum(LANGUAGES),
+    visualStyle: z.enum(VISUAL_STYLES),
+    structureType: z.enum(STRUCTURE_TYPES),
+  })
+  .superRefine((input, ctx) => {
+    if (input.businessType === "other" && !input.customBusinessType) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["customBusinessType"],
+        message: "Describe que tipo de negocio es.",
+      });
+    }
+
+    if (input.goal === "calls" && !input.phone) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["phone"],
+        message: "Agrega el telefono que recibira las llamadas.",
+      });
+    } else if (!input.phone && !input.email) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["phone"],
+        message: "Agrega un telefono o un email de contacto.",
+      });
+    }
+  });
+
+export type OnboardingInput = z.infer<typeof onboardingSchema>;
+
+export const sitePromptSchema = z.object({
+  prompt: z
+    .string()
+    .trim()
+    .min(10, "Describe un poco mas el sitio que quieres crear.")
+    .max(2000, "El prompt no puede superar 2000 caracteres."),
+});
+
+export type SitePromptInput = z.infer<typeof sitePromptSchema>;
+
+export const BUSINESS_TYPE_LABELS: Record<string, string> = {
+  roofing: "Techos",
+  painting: "Pintura",
+  landscaping: "Jardineria",
+  cleaning: "Limpieza",
+  restaurant: "Restaurante",
+  law_firm: "Servicios legales",
+  real_estate: "Bienes raices",
+  medical: "Clinica",
+  beauty: "Belleza",
+  fitness: "Gimnasio",
+  other: "Otro",
+};
+
+export const GOAL_LABELS: Record<string, string> = {
+  calls: "Recibir llamadas",
+  quote_forms: "Recibir solicitudes de cotizacion",
+  show_services: "Explicar servicios",
+  sell_products: "Mostrar productos para vender",
+  book_appointments: "Recibir solicitudes de cita",
+  professional_presence: "Presentar el negocio profesionalmente",
+};
+
+export const VISUAL_STYLE_LABELS: Record<string, string> = {
+  modern_clean: "Moderno y limpio",
+  premium_elegant: "Premium y elegante",
+  local_trustworthy: "Local y confiable",
+  corporate: "Corporativo",
+  creative: "Creativo",
+  minimalist: "Minimalista",
+  bold: "Fuerte y llamativo",
+};
+
+export const STRUCTURE_TYPE_LABELS: Record<string, string> = {
+  one_page: "Una pagina",
+  pages_3: "Tres paginas",
+  pages_4: "Cuatro paginas",
+  pages_full: "Sitio completo",
+  ai_decide: "Estructura automatica",
+};
+
+export const LANGUAGE_LABELS: Record<string, string> = {
+  es: "Espanol",
+  en: "Ingles",
+  bilingual: "Bilingue",
+};
+
+export function resolveBusinessTypeLabel(input: OnboardingInput): string {
+  if (input.businessType === "other" && input.customBusinessType) {
+    return input.customBusinessType;
+  }
+  return BUSINESS_TYPE_LABELS[input.businessType] ?? input.businessType;
+}
+
+export type ServiceFact = { name: string; description: string };
+
+export function parseServiceFacts(value: string): ServiceFact[] {
+  return splitFactLines(value)
+    .map((line) => {
+      const separator = line.indexOf(":");
+      if (separator < 0) return { name: line, description: "" };
+      return {
+        name: line.slice(0, separator).trim(),
+        description: line.slice(separator + 1).trim(),
+      };
+    })
+    .filter((item) => item.name.length > 0);
+}
+
+export function splitFactLines(value?: string): string[] {
+  return (value ?? "")
+    .split(/\r?\n|;/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+export function promptToOnboardingInput(prompt: string): OnboardingInput {
+  const value = prompt.trim();
+  const lower = value.toLocaleLowerCase("es");
+  const businessType = detectBusinessType(lower);
+  const businessLabel = BUSINESS_TYPE_LABELS[businessType] ?? "Negocio";
+  const email = value.match(/[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}/)?.[0] ?? "";
+  const phone = value.match(/\+?\d[\d\s()-]{7,}\d/)?.[0]?.trim() ?? "";
+  const explicitName =
+    value.match(/["“]([^"”]{2,80})["”]/)?.[1]?.trim() ??
+    value.match(/(?:se llama|llamad[oa])\s+([^,.;\n]{2,80})/i)?.[1]?.trim();
+  const location =
+    value
+      .match(
+        /(?:ubicad[oa]\s+en|atiende\s+en|trabaja\s+en|negocio\s+en)\s+([^,.;\n]+?)(?=\s+con\s+|[,.;\n]|$)/i
+      )?.[1]
+      ?.trim() ?? "Zona por definir";
+
+  return {
+    businessName: explicitName || `Sitio de ${businessLabel}`,
+    businessType,
+    customBusinessType: businessType === "other" ? "Negocio" : "",
+    location,
+    services: value.slice(0, 1200),
+    targetCustomer: `Personas interesadas en ${businessLabel.toLocaleLowerCase("es")}`,
+    proofPoints: "",
+    goal: detectGoal(lower),
+    phone,
+    email,
+    domain: "",
+    language: detectLanguage(lower),
+    visualStyle: detectVisualStyle(lower),
+    structureType: detectStructure(lower),
+  };
+}
+
+function detectBusinessType(value: string): OnboardingInput["businessType"] {
+  const matches: Array<[OnboardingInput["businessType"], string[]]> = [
+    ["restaurant", ["restaurante", "comida", "cafeteria", "café", "menu", "menú"]],
+    ["roofing", ["techo", "tejado", "roofing"]],
+    ["painting", ["pintura", "pintor"]],
+    ["landscaping", ["jardiner", "landscaping", "paisajismo"]],
+    ["cleaning", ["limpieza", "cleaning"]],
+    ["law_firm", ["abogado", "legal", "bufete"]],
+    ["real_estate", ["inmobiliaria", "bienes raices", "bienes raíces"]],
+    ["medical", ["clinica", "clínica", "medico", "médico", "salud"]],
+    ["beauty", ["belleza", "salon", "salón", "spa"]],
+    ["fitness", ["gimnasio", "fitness", "entrenamiento"]],
+  ];
+  return matches.find(([, words]) => words.some((word) => value.includes(word)))?.[0] ?? "other";
+}
+
+function detectGoal(value: string): OnboardingInput["goal"] {
+  if (/(reserv|agend|cita)/.test(value)) return "book_appointments";
+  if (/(cotiz|presupuesto)/.test(value)) return "quote_forms";
+  if (/(tienda|producto|vender|venta)/.test(value)) return "sell_products";
+  if (/(llamad|telefono|teléfono)/.test(value)) return "calls";
+  if (/(servicio|menú|menu|portafolio|proyecto)/.test(value)) return "show_services";
+  return "professional_presence";
+}
+
+function detectVisualStyle(value: string): OnboardingInput["visualStyle"] {
+  if (/(premium|elegante|lujo)/.test(value)) return "premium_elegant";
+  if (/(creativ|colorid|artist)/.test(value)) return "creative";
+  if (/(minimal|simple)/.test(value)) return "minimalist";
+  if (/(audaz|fuerte|llamativ)/.test(value)) return "bold";
+  if (/(corporativ|empresa|empresarial)/.test(value)) return "corporate";
+  if (/(local|cercan|confiable)/.test(value)) return "local_trustworthy";
+  return "modern_clean";
+}
+
+function detectStructure(value: string): OnboardingInput["structureType"] {
+  if (/(sitio completo|multipagina|multipágina|varias paginas|varias páginas)/.test(value)) {
+    return "pages_full";
+  }
+  if (/(landing|una pagina|una página|one page)/.test(value)) return "one_page";
+  return "ai_decide";
+}
+
+function detectLanguage(value: string): OnboardingInput["language"] {
+  if (/(biling|español e inglés|espanol e ingles)/.test(value)) return "bilingual";
+  if (/(in english|english website|sitio en ingles|sitio en inglés)/.test(value)) return "en";
+  return "es";
+}

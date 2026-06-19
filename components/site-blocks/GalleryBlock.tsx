@@ -18,14 +18,14 @@ export function GalleryBlock({ section, theme, preset, site }: BlockProps) {
           {tiles.map((_, i) => (
             <div
               key={i}
-              className="group relative overflow-hidden"
+              className="relative overflow-hidden border border-black/5"
               style={{ borderRadius: "var(--site-radius)" }}
             >
               <img
                 src={stockImageUrl(site.businessType, `gallery-${i}`, 600, 600)}
                 alt={`${site.businessName} ${i + 1}`}
                 loading="lazy"
-                className="aspect-square h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                className="aspect-square h-full w-full object-cover"
               />
             </div>
           ))}

@@ -4,24 +4,29 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --background: 240 20% 99%;
+    --foreground: 252 21% 12%;
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-    --primary: 221.2 83.2% 53.3%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --card-foreground: 252 21% 12%;
+    --primary: 262 72% 50%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 255 40% 96%;
+    --secondary-foreground: 262 48% 30%;
+    --muted: 240 18% 96%;
+    --muted-foreground: 245 8% 43%;
+    --accent: 255 50% 95%;
+    --accent-foreground: 262 72% 40%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 221.2 83.2% 53.3%;
-    --radius: 0.65rem;
+    --border: 244 18% 89%;
+    --input: 244 18% 89%;
+    --ring: 262 72% 50%;
+    --radius: 0.85rem;
+    --modal-open-dur: 250ms;
+    --modal-close-dur: 150ms;
+    --modal-scale: 0.96;
+    --modal-scale-close: 0.96;
+    --modal-ease: cubic-bezier(0.22, 1, 0.36, 1);
   }
 }
 
@@ -33,38 +38,52 @@
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
+  ::selection {
+    background: hsl(var(--primary) / 0.2);
+  }
 }
 
-/* ---- Generated-site motion ---- */
-.site-reveal {
-  opacity: 0;
-  transform: translateY(24px);
-  transition:
-    opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
-    transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
-  will-change: opacity, transform;
+.marketing-shell {
+  background:
+    radial-gradient(circle at 50% -10%, rgba(130, 73, 220, 0.2), transparent 34rem),
+    linear-gradient(135deg, #100a1f 0%, #1b1230 48%, #2b1d4b 100%);
 }
-.site-reveal.is-visible {
+
+.soft-grid {
+  background-image:
+    linear-gradient(rgba(124, 58, 237, 0.055) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(124, 58, 237, 0.055) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
+/* ---- Dialog motion ---- */
+.t-modal {
+  transform-origin: center;
+  transform: scale(var(--modal-scale));
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    transform var(--modal-open-dur) var(--modal-ease),
+    opacity var(--modal-open-dur) var(--modal-ease);
+  will-change: transform, opacity;
+}
+.t-modal.is-open {
+  transform: scale(1);
   opacity: 1;
-  transform: translateY(0);
+  pointer-events: auto;
+}
+.t-modal.is-closing {
+  transform: scale(var(--modal-scale-close));
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    transform var(--modal-close-dur) var(--modal-ease),
+    opacity var(--modal-close-dur) var(--modal-ease);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .site-reveal {
-    opacity: 1 !important;
+  .t-modal {
     transform: none !important;
     transition: none !important;
   }
-}
-
-@keyframes site-hero-zoom {
-  from {
-    transform: scale(1.12);
-  }
-  to {
-    transform: scale(1);
-  }
-}
-.site-hero-bg {
-  animation: site-hero-zoom 8s ease-out forwards;
 }

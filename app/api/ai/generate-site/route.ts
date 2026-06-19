@@ -15,7 +15,9 @@ import { applyPageStructure } from "@/lib/site/structure";
 import { getPalette } from "@/lib/site/design";
 import {
   onboardingSchema,
+  promptToOnboardingInput,
   resolveBusinessTypeLabel,
+  sitePromptSchema,
   type OnboardingInput,
 } from "@/lib/validators/site-onboarding";
 
@@ -40,14 +42,21 @@ export async function POST(req: NextRequest) {
 
   // Parse + validate onboarding input.
   let input: OnboardingInput;
+  let originalRequest: string | undefined;
   try {
     const body = await req.json();
-    input = onboardingSchema.parse(body);
+    if (typeof body === "object" && body !== null && "prompt" in body) {
+      const request = sitePromptSchema.parse(body);
+      originalRequest = request.prompt;
+      input = promptToOnboardingInput(request.prompt);
+    } else {
+      input = onboardingSchema.parse(body);
+    }
   } catch (err) {
     if (err instanceof ZodError) {
       const first = err.errors[0];
       return jsonError(
-        `Datos del formulario invalidos: ${
+        `Solicitud invalida: ${
           first?.message ?? "revisa los campos."
         }`,
         400
@@ -56,7 +65,7 @@ export async function POST(req: NextRequest) {
     return jsonError("No se pudo leer la solicitud.", 400);
   }
 
-  const { system, user } = buildSiteGenerationPrompt(input);
+  const { system, user } = buildSiteGenerationPrompt(input, originalRequest);
 
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {

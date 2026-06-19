@@ -5,9 +5,9 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
 export const metadata: Metadata = {
-  title: "AI Hosting Website Builder",
+  title: "Cluster Web Builder",
   description:
-    "Genera sitios web profesionales con IA para clientes de hosting. Responde 5 preguntas y obtén un sitio listo para editar.",
+    "Describe tu negocio y obtén un sitio profesional, editable y listo para compartir.",
 };
 
 export default function RootLayout({

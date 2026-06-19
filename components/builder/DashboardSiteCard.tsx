@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Eye, Pencil, Rocket } from "lucide-react";
+import { Eye, Pencil } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -19,20 +19,27 @@ export type DashboardSite = {
 
 const STATUS_LABEL: Record<
   string,
-  { label: string; dot: string; text: string }
+  { label: string; dot: string; text: string; border: string }
 > = {
-  GENERATED: { label: "Generado", dot: "bg-emerald-500", text: "text-emerald-700" },
-  DRAFT: { label: "Borrador", dot: "bg-slate-400", text: "text-slate-500" },
-  PUBLISHED: { label: "Publicado", dot: "bg-blue-500", text: "text-blue-700" },
+  GENERATED: {
+    label: "Generado",
+    dot: "bg-emerald-500",
+    text: "text-emerald-700",
+    border: "border-emerald-200",
+  },
+  DRAFT: {
+    label: "Borrador",
+    dot: "bg-slate-400",
+    text: "text-slate-600",
+    border: "border-slate-200",
+  },
+  PUBLISHED: {
+    label: "Publicado",
+    dot: "bg-blue-500",
+    text: "text-violet-700",
+    border: "border-violet-200",
+  },
 };
-
-function initials(name: string): string {
-  return name
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((w) => w[0]?.toUpperCase() ?? "")
-    .join("");
-}
 
 export function DashboardSiteCard({ site }: { site: DashboardSite }) {
   const status = STATUS_LABEL[site.status] ?? STATUS_LABEL.DRAFT;
@@ -43,60 +50,62 @@ export function DashboardSiteCard({ site }: { site: DashboardSite }) {
   });
 
   return (
-    <div className="group overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-all hover:-translate-y-0.5 hover:shadow-[0_12px_32px_-12px_rgba(15,23,42,0.18)]">
-      {/* Palette banner with the site's real colors */}
-      <div
-        className="relative h-24"
-        style={{
-          background: `linear-gradient(135deg, ${site.primaryColor} 0%, ${site.secondaryColor} 100%)`,
-        }}
-      >
+    <article className="group rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-violet-200 hover:shadow-xl hover:shadow-violet-100/50">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h3 className="truncate font-semibold text-slate-950">
+            {site.businessName}
+          </h3>
+          <p className="mt-1 truncate text-sm text-slate-500">
+            {site.businessType}
+          </p>
+        </div>
         <span
-          className="absolute -bottom-6 left-5 flex h-12 w-12 items-center justify-center rounded-xl border-4 border-white text-sm font-bold text-white shadow-sm"
-          style={{ backgroundColor: site.accentColor }}
+          className={cn(
+            "inline-flex shrink-0 items-center gap-1.5 rounded-full border bg-white px-2.5 py-1 text-xs font-medium",
+            status.border,
+            status.text
+          )}
         >
-          {initials(site.businessName)}
-        </span>
-        <span className="absolute right-4 top-4 inline-flex items-center gap-1.5 rounded-full bg-white/90 px-2.5 py-1 text-xs font-medium backdrop-blur">
           <span className={cn("h-1.5 w-1.5 rounded-full", status.dot)} />
-          <span className={status.text}>{status.label}</span>
+          {status.label}
         </span>
       </div>
 
-      <div className="px-5 pb-5 pt-8">
-        <h3 className="truncate font-semibold text-slate-900">
-          {site.businessName}
-        </h3>
-        <p className="mt-0.5 truncate text-sm text-slate-500">
-          {site.businessType}
-        </p>
-        <p className="mt-3 text-xs text-slate-400">Creado el {date}</p>
-
-        <div className="mt-4 flex items-center gap-2">
-          <Button asChild size="sm" className="flex-1">
-            <Link href={`/builder/${site.id}`}>
-              <Pencil className="h-3.5 w-3.5" /> Editar
-            </Link>
-          </Button>
-          <Button asChild size="sm" variant="outline">
-            <Link href={`/preview/${site.id}`} target="_blank">
-              <Eye className="h-3.5 w-3.5" /> Preview
-            </Link>
-          </Button>
-          <Button
-            size="sm"
-            variant="ghost"
-            title="Publicar (próximamente)"
-            onClick={() =>
-              alert(
-                "La publicación real (dominio + hosting) llegará en una fase futura."
-              )
-            }
-          >
-            <Rocket className="h-3.5 w-3.5" />
-          </Button>
+      <div className="mt-8 flex items-center justify-between border-t border-slate-100 pt-4">
+        <p className="text-xs text-slate-400">Creado el {date}</p>
+        <div className="flex items-center gap-1.5" aria-label="Paleta del sitio">
+          {[site.primaryColor, site.secondaryColor, site.accentColor].map((color) => (
+            <span
+              key={color}
+              className="h-4 w-4 rounded-full border border-white shadow-sm ring-1 ring-slate-200"
+              style={{ backgroundColor: color }}
+            />
+          ))}
         </div>
       </div>
-    </div>
+
+      <div className="mt-4 grid grid-cols-2 gap-2">
+        <Button asChild size="sm" className="bg-violet-700 text-white hover:bg-violet-800">
+          <Link href={`/builder/${site.id}`}>
+            <Pencil className="h-3.5 w-3.5" /> Editar
+          </Link>
+        </Button>
+        <Button asChild size="sm" variant="outline" className="border-slate-200 bg-white text-slate-700 hover:bg-violet-50 hover:text-violet-800">
+          <Link href={`/preview/${site.id}`} target="_blank">
+            <Eye className="h-3.5 w-3.5" /> Preview
+          </Link>
+        </Button>
+        <Button
+          size="sm"
+          variant="ghost"
+          disabled
+          className="col-span-2 justify-center text-slate-400"
+          title="Publicar proximamente"
+        >
+          Publicar proximamente
+        </Button>
+      </div>
+    </article>
   );
 }

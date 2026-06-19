@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Plus, Sparkles, LayoutGrid } from "lucide-react";
+import { ArrowLeft, LayoutGrid, Plus, WandSparkles } from "lucide-react";
 
 import { prisma } from "@/lib/db";
 import { Button } from "@/components/ui/button";
@@ -12,7 +12,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "Dashboard · AI Website Builder",
+  title: "Dashboard | Cluster Web Builder",
 };
 
 export default async function DashboardPage() {
@@ -42,14 +42,17 @@ export default async function DashboardPage() {
   }));
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
-      <header className="border-b bg-white/70 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-          <Link href="/" className="flex items-center gap-2 font-semibold">
-            <Sparkles className="h-5 w-5 text-primary" />
-            <span>AI Website Builder</span>
+    <main className="soft-grid min-h-dvh bg-[#f7f7fa] text-slate-950">
+      <header className="border-b border-slate-200 bg-white/90 backdrop-blur">
+        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5 sm:px-8">
+          <Link href="/" className="flex items-center gap-2.5 font-semibold tracking-tight">
+            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-600 text-white shadow-sm">
+              <WandSparkles className="h-4 w-4" />
+            </span>
+            <span>Cluster</span>
+            <span className="rounded bg-violet-100 px-1.5 py-0.5 text-[10px] font-bold uppercase text-violet-700">Beta</span>
           </Link>
-          <Button asChild size="sm">
+          <Button asChild size="sm" className="bg-violet-700 text-white hover:bg-violet-800">
             <Link href="/builder">
               <Plus className="h-4 w-4" /> Nuevo sitio
             </Link>
@@ -57,12 +60,17 @@ export default async function DashboardPage() {
         </div>
       </header>
 
-      <section className="mx-auto max-w-6xl px-6 py-10">
-        <div className="mb-8 flex items-center justify-between">
+      <section className="mx-auto max-w-6xl px-5 py-10 sm:px-8 sm:py-14">
+        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">Mis sitios</h1>
-            <p className="text-sm text-slate-500">
-              {data.length} {data.length === 1 ? "sitio" : "sitios"} generados
+            <Link href="/" className="mb-6 inline-flex items-center gap-2 text-sm text-slate-500 transition-colors hover:text-violet-700">
+              <ArrowLeft className="h-4 w-4" /> Volver al inicio
+            </Link>
+            <h1 className="text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">
+              Tus proyectos
+            </h1>
+            <p className="mt-2 text-sm text-slate-500">
+              {data.length} {data.length === 1 ? "sitio guardado" : "sitios guardados"}
             </p>
           </div>
         </div>
@@ -83,20 +91,19 @@ export default async function DashboardPage() {
 
 function EmptyState() {
   return (
-    <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed bg-white py-20 text-center">
-      <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
-        <LayoutGrid className="h-7 w-7 text-primary" />
+    <div className="rounded-3xl border border-dashed border-violet-200 bg-white/90 px-6 py-20 text-center shadow-sm">
+      <div className="mx-auto mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-violet-100">
+        <LayoutGrid className="h-5 w-5 text-violet-700" />
       </div>
-      <h2 className="text-lg font-semibold text-slate-900">
-        Aún no tienes sitios
+      <h2 className="text-lg font-semibold text-slate-950">
+        Tu espacio está listo
       </h2>
-      <p className="mt-1 max-w-sm text-sm text-slate-500">
-        Crea tu primer sitio web con IA en menos de un minuto respondiendo 5
-        preguntas.
+      <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-slate-500">
+        Describe tu primer proyecto y obtén una propuesta editable en minutos.
       </p>
-      <Button asChild className="mt-6">
+      <Button asChild className="mt-6 bg-violet-700 text-white hover:bg-violet-800">
         <Link href="/builder">
-          <Plus className="h-4 w-4" /> Crear mi primer sitio
+          <Plus className="h-4 w-4" /> Crear sitio
         </Link>
       </Button>
     </div>

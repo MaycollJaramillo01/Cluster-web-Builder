@@ -28,7 +28,7 @@ export function HeroBlock({ section, theme, preset, site }: BlockProps) {
   const ctaButton = section.ctaText ? (
     <a
       href={section.ctaLink || "#contact"}
-      className="inline-flex items-center justify-center px-8 py-3.5 text-base font-semibold shadow-lg transition-transform duration-200 hover:scale-[1.03]"
+      className="inline-flex items-center justify-center px-8 py-3.5 text-base font-semibold shadow-sm transition-[filter] duration-200 hover:brightness-95"
       style={{
         backgroundColor: theme.accent,
         color: "#0f172a",
@@ -82,12 +82,14 @@ export function HeroBlock({ section, theme, preset, site }: BlockProps) {
             {ctaButton && <div className="mt-8">{ctaButton}</div>}
           </div>
           <div className="relative">
-            <img
-              src={heroImg(900, 700, "hero-split")}
-              alt={site.businessName}
-              loading="eager"
-              className="h-[420px] w-full object-cover shadow-xl"
-              style={{ borderRadius: "var(--site-radius)" }}
+            <div
+              role="img"
+              aria-label={site.businessName}
+              className="h-[420px] w-full border border-black/5 bg-cover bg-center shadow-sm"
+              style={{
+                backgroundImage: `url("${heroImg(900, 700, "hero-split")}")`,
+                borderRadius: "var(--site-radius)",
+              }}
             />
           </div>
         </div>
@@ -95,13 +97,13 @@ export function HeroBlock({ section, theme, preset, site }: BlockProps) {
     );
   }
 
-  // --- Gradient: bold colorful background ---
+  // --- Solid: bold color without decorative gradients ---
   if (preset.heroStyle === "gradient" || !preset.useImages) {
     return (
       <section
         className="px-6 py-28 sm:py-36"
         style={{
-          background: `linear-gradient(135deg, ${theme.primary} 0%, ${theme.accent} 120%)`,
+          backgroundColor: theme.secondary,
           color: "#ffffff",
         }}
       >
@@ -119,23 +121,22 @@ export function HeroBlock({ section, theme, preset, site }: BlockProps) {
   return (
     <section className="relative overflow-hidden">
       <div className="absolute inset-0 overflow-hidden">
-        <img
-          src={heroImg(1600, 1000, "hero-bg")}
-          alt=""
+        <div
           aria-hidden
-          className="site-hero-bg h-full w-full object-cover"
+          className="h-full w-full bg-cover bg-center"
+          style={{ backgroundImage: `url("${heroImg(1600, 1000, "hero-bg")}")` }}
         />
         <div
           className="absolute inset-0"
           style={{
-            background: `linear-gradient(120deg, ${theme.primary}E6 0%, ${theme.secondary}CC 60%, ${theme.secondary}99 100%)`,
+            backgroundColor: `${theme.secondary}D9`,
           }}
         />
       </div>
       <div className="relative px-6 py-32 sm:py-44">
         <div className="mx-auto max-w-4xl text-center text-white">
           {section.subtitle && (
-            <span className="mb-5 inline-block rounded-full bg-white/15 px-4 py-1.5 text-sm font-medium backdrop-blur">
+            <span className="mb-5 inline-block rounded-md border border-white/20 bg-white/10 px-4 py-1.5 text-sm font-medium">
               {section.subtitle}
             </span>
           )}

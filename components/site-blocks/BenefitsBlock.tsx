@@ -4,6 +4,7 @@ import type { BlockProps } from "./types";
 
 export function BenefitsBlock({ section, theme, preset }: BlockProps) {
   const items = getItems(section);
+
   return (
     <section className="px-6 py-20 sm:py-24" style={{ backgroundColor: theme.background }}>
       <div className="mx-auto max-w-5xl">
@@ -13,17 +14,18 @@ export function BenefitsBlock({ section, theme, preset }: BlockProps) {
           theme={theme}
           preset={preset}
         />
-        <div className="mt-14 grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {items.map((item, i) => (
-            <div key={i} className="group text-center">
-              <div
-                className="mx-auto flex h-14 w-14 items-center justify-center text-xl text-white shadow-md transition-transform duration-300 group-hover:scale-110"
-                style={{ backgroundColor: theme.accent, borderRadius: "var(--site-radius)" }}
-              >
-                ✓
-              </div>
+            <div
+              key={i}
+              className={`border bg-white p-5 ${preset.cardShadow}`}
+              style={{ borderRadius: "var(--site-radius)" }}
+            >
+              <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: theme.primary }}>
+                {String(i + 1).padStart(2, "0")}
+              </p>
               <h3
-                className="mt-5 font-semibold"
+                className="mt-4 font-semibold"
                 style={{ color: theme.text, fontFamily: "var(--site-heading)" }}
               >
                 {String(item.title ?? item.name ?? "Beneficio")}

@@ -1,199 +1,225 @@
 import Link from "next/link";
 import {
   ArrowRight,
-  Sparkles,
-  Zap,
+  ChevronDown,
+  Code2,
+  Globe2,
   LayoutDashboard,
-  ListChecks,
-  Radio,
-  Pencil,
-  MessagesSquare,
-  Wand2,
-  Globe,
+  MousePointer2,
+  PanelsTopLeft,
+  ShieldCheck,
+  Sparkles,
+  UserRound,
+  WandSparkles,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { PromptComposer } from "@/components/builder/OnboardingWizard";
 
 export default function HomePage() {
   return (
-    <main className="min-h-screen bg-white">
-      {/* Top bar */}
-      <header className="sticky top-0 z-30 border-b border-slate-200/70 bg-white/80 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-          <div className="flex items-center gap-2 font-semibold">
-            <Sparkles className="h-5 w-5 text-primary" />
-            <span>AI Website Builder</span>
-          </div>
-          <nav className="flex items-center gap-2">
-            <Button asChild variant="ghost" size="sm">
-              <Link href="/dashboard">Dashboard</Link>
+    <main className="marketing-shell min-h-dvh overflow-x-hidden text-white">
+      <header className="border-b border-white/10 bg-[#100a1f]/70 backdrop-blur-xl">
+        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5 sm:px-8">
+          <Brand />
+          <nav className="flex items-center gap-1" aria-label="Navegación principal">
+            <Button
+              asChild
+              variant="ghost"
+              size="sm"
+              className="hidden text-violet-100 hover:bg-white/10 hover:text-white sm:inline-flex"
+            >
+              <Link href="/dashboard">
+                <LayoutDashboard /> Proyectos
+              </Link>
             </Button>
-            <Button asChild size="sm">
-              <Link href="/builder">Crear sitio</Link>
+            <Button
+              asChild
+              variant="ghost"
+              size="icon"
+              className="h-11 w-11 text-violet-100 hover:bg-white/10 hover:text-white"
+            >
+              <Link href="/dashboard" aria-label="Abrir perfil">
+                <UserRound />
+              </Link>
             </Button>
           </nav>
         </div>
       </header>
 
-      {/* Hero */}
-      <section className="relative overflow-hidden">
-        {/* Decorative glow */}
-        <div
-          aria-hidden
-          className="pointer-events-none absolute left-1/2 top-[-10rem] h-[28rem] w-[48rem] -translate-x-1/2 rounded-full bg-gradient-to-tr from-primary/20 via-indigo-300/20 to-transparent blur-3xl"
-        />
-        <div className="relative mx-auto max-w-4xl px-6 py-24 text-center sm:py-28">
-          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-1.5 text-sm text-slate-600 shadow-sm">
-            <Zap className="h-4 w-4 text-primary" />
-            Plataforma para empresas de hosting
+      <section className="relative px-5 pb-28 pt-20 text-center sm:pt-28">
+        <div className="mx-auto max-w-4xl">
+          <div className="mx-auto mb-6 inline-flex items-center gap-2 rounded-full border border-violet-300/20 bg-white/5 px-3 py-1.5 text-xs font-medium text-violet-200">
+            <Sparkles className="h-3.5 w-3.5" /> Tu próximo sitio empieza aquí
           </div>
-          <h1 className="text-4xl font-bold tracking-tight text-slate-900 sm:text-6xl">
-            Vende sitios web creados con{" "}
-            <span className="bg-gradient-to-r from-primary to-indigo-500 bg-clip-text text-transparent">
-              Inteligencia Artificial
-            </span>
+          <h1 className="max-w-full text-balance text-3xl font-bold leading-[1.08] tracking-[-0.04em] sm:text-6xl lg:text-7xl">
+            Describe <span className="text-violet-400">tu idea.</span> Obtén un sitio web en vivo en minutos.
           </h1>
-          <p className="mx-auto mt-6 max-w-2xl text-lg text-slate-600">
-            Tus clientes responden 5 preguntas y la IA genera un sitio completo,
-            profesional y editable en segundos. Optimizado para conversión y SEO
-            local.
+          <p className="mx-auto mt-6 max-w-2xl text-base leading-7 text-violet-100/70 sm:text-lg">
+            Sin código ni plantillas rígidas. Cuéntanos sobre el negocio y crea una base completa que puedes editar y compartir.
           </p>
-          <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
-            <Button asChild size="lg" className="px-7">
-              <Link href="/builder">
-                Generar mi sitio <ArrowRight className="h-4 w-4" />
-              </Link>
-            </Button>
-            <Button asChild size="lg" variant="outline" className="px-7">
-              <Link href="/dashboard">
-                <LayoutDashboard className="h-4 w-4" /> Ver mis sitios
-              </Link>
-            </Button>
-          </div>
-          {/* Trust chips */}
-          <div className="mt-10 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-slate-400">
-            <span className="flex items-center gap-1.5"><Radio className="h-4 w-4" /> Generación en streaming</span>
-            <span className="flex items-center gap-1.5"><Globe className="h-4 w-4" /> Sitios multipágina</span>
-            <span className="flex items-center gap-1.5"><Wand2 className="h-4 w-4" /> Imágenes con IA</span>
+
+          <div className="mt-10">
+            <PromptComposer variant="hero" />
           </div>
         </div>
       </section>
 
-      {/* How it works */}
-      <section className="border-y border-slate-100 bg-slate-50/60">
-        <div className="mx-auto max-w-5xl px-6 py-16">
-          <h2 className="text-center text-2xl font-semibold tracking-tight text-slate-900">
-            Cómo funciona
-          </h2>
-          <p className="mx-auto mt-2 max-w-xl text-center text-sm text-slate-500">
-            De cero a un sitio publicable en tres pasos.
-          </p>
-          <div className="mt-12 grid gap-8 sm:grid-cols-3">
-            {STEPS.map((s, i) => (
-              <div key={s.title} className="relative text-center">
-                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                  <s.icon className="h-6 w-6" />
-                </div>
-                <div className="mt-4 text-xs font-semibold uppercase tracking-wide text-primary">
-                  Paso {i + 1}
-                </div>
-                <h3 className="mt-1 font-semibold text-slate-900">{s.title}</h3>
-                <p className="mx-auto mt-1.5 max-w-xs text-sm text-slate-500">
-                  {s.desc}
-                </p>
-              </div>
-            ))}
+      <section className="mx-auto max-w-6xl px-5 py-24 sm:px-8">
+        <div className="grid items-center gap-12 lg:grid-cols-[0.82fr_1.18fr]">
+          <div>
+            <p className="text-sm font-semibold text-violet-300">Comienza con una instrucción</p>
+            <h2 className="mt-4 text-3xl font-bold tracking-tight sm:text-5xl">
+              De la idea a la publicación de principio a fin
+            </h2>
+            <p className="mt-5 max-w-xl text-base leading-7 text-violet-100/65">
+              Cada proyecto conserva objetivos, páginas, estilo y datos del negocio. La IA convierte ese contexto en una propuesta que puedes revisar sin perder control.
+            </p>
           </div>
+          <EditorMockup />
         </div>
-      </section>
 
-      {/* Feature cards */}
-      <section className="mx-auto max-w-5xl px-6 py-20">
-        <div className="grid gap-6 sm:grid-cols-3">
-          {FEATURES.map((f) => (
-            <div
-              key={f.title}
-              className="rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-shadow hover:shadow-[0_12px_32px_-16px_rgba(15,23,42,0.18)]"
-            >
-              <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-slate-100 text-slate-700">
-                <f.icon className="h-5 w-5" />
-              </div>
-              <h3 className="mt-4 font-semibold text-slate-900">{f.title}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-slate-600">
-                {f.desc}
-              </p>
-            </div>
+        <div className="mt-16 grid gap-8 border-t border-white/10 pt-10 md:grid-cols-3">
+          {STEPS.map((step, index) => (
+            <article key={step.title}>
+              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-400/15 text-sm font-bold text-violet-300">
+                0{index + 1}
+              </span>
+              <h3 className="mt-5 text-lg font-semibold">{step.title}</h3>
+              <p className="mt-2 text-sm leading-6 text-violet-100/60">{step.description}</p>
+            </article>
           ))}
         </div>
       </section>
 
-      {/* CTA */}
-      <section className="px-6 pb-24">
-        <div className="mx-auto max-w-4xl overflow-hidden rounded-3xl bg-gradient-to-br from-primary to-indigo-600 px-8 py-14 text-center text-white shadow-xl">
-          <h2 className="text-3xl font-bold tracking-tight">
-            Empieza a crear hoy
-          </h2>
-          <p className="mx-auto mt-3 max-w-xl text-white/85">
-            Genera tu primer sitio en menos de un minuto. Sin tarjeta, sin
-            complicaciones.
-          </p>
-          <Button
-            asChild
-            size="lg"
-            variant="secondary"
-            className="mt-8 bg-white px-8 text-slate-900 hover:bg-white/90"
-          >
+      <section className="border-y border-white/10 bg-[#120c22]/45">
+        <div className="mx-auto grid max-w-6xl gap-12 px-5 py-24 sm:px-8 lg:grid-cols-2 lg:items-center">
+          <div className="hidden lg:block">
+            <div className="relative mx-auto h-72 max-w-md">
+              <div className="absolute inset-8 rotate-[-5deg] rounded-3xl border border-white/10 bg-white/5" />
+              <div className="absolute inset-8 rotate-[5deg] rounded-3xl border border-violet-300/20 bg-violet-500/10" />
+              <div className="absolute inset-8 flex items-center justify-center rounded-3xl border border-white/15 bg-[#211638] shadow-2xl">
+                <ShieldCheck className="h-20 w-20 text-violet-300" />
+              </div>
+            </div>
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-violet-300">Diseñado para trabajo real</p>
+            <h2 className="mt-4 text-3xl font-bold tracking-tight sm:text-5xl">
+              IA que se envía en una infraestructura de producto real
+            </h2>
+            <p className="mt-5 text-base leading-7 text-violet-100/65">
+              No es una demo desconectada. Los proyectos se guardan, se editan por sección y tienen una vista previa lista para compartir.
+            </p>
+            <div className="mt-8 grid gap-4 sm:grid-cols-2">
+              {BENEFITS.map(({ icon: Icon, title }) => (
+                <div key={title} className="flex items-center gap-3 text-sm text-violet-100/80">
+                  <span className="flex h-9 w-9 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-violet-300">
+                    <Icon className="h-4 w-4" />
+                  </span>
+                  {title}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="mx-auto max-w-4xl px-5 py-24 sm:px-8">
+        <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">Preguntas frecuentes</h2>
+        <div className="mt-8 divide-y divide-white/10 border-y border-white/10">
+          {FAQS.map((item) => (
+            <details key={item.question} className="group py-5">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-5 text-base font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300">
+                {item.question}
+                <ChevronDown className="h-5 w-5 shrink-0 text-violet-300 transition-transform group-open:rotate-180" />
+              </summary>
+              <p className="max-w-2xl pt-3 text-sm leading-6 text-violet-100/60">{item.answer}</p>
+            </details>
+          ))}
+        </div>
+      </section>
+
+      <section className="px-5 pb-24 sm:px-8">
+        <div className="mx-auto flex max-w-4xl flex-col items-start gap-7 rounded-3xl border border-white/10 bg-white/10 p-8 shadow-2xl backdrop-blur sm:p-12">
+          <div>
+            <h2 className="text-3xl font-bold">¿Listo para construir algo?</h2>
+            <p className="mt-3 max-w-xl text-sm leading-6 text-violet-100/65">
+              Empieza con el brief guiado y termina con un sitio editable en el mismo flujo.
+            </p>
+          </div>
+          <Button asChild size="lg" className="bg-white text-violet-800 hover:bg-violet-50">
             <Link href="/builder">
-              Crear mi sitio <ArrowRight className="h-4 w-4" />
+              Crear mi sitio <ArrowRight />
             </Link>
           </Button>
         </div>
       </section>
 
-      <footer className="border-t border-slate-100 py-8">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 text-sm text-slate-400">
-          <span className="flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-primary" /> AI Website Builder
-          </span>
-          <span>© {new Date().getFullYear()}</span>
+      <footer className="border-t border-white/10 py-8">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-5 text-sm text-violet-100/45 sm:px-8">
+          <span>Cluster Web Builder</span>
+          <span>{new Date().getFullYear()}</span>
         </div>
       </footer>
     </main>
   );
 }
 
+function Brand() {
+  return (
+    <Link href="/" className="flex items-center gap-2.5 font-semibold tracking-tight">
+      <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-500 text-white shadow-lg shadow-violet-950/30">
+        <WandSparkles className="h-4 w-4" />
+      </span>
+      <span>Cluster</span>
+      <span className="rounded bg-violet-500/25 px-1.5 py-0.5 text-[10px] font-bold uppercase text-violet-200">Beta</span>
+    </Link>
+  );
+}
+
+function EditorMockup() {
+  return (
+    <div className="overflow-hidden rounded-3xl border border-white/15 bg-[#f7f7fa] p-2 shadow-[0_30px_90px_rgba(0,0,0,0.35)]">
+      <div className="flex items-center justify-between rounded-t-2xl border-b border-slate-200 bg-white px-4 py-3 text-slate-500">
+        <div className="flex gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-red-300" /><span className="h-2.5 w-2.5 rounded-full bg-amber-300" /><span className="h-2.5 w-2.5 rounded-full bg-emerald-300" /></div>
+        <span className="rounded-lg bg-violet-100 px-3 py-1 text-xs font-medium text-violet-700">Editando</span>
+        <span className="h-6 w-6 rounded-full bg-slate-100" />
+      </div>
+      <div className="grid min-h-80 grid-cols-[120px_1fr] text-slate-700 sm:grid-cols-[160px_1fr]">
+        <aside className="border-r border-slate-200 bg-white p-3">
+          <div className="h-7 rounded-lg bg-violet-100" />
+          <div className="mt-4 space-y-2">{[72, 88, 62, 80].map((width) => <div key={width} className="h-2 rounded bg-slate-100" style={{ width: `${width}%` }} />)}</div>
+        </aside>
+        <div className="soft-grid flex items-center justify-center p-5">
+          <div className="w-full max-w-sm overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl">
+            <div className="h-28 bg-gradient-to-br from-violet-600 to-fuchsia-400 p-5 text-white">
+              <div className="h-2 w-14 rounded bg-white/50" /><div className="mt-4 h-4 w-4/5 rounded bg-white/90" /><div className="mt-2 h-2 w-2/3 rounded bg-white/50" />
+            </div>
+            <div className="grid grid-cols-3 gap-2 p-4">{[1, 2, 3].map((item) => <div key={item} className="h-16 rounded-lg bg-slate-100" />)}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 const STEPS = [
-  {
-    title: "Responde 5 preguntas",
-    desc: "Tipo de negocio, objetivo, estilo, páginas y datos de contacto.",
-    icon: MessagesSquare,
-  },
-  {
-    title: "La IA genera el sitio",
-    desc: "Estructura, textos, paleta e imágenes, en vivo y por streaming.",
-    icon: Wand2,
-  },
-  {
-    title: "Edita y comparte",
-    desc: "Ajusta textos y colores, y comparte una vista previa al instante.",
-    icon: Pencil,
-  },
+  { title: "De la idea al primer borrador", description: "Describe el negocio y el objetivo. El sistema organiza el brief antes de generar." },
+  { title: "Edición guiada", description: "Ajusta textos, orden, visibilidad y colores sin tocar código." },
+  { title: "Comparte el resultado", description: "Abre una vista previa multipágina y presenta el proyecto al cliente." },
 ];
 
-const FEATURES = [
-  {
-    title: "Onboarding en 5 pasos",
-    desc: "Opciones visuales, sin formularios largos. El cliente termina en menos de un minuto.",
-    icon: ListChecks,
-  },
-  {
-    title: "Generación en streaming",
-    desc: "La IA construye el sitio en vivo, sección por sección, con OpenRouter.",
-    icon: Radio,
-  },
-  {
-    title: "Editor incluido",
-    desc: "Edita textos, colores y secciones, y comparte una vista previa al instante.",
-    icon: Pencil,
-  },
+const BENEFITS = [
+  { icon: PanelsTopLeft, title: "Editor visual integrado" },
+  { icon: Globe2, title: "Sitios multipágina" },
+  { icon: Code2, title: "Salida estructurada" },
+  { icon: MousePointer2, title: "Vista previa compartible" },
+];
+
+const FAQS = [
+  { question: "¿Necesito experiencia en programación?", answer: "No. El flujo está diseñado para crear y ajustar el sitio desde controles visuales." },
+  { question: "¿Puedo editar el sitio que genera la IA?", answer: "Sí. Puedes cambiar datos, colores, textos, orden y visibilidad de cada sección." },
+  { question: "¿Qué pasa si la generación con IA falla?", answer: "El generador incluye una base local para que el flujo continúe y siempre tengas un borrador editable." },
+  { question: "¿Puedo crear sitios con varias páginas?", answer: "Sí. Puedes elegir una sola página, estructuras de tres o cuatro páginas, o dejar que la IA decida." },
 ];

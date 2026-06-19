@@ -3,32 +3,31 @@ import type { BlockProps } from "./types";
 
 export function CtaBlock({ section, theme, preset, site }: BlockProps) {
   const useImage = preset.useImages;
+  const backgroundImage = useImage
+    ? sectionImageUrl({
+        prompt: section.imagePrompt,
+        businessType: site.businessType,
+        seed: "cta-bg",
+        width: 1600,
+        height: 600,
+      })
+    : "";
 
   return (
     <section className="relative overflow-hidden px-6 py-20">
       {useImage && (
         <div className="absolute inset-0">
-          <img
-            src={sectionImageUrl({
-              prompt: section.imagePrompt,
-              businessType: site.businessType,
-              seed: "cta-bg",
-              width: 1600,
-              height: 600,
-            })}
-            alt=""
+          <div
             aria-hidden
-            loading="lazy"
-            className="h-full w-full object-cover"
+            className="h-full w-full bg-cover bg-center"
+            style={{ backgroundImage: `url("${backgroundImage}")` }}
           />
         </div>
       )}
       <div
         className="absolute inset-0"
         style={{
-          background: useImage
-            ? `linear-gradient(120deg, ${theme.secondary}F2, ${theme.primary}E6)`
-            : theme.secondary,
+          backgroundColor: useImage ? `${theme.secondary}F2` : theme.secondary,
         }}
       />
       <div className="relative mx-auto flex max-w-4xl flex-col items-center gap-6 text-center text-white">
@@ -48,7 +47,7 @@ export function CtaBlock({ section, theme, preset, site }: BlockProps) {
         {section.ctaText && (
           <a
             href={section.ctaLink || "#contact"}
-            className="inline-flex items-center px-8 py-3.5 text-base font-semibold shadow-lg transition-transform duration-200 hover:scale-[1.03]"
+            className="inline-flex items-center px-8 py-3.5 text-base font-semibold shadow-sm transition-[filter] duration-200 hover:brightness-95"
             style={{
               backgroundColor: theme.accent,
               color: "#0f172a",

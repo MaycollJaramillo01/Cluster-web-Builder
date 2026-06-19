@@ -90,6 +90,8 @@ export function SiteEditorPanel({
     () => ({ ...initialSite.theme, primary, secondary, accent }),
     [initialSite.theme, primary, secondary, accent]
   );
+  const fieldClass =
+    "border-slate-200 bg-white text-slate-950 placeholder:text-slate-400 focus-visible:ring-violet-500";
 
   const updateSection = (id: string, patch: Partial<RenderSection>) => {
     setSections((prev) =>
@@ -177,25 +179,25 @@ export function SiteEditorPanel({
   };
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex min-h-dvh flex-col bg-[#f5f6f8] text-slate-950">
       {/* Toolbar */}
-      <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/90 backdrop-blur">
-        <div className="mx-auto flex max-w-[1600px] items-center justify-between gap-4 px-4 py-3">
+      <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/95 backdrop-blur">
+        <div className="mx-auto flex min-h-16 max-w-[1600px] flex-wrap items-center justify-between gap-3 px-3 py-2 sm:px-5">
           <div className="flex items-center gap-3">
-            <Button asChild variant="ghost" size="sm">
+            <Button asChild variant="ghost" size="sm" className="text-slate-500 hover:bg-violet-50 hover:text-violet-700">
               <Link href="/dashboard">
                 <ArrowLeft className="h-4 w-4" /> Dashboard
               </Link>
             </Button>
             <div>
-              <p className="text-sm font-semibold leading-tight">
+              <p className="max-w-40 truncate text-sm font-semibold leading-tight text-slate-950 sm:max-w-none">
                 {businessName}
               </p>
-              <p className="text-xs text-slate-500">{initialSite.businessType}</p>
+              <p className="text-xs text-slate-400">{initialSite.businessType}</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Button asChild variant="outline" size="sm">
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            <Button asChild variant="outline" size="sm" className="border-slate-200 bg-white text-slate-700 hover:bg-violet-50 hover:text-violet-700">
               <Link href={`/preview/${initialSite.id}`} target="_blank">
                 <Eye className="h-4 w-4" /> Ver preview
               </Link>
@@ -203,6 +205,7 @@ export function SiteEditorPanel({
             <Button
               variant="outline"
               size="sm"
+              className="border-slate-200 bg-white text-slate-700 hover:bg-violet-50 hover:text-violet-700"
               onClick={() =>
                 alert(
                   "La publicación real (dominio + hosting) llegará en una fase futura."
@@ -211,7 +214,7 @@ export function SiteEditorPanel({
             >
               <Rocket className="h-4 w-4" /> Publicar
             </Button>
-            <Button size="sm" onClick={save} disabled={saving}>
+            <Button size="sm" className="bg-violet-700 text-white hover:bg-violet-800" onClick={save} disabled={saving}>
               {saving ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
@@ -223,8 +226,9 @@ export function SiteEditorPanel({
         </div>
         {(message || error) && (
           <div
+            role="status"
             className={`px-4 py-2 text-center text-sm ${
-              error ? "bg-destructive/10 text-destructive" : "bg-emerald-50 text-emerald-700"
+              error ? "bg-red-50 text-red-700" : "bg-emerald-50 text-emerald-700"
             }`}
           >
             {error ?? message}
@@ -232,32 +236,34 @@ export function SiteEditorPanel({
         )}
       </header>
 
-      <div className="mx-auto grid w-full max-w-[1600px] flex-1 grid-cols-1 gap-0 lg:grid-cols-[380px_1fr]">
+      <div className="mx-auto grid w-full max-w-[1600px] flex-1 grid-cols-1 gap-0 lg:grid-cols-[360px_1fr]">
         {/* Controls */}
-        <aside className="border-r bg-slate-50 p-4 lg:max-h-[calc(100vh-57px)] lg:overflow-y-auto">
+        <aside className="border-b border-slate-200 bg-white p-4 lg:max-h-[calc(100dvh-65px)] lg:overflow-y-auto lg:border-b-0 lg:border-r">
           <Section title="Datos del negocio">
             <Field label="Nombre">
               <Input
                 value={businessName}
                 onChange={(e) => setBusinessName(e.target.value)}
+                className={fieldClass}
               />
             </Field>
             <Field label="Teléfono">
-              <Input value={phone} onChange={(e) => setPhone(e.target.value)} />
+              <Input value={phone} onChange={(e) => setPhone(e.target.value)} className={fieldClass} />
             </Field>
             <Field label="Email">
-              <Input value={email} onChange={(e) => setEmail(e.target.value)} />
+              <Input value={email} onChange={(e) => setEmail(e.target.value)} className={fieldClass} />
             </Field>
             <Field label="Ubicación">
               <Input
                 value={location}
                 onChange={(e) => setLocation(e.target.value)}
+                className={fieldClass}
               />
             </Field>
           </Section>
 
           <Section title="Colores">
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid gap-3">
               <ColorField label="Primario" value={primary} onChange={setPrimary} />
               <ColorField
                 label="Secundario"
@@ -279,8 +285,8 @@ export function SiteEditorPanel({
                     className={cn(
                       "rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
                       previewPage === p.slug
-                        ? "bg-primary text-primary-foreground"
-                        : "border bg-white text-slate-600 hover:border-primary/50"
+                        ? "bg-violet-700 text-white shadow-sm"
+                        : "border border-slate-200 bg-white text-slate-600 hover:border-violet-300 hover:text-violet-700"
                     )}
                   >
                     {p.name}
@@ -301,7 +307,7 @@ export function SiteEditorPanel({
                 return (
                   <div
                     key={s.id}
-                    className="rounded-lg border bg-white"
+                    className="rounded-xl border border-slate-200 bg-white"
                   >
                     <div className="flex items-center justify-between gap-2 p-3">
                       <button
@@ -309,7 +315,14 @@ export function SiteEditorPanel({
                         className="flex flex-1 items-center gap-2 text-left"
                         onClick={() => setOpenId(open ? null : s.id)}
                       >
-                        <Badge variant={s.isVisible ? "secondary" : "muted"}>
+                        <Badge
+                          variant={s.isVisible ? "secondary" : "muted"}
+                          className={
+                            s.isVisible
+                              ? "bg-violet-100 text-violet-700"
+                              : "bg-slate-100 text-slate-500"
+                          }
+                        >
                           {SECTION_LABELS[s.type] ?? s.type}
                         </Badge>
                         {!s.isVisible && (
@@ -347,10 +360,11 @@ export function SiteEditorPanel({
                     </div>
 
                     {open && (
-                      <div className="space-y-3 border-t p-3">
+                      <div className="space-y-3 border-t border-slate-100 bg-slate-50/60 p-3">
                         <Field label="Título">
                           <Input
                             value={s.title}
+                            className={fieldClass}
                             onChange={(e) =>
                               updateSection(s.id, { title: e.target.value })
                             }
@@ -359,6 +373,7 @@ export function SiteEditorPanel({
                         <Field label="Subtítulo">
                           <Input
                             value={s.subtitle}
+                            className={fieldClass}
                             onChange={(e) =>
                               updateSection(s.id, { subtitle: e.target.value })
                             }
@@ -368,6 +383,7 @@ export function SiteEditorPanel({
                           <Textarea
                             value={s.body}
                             rows={4}
+                            className={fieldClass}
                             onChange={(e) =>
                               updateSection(s.id, { body: e.target.value })
                             }
@@ -379,6 +395,7 @@ export function SiteEditorPanel({
                           <Field label="Texto del botón (CTA)">
                             <Input
                               value={s.ctaText}
+                              className={fieldClass}
                               onChange={(e) =>
                                 updateSection(s.id, { ctaText: e.target.value })
                               }
@@ -396,8 +413,8 @@ export function SiteEditorPanel({
         </aside>
 
         {/* Live preview */}
-        <main className="bg-slate-100 p-4 lg:max-h-[calc(100vh-57px)] lg:overflow-y-auto">
-          <div className="overflow-hidden rounded-xl border bg-white shadow-sm">
+        <main className="soft-grid bg-[#f5f6f8] p-3 sm:p-5 lg:max-h-[calc(100dvh-65px)] lg:overflow-y-auto">
+          <div className="mx-auto overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-slate-300/60">
             <SitePreview
               businessName={businessName}
               businessType={initialSite.businessType}
@@ -428,7 +445,7 @@ function Section({
 }) {
   return (
     <div className="mb-6">
-      <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
+      <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-violet-700">
         {title}
       </h3>
       <div className="space-y-3">{children}</div>
@@ -468,12 +485,12 @@ function ColorField({
           type="color"
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="h-9 w-9 cursor-pointer rounded border bg-white p-0.5"
+          className="h-10 w-10 cursor-pointer rounded-lg border border-slate-200 bg-white p-1"
         />
         <Input
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="h-9 px-2 text-xs"
+          className="h-10 border-slate-200 bg-white px-2 text-xs text-slate-700 focus-visible:ring-violet-500"
         />
       </div>
     </div>
@@ -497,7 +514,7 @@ function IconBtn({
       title={title}
       onClick={onClick}
       disabled={disabled}
-      className="flex h-7 w-7 items-center justify-center rounded text-slate-500 hover:bg-slate-100 hover:text-slate-900 disabled:opacity-30"
+      className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-violet-50 hover:text-violet-700 disabled:opacity-30"
     >
       {children}
     </button>

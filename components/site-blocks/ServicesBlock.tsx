@@ -18,7 +18,7 @@ export function ServicesBlock({ section, theme, preset, site }: BlockProps) {
           {items.map((item, i) => (
             <div
               key={i}
-              className={`group overflow-hidden border bg-white transition-all duration-300 hover:-translate-y-1 ${preset.cardShadow}`}
+              className={`overflow-hidden border bg-white transition-colors duration-200 hover:border-slate-300 ${preset.cardShadow}`}
               style={{ borderRadius: "var(--site-radius)" }}
             >
               <div className="relative h-40 overflow-hidden">
@@ -26,10 +26,10 @@ export function ServicesBlock({ section, theme, preset, site }: BlockProps) {
                   src={stockImageUrl(site.businessType, `service-${i}`, 500, 320)}
                   alt={String(item.name ?? item.title ?? "Servicio")}
                   loading="lazy"
-                  className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                  className="h-full w-full object-cover"
                 />
                 <span
-                  className="absolute left-3 top-3 flex h-8 w-8 items-center justify-center text-sm font-bold text-white shadow"
+                  className="absolute left-3 top-3 flex h-8 w-8 items-center justify-center text-sm font-bold text-white"
                   style={{ backgroundColor: theme.primary, borderRadius: "var(--site-radius)" }}
                 >
                   {i + 1}
