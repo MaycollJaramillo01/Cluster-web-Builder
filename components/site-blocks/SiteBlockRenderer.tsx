@@ -91,6 +91,23 @@ export function SiteBlockRenderer({
     .filter((s) => (isMultipage ? s.pageSlug === currentPageSlug : true))
     .sort((a, b) => a.order - b.order);
 
+  const sectionNames: Record<string, string> = {
+    services: "Servicios",
+    about: "Nosotros",
+    benefits: "Beneficios",
+    gallery: "Galería",
+    process: "Proceso",
+    pricing: "Precios",
+    faq: "Preguntas",
+    location: "Ubicación",
+    contact: "Contacto",
+  };
+  const landingNav = pageSections
+    .filter((section) => section.isVisible && sectionNames[section.type])
+    .slice(0, 5)
+    .map((section) => ({ slug: section.type, name: sectionNames[section.type] }));
+  const hero = pageSections.find((section) => section.type === "hero");
+
   const currentPage = navPages.find((p) => p.slug === currentPageSlug);
   const showPageHeader = isMultipage && currentPageSlug !== "home";
 
@@ -103,7 +120,7 @@ export function SiteBlockRenderer({
 
     if (editable && !section.isVisible) {
       return (
-        <div key={section.id} className="relative opacity-40">
+        <div id={`section-${section.type}`} key={section.id} className="relative opacity-40 scroll-mt-16">
           <div className="pointer-events-none absolute right-3 top-3 z-10 rounded bg-slate-900/80 px-2 py-1 text-xs text-white">
             Oculta
           </div>
@@ -113,24 +130,26 @@ export function SiteBlockRenderer({
     }
     const animate = !editable;
     return (
-      <Reveal key={section.id} disabled={!animate}>
-        {content}
-      </Reveal>
+      <div id={`section-${section.type}`} key={section.id} className={`scroll-mt-16 design-reveal design-reveal-${preset.motionStyle}`}>
+        <Reveal disabled={!animate}>{content}</Reveal>
+      </div>
     );
   };
 
   return (
-    <div style={rootStyle}>
-      {isMultipage && (
-        <SiteNav
-          businessName={site.businessName}
-          navPages={navPages}
-          currentSlug={currentPageSlug}
-          theme={theme}
-          baseHref={baseHref}
-          onSelect={onSelectPage}
-        />
-      )}
+    <div id="top" data-design-style={preset.id} data-design-motion={preset.motionStyle} style={rootStyle}>
+      <SiteNav
+        businessName={site.businessName}
+        navPages={isMultipage ? navPages : landingNav}
+        currentSlug={currentPageSlug}
+        theme={theme}
+        preset={preset}
+        baseHref={baseHref}
+        onSelect={onSelectPage}
+        onePage={!isMultipage}
+        ctaText={hero?.ctaText || "Contacto"}
+        ctaHref={isMultipage ? `${baseHref || ""}/contacto` : hero?.ctaLink || "#contact"}
+      />
 
       {showPageHeader && (
         <section

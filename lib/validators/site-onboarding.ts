@@ -154,25 +154,28 @@ export function promptToOnboardingInput(prompt: string): OnboardingInput {
   const value = prompt.trim();
   const lower = value.toLocaleLowerCase("es");
   const businessType = detectBusinessType(lower);
-  const businessLabel = BUSINESS_TYPE_LABELS[businessType] ?? "Negocio";
+  const customBusinessType = businessType === "other" ? detectCustomBusinessType(lower) : "";
+  const businessLabel = customBusinessType || BUSINESS_TYPE_LABELS[businessType] || "Negocio";
   const email = value.match(/[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}/)?.[0] ?? "";
   const phone = value.match(/\+?\d[\d\s()-]{7,}\d/)?.[0]?.trim() ?? "";
   const explicitName =
     value.match(/["“]([^"”]{2,80})["”]/)?.[1]?.trim() ??
-    value.match(/(?:se llama|llamad[oa])\s+([^,.;\n]{2,80})/i)?.[1]?.trim();
+    value.match(/(?:se llama|llamad[oa])\s+(.+?)(?=\s+en\s+[^,.;\n]+|[,.;\n]|$)/i)?.[1]?.trim();
   const location =
     value
       .match(
         /(?:ubicad[oa]\s+en|atiende\s+en|trabaja\s+en|negocio\s+en)\s+([^,.;\n]+?)(?=\s+con\s+|[,.;\n]|$)/i
       )?.[1]
-      ?.trim() ?? "Zona por definir";
+      ?.trim() ??
+    Array.from(value.matchAll(/\ben\s+([A-ZÁÉÍÓÚÑ][\p{L}\s-]{1,60}?)(?=[,.;\n]|$)/gu)).at(-1)?.[1]?.trim() ??
+    "Zona por definir";
 
   return {
     businessName: explicitName || `Sitio de ${businessLabel}`,
     businessType,
-    customBusinessType: businessType === "other" ? "Negocio" : "",
+    customBusinessType,
     location,
-    services: value.slice(0, 1200),
+    services: extractServices(value, businessLabel),
     targetCustomer: `Personas interesadas en ${businessLabel.toLocaleLowerCase("es")}`,
     proofPoints: "",
     goal: detectGoal(lower),
@@ -183,6 +186,27 @@ export function promptToOnboardingInput(prompt: string): OnboardingInput {
     visualStyle: detectVisualStyle(lower),
     structureType: detectStructure(lower),
   };
+}
+
+function extractServices(value: string, fallback: string): string {
+  const list = value.match(
+    /(?:ofrece|ofrecemos|servicios?(?:\s+(?:son|incluyen))?|productos?(?:\s+(?:son|incluyen))?)\s*:?\s*([^.;\n]+)/i
+  )?.[1];
+  if (!list) return fallback;
+  return list
+    .split(/\s*,\s*|\s+y\s+/i)
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .join("\n") || fallback;
+}
+
+function detectCustomBusinessType(value: string): string {
+  if (/arquitect/.test(value)) return "Estudio de arquitectura";
+  if (/agencia/.test(value)) return "Agencia";
+  if (/consultor/.test(value)) return "Consultoría";
+  if (/portafolio|diseñador|diseñadora|fotograf/.test(value)) return "Portafolio profesional";
+  if (/tienda/.test(value)) return "Tienda";
+  return "Negocio";
 }
 
 function detectBusinessType(value: string): OnboardingInput["businessType"] {

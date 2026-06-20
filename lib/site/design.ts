@@ -1,10 +1,34 @@
+export const DESIGN_STYLE_IDS = [
+  "Neobrutalist", "Swiss/International", "Editorial", "Glassmorphism", "Retro-futuristic",
+  "Bauhaus", "Art Deco", "Minimal", "Flat", "Material", "Neumorphic", "Monochromatic",
+  "Scandinavian", "Japandi", "Dark Mode First", "Modernist", "Organic/Fluid",
+  "Corporate Professional", "Tech Forward", "Luxury Minimal", "Neo-Geo", "Kinetic",
+  "Gradient Modern", "Typography First", "Metropolitan",
+] as const;
+
 /**
  * Design presets mapped from the onboarding `visualStyle` choice.
  * These give each generated site a distinct look (typography, radius, button
  * shape, hero treatment, motion) instead of one flat template for everyone.
  */
 
-export type HeroStyle = "image" | "gradient" | "minimal" | "split";
+export type HeroStyle =
+  | "image"
+  | "gradient"
+  | "minimal"
+  | "split"
+  | "editorial"
+  | "poster"
+  | "framed"
+  | "immersive";
+export type NavStyle = "bar" | "floating" | "minimal" | "bordered" | "dark";
+export type ServicesStyle = "cards" | "list" | "bento" | "editorial" | "bordered" | "split";
+export type SectionStyle = "centered" | "asymmetric" | "contained" | "fullBleed" | "grid";
+export type ImageStyle = "rounded" | "square" | "arch" | "fullBleed" | "monochrome" | "offset";
+export type SurfaceStyle = "plain" | "soft" | "outlined" | "glass" | "brutal" | "tonal" | "dark";
+export type MotionStyle = "none" | "subtle" | "stagger" | "kinetic";
+export type CtaStyle = "solid" | "outline" | "pill" | "offset" | "link";
+export type FooterStyle = "minimal" | "columns" | "editorial" | "brutal" | "darkBand" | "centered";
 
 export type DesignPreset = {
   id: string;
@@ -28,107 +52,87 @@ export type DesignPreset = {
   headingTracking: string;
   /** Font weight for big headings. */
   headingWeight: number;
+  navStyle: NavStyle;
+  servicesStyle: ServicesStyle;
+  sectionStyle: SectionStyle;
+  imageStyle: ImageStyle;
+  surfaceStyle: SurfaceStyle;
+  motionStyle: MotionStyle;
+  ctaStyle: CtaStyle;
+  footerStyle: FooterStyle;
+  paletteId: string;
+  sectionPlan: string[];
 };
+
+type RecipeInput = Omit<DesignPreset, "bodyFont" | "useImages" | "footerStyle"> &
+  Partial<Pick<DesignPreset, "bodyFont" | "useImages" | "footerStyle">>;
+
+function recipe(input: RecipeInput): DesignPreset {
+  const footerStyle: FooterStyle = input.footerStyle
+    ?? (input.surfaceStyle === "brutal" ? "brutal"
+      : input.heroStyle === "editorial" || input.servicesStyle === "editorial" ? "editorial"
+        : input.surfaceStyle === "dark" ? "darkBand"
+          : input.navStyle === "floating" ? "columns"
+            : input.sectionStyle === "centered" ? "centered"
+              : "minimal");
+
+  return {
+    bodyFont: '"Inter", system-ui, sans-serif',
+    useImages: true,
+    ...input,
+    footerStyle,
+  };
+}
 
 const PRESETS: Record<string, DesignPreset> = {
-  modern_clean: {
-    id: "modern_clean",
-    headingFont: '"Space Grotesk", system-ui, sans-serif',
-    bodyFont: '"Inter", system-ui, sans-serif',
-    radius: "0.85rem",
-    buttonRadius: "0.6rem",
-    cardShadow: "shadow-sm hover:shadow-lg",
-    uppercaseHeadings: false,
-    heroStyle: "image",
-    useImages: true,
-    headingTracking: "-0.02em",
-    headingWeight: 700,
-  },
-  premium_elegant: {
-    id: "premium_elegant",
-    headingFont: '"Playfair Display", Georgia, serif',
-    bodyFont: '"Inter", system-ui, sans-serif',
-    radius: "0.25rem",
-    buttonRadius: "0.15rem",
-    cardShadow: "shadow-md hover:shadow-xl",
-    uppercaseHeadings: false,
-    heroStyle: "image",
-    useImages: true,
-    headingTracking: "0",
-    headingWeight: 700,
-  },
-  local_trustworthy: {
-    id: "local_trustworthy",
-    headingFont: '"Poppins", system-ui, sans-serif',
-    bodyFont: '"Inter", system-ui, sans-serif',
-    radius: "0.75rem",
-    buttonRadius: "0.55rem",
-    cardShadow: "shadow-sm hover:shadow-md",
-    uppercaseHeadings: false,
-    heroStyle: "image",
-    useImages: true,
-    headingTracking: "-0.01em",
-    headingWeight: 700,
-  },
-  corporate: {
-    id: "corporate",
-    headingFont: '"Inter", system-ui, sans-serif',
-    bodyFont: '"Inter", system-ui, sans-serif',
-    radius: "0.4rem",
-    buttonRadius: "0.35rem",
-    cardShadow: "shadow-sm hover:shadow-md",
-    uppercaseHeadings: false,
-    heroStyle: "split",
-    useImages: true,
-    headingTracking: "-0.01em",
-    headingWeight: 700,
-  },
-  creative: {
-    id: "creative",
-    headingFont: '"Poppins", system-ui, sans-serif',
-    bodyFont: '"Inter", system-ui, sans-serif',
-    radius: "0.6rem",
-    buttonRadius: "0.45rem",
-    cardShadow: "shadow-sm hover:shadow-md",
-    uppercaseHeadings: false,
-    heroStyle: "split",
-    useImages: true,
-    headingTracking: "-0.02em",
-    headingWeight: 800,
-  },
-  minimalist: {
-    id: "minimalist",
-    headingFont: '"Inter", system-ui, sans-serif',
-    bodyFont: '"Inter", system-ui, sans-serif',
-    radius: "0rem",
-    buttonRadius: "0rem",
-    cardShadow: "shadow-none hover:shadow-sm",
-    uppercaseHeadings: true,
-    heroStyle: "minimal",
-    useImages: false,
-    headingTracking: "0.04em",
-    headingWeight: 600,
-  },
-  bold: {
-    id: "bold",
-    headingFont: '"Montserrat", system-ui, sans-serif',
-    bodyFont: '"Inter", system-ui, sans-serif',
-    radius: "0.5rem",
-    buttonRadius: "0.4rem",
-    cardShadow: "shadow-md hover:shadow-lg",
-    uppercaseHeadings: true,
-    heroStyle: "image",
-    useImages: true,
-    headingTracking: "0.01em",
-    headingWeight: 800,
-  },
+  Neobrutalist: recipe({ id: "Neobrutalist", headingFont: '"Montserrat", system-ui, sans-serif', radius: "0rem", buttonRadius: "0rem", cardShadow: "shadow-[6px_6px_0_#000]", uppercaseHeadings: true, heroStyle: "poster", headingTracking: "-0.03em", headingWeight: 900, navStyle: "bordered", servicesStyle: "bordered", sectionStyle: "grid", imageStyle: "square", surfaceStyle: "brutal", motionStyle: "kinetic", ctaStyle: "offset", paletteId: "bold", sectionPlan: ["hero", "benefits", "services", "process", "gallery", "cta", "contact", "footer"] }),
+  "Swiss/International": recipe({ id: "Swiss/International", headingFont: '"Inter", system-ui, sans-serif', radius: "0rem", buttonRadius: "0rem", cardShadow: "shadow-none", uppercaseHeadings: true, heroStyle: "split", headingTracking: "0.06em", headingWeight: 700, navStyle: "minimal", servicesStyle: "list", sectionStyle: "grid", imageStyle: "square", surfaceStyle: "plain", motionStyle: "none", ctaStyle: "solid", paletteId: "corporate", sectionPlan: ["hero", "services", "about", "benefits", "faq", "contact", "cta", "footer"] }),
+  Editorial: recipe({ id: "Editorial", headingFont: '"Playfair Display", Georgia, serif', radius: "0rem", buttonRadius: "0rem", cardShadow: "shadow-none", uppercaseHeadings: false, heroStyle: "editorial", headingTracking: "-0.02em", headingWeight: 700, navStyle: "minimal", servicesStyle: "editorial", sectionStyle: "asymmetric", imageStyle: "offset", surfaceStyle: "plain", motionStyle: "subtle", ctaStyle: "link", paletteId: "luxury_light", sectionPlan: ["hero", "about", "gallery", "services", "faq", "cta", "contact", "footer"] }),
+  Glassmorphism: recipe({ id: "Glassmorphism", headingFont: '"Space Grotesk", system-ui, sans-serif', radius: "1.5rem", buttonRadius: "9999px", cardShadow: "shadow-xl", uppercaseHeadings: false, heroStyle: "immersive", headingTracking: "-0.03em", headingWeight: 700, navStyle: "floating", servicesStyle: "bento", sectionStyle: "contained", imageStyle: "rounded", surfaceStyle: "glass", motionStyle: "stagger", ctaStyle: "pill", paletteId: "tech_saas", sectionPlan: ["hero", "benefits", "services", "gallery", "process", "cta", "contact", "footer"] }),
+  "Retro-futuristic": recipe({ id: "Retro-futuristic", headingFont: '"Space Grotesk", system-ui, sans-serif', radius: "0.4rem", buttonRadius: "0.25rem", cardShadow: "shadow-[0_0_24px_rgba(34,211,238,.22)]", uppercaseHeadings: true, heroStyle: "framed", headingTracking: "0.08em", headingWeight: 700, navStyle: "dark", servicesStyle: "bordered", sectionStyle: "contained", imageStyle: "monochrome", surfaceStyle: "dark", motionStyle: "kinetic", ctaStyle: "outline", paletteId: "cybersecurity", sectionPlan: ["hero", "benefits", "process", "services", "gallery", "cta", "contact", "footer"] }),
+  Bauhaus: recipe({ id: "Bauhaus", headingFont: '"Montserrat", system-ui, sans-serif', radius: "0rem", buttonRadius: "9999px", cardShadow: "shadow-none", uppercaseHeadings: true, heroStyle: "poster", headingTracking: "-0.04em", headingWeight: 800, navStyle: "bar", servicesStyle: "bento", sectionStyle: "asymmetric", imageStyle: "square", surfaceStyle: "tonal", motionStyle: "subtle", ctaStyle: "pill", paletteId: "creative", sectionPlan: ["hero", "services", "benefits", "gallery", "about", "cta", "contact", "footer"] }),
+  "Art Deco": recipe({ id: "Art Deco", headingFont: '"Playfair Display", Georgia, serif', radius: "0.15rem", buttonRadius: "0.15rem", cardShadow: "shadow-lg", uppercaseHeadings: true, heroStyle: "framed", headingTracking: "0.12em", headingWeight: 700, navStyle: "dark", servicesStyle: "editorial", sectionStyle: "centered", imageStyle: "arch", surfaceStyle: "outlined", motionStyle: "subtle", ctaStyle: "outline", paletteId: "luxury_dark", sectionPlan: ["hero", "about", "services", "benefits", "gallery", "cta", "footer"] }),
+  Minimal: recipe({ id: "Minimal", headingFont: '"Inter", system-ui, sans-serif', radius: "0rem", buttonRadius: "0rem", cardShadow: "shadow-none", uppercaseHeadings: true, heroStyle: "minimal", useImages: false, headingTracking: "0.08em", headingWeight: 600, navStyle: "minimal", servicesStyle: "list", sectionStyle: "centered", imageStyle: "square", surfaceStyle: "plain", motionStyle: "none", ctaStyle: "link", paletteId: "minimalist", sectionPlan: ["hero", "services", "about", "cta", "footer"] }),
+  Flat: recipe({ id: "Flat", headingFont: '"Poppins", system-ui, sans-serif', radius: "0.75rem", buttonRadius: "0.5rem", cardShadow: "shadow-none", uppercaseHeadings: false, heroStyle: "gradient", headingTracking: "-0.02em", headingWeight: 700, navStyle: "bar", servicesStyle: "cards", sectionStyle: "centered", imageStyle: "rounded", surfaceStyle: "tonal", motionStyle: "subtle", ctaStyle: "solid", paletteId: "modern_clean", sectionPlan: ["hero", "services", "benefits", "about", "faq", "cta", "contact", "footer"] }),
+  Material: recipe({ id: "Material", headingFont: '"Poppins", system-ui, sans-serif', radius: "1.25rem", buttonRadius: "9999px", cardShadow: "shadow-md hover:shadow-xl", uppercaseHeadings: false, heroStyle: "split", headingTracking: "-0.02em", headingWeight: 700, navStyle: "floating", servicesStyle: "cards", sectionStyle: "contained", imageStyle: "rounded", surfaceStyle: "soft", motionStyle: "stagger", ctaStyle: "pill", paletteId: "modern_clean", sectionPlan: ["hero", "services", "process", "benefits", "faq", "cta", "contact", "footer"] }),
+  Neumorphic: recipe({ id: "Neumorphic", headingFont: '"Poppins", system-ui, sans-serif', radius: "1.75rem", buttonRadius: "1rem", cardShadow: "shadow-[10px_10px_24px_rgba(15,23,42,.12),-8px_-8px_20px_rgba(255,255,255,.8)]", uppercaseHeadings: false, heroStyle: "framed", headingTracking: "-0.01em", headingWeight: 600, navStyle: "floating", servicesStyle: "bento", sectionStyle: "contained", imageStyle: "rounded", surfaceStyle: "soft", motionStyle: "subtle", ctaStyle: "solid", paletteId: "spa_natural", sectionPlan: ["hero", "benefits", "services", "about", "cta", "contact", "footer"] }),
+  Monochromatic: recipe({ id: "Monochromatic", headingFont: '"Space Grotesk", system-ui, sans-serif', radius: "0.25rem", buttonRadius: "0.25rem", cardShadow: "shadow-sm", uppercaseHeadings: true, heroStyle: "image", headingTracking: "0.04em", headingWeight: 700, navStyle: "bar", servicesStyle: "editorial", sectionStyle: "asymmetric", imageStyle: "monochrome", surfaceStyle: "outlined", motionStyle: "subtle", ctaStyle: "outline", paletteId: "minimalist", sectionPlan: ["hero", "about", "services", "faq", "cta", "footer"] }),
+  Scandinavian: recipe({ id: "Scandinavian", headingFont: '"Poppins", system-ui, sans-serif', radius: "1rem", buttonRadius: "9999px", cardShadow: "shadow-sm", uppercaseHeadings: false, heroStyle: "split", headingTracking: "-0.01em", headingWeight: 600, navStyle: "minimal", servicesStyle: "cards", sectionStyle: "asymmetric", imageStyle: "rounded", surfaceStyle: "soft", motionStyle: "subtle", ctaStyle: "pill", paletteId: "spa_natural", sectionPlan: ["hero", "about", "services", "benefits", "gallery", "cta", "contact", "footer"] }),
+  Japandi: recipe({ id: "Japandi", headingFont: '"Playfair Display", Georgia, serif', radius: "0.15rem", buttonRadius: "0rem", cardShadow: "shadow-none", uppercaseHeadings: false, heroStyle: "minimal", headingTracking: "0.01em", headingWeight: 600, navStyle: "minimal", servicesStyle: "list", sectionStyle: "asymmetric", imageStyle: "offset", surfaceStyle: "plain", motionStyle: "none", ctaStyle: "solid", paletteId: "spa_natural", sectionPlan: ["hero", "about", "services", "gallery", "cta", "footer"] }),
+  "Dark Mode First": recipe({ id: "Dark Mode First", headingFont: '"Space Grotesk", system-ui, sans-serif', radius: "0.8rem", buttonRadius: "0.5rem", cardShadow: "shadow-[0_0_28px_rgba(56,189,248,.16)]", uppercaseHeadings: false, heroStyle: "immersive", headingTracking: "-0.04em", headingWeight: 800, navStyle: "dark", servicesStyle: "bento", sectionStyle: "fullBleed", imageStyle: "fullBleed", surfaceStyle: "dark", motionStyle: "stagger", ctaStyle: "solid", paletteId: "cybersecurity", sectionPlan: ["hero", "benefits", "services", "process", "gallery", "faq", "cta", "contact", "footer"] }),
+  Modernist: recipe({ id: "Modernist", headingFont: '"Inter", system-ui, sans-serif', radius: "0rem", buttonRadius: "0rem", cardShadow: "shadow-none", uppercaseHeadings: false, heroStyle: "editorial", headingTracking: "-0.05em", headingWeight: 700, navStyle: "bordered", servicesStyle: "list", sectionStyle: "grid", imageStyle: "square", surfaceStyle: "outlined", motionStyle: "none", ctaStyle: "solid", paletteId: "corporate", sectionPlan: ["hero", "services", "about", "process", "benefits", "cta", "contact", "footer"] }),
+  "Organic/Fluid": recipe({ id: "Organic/Fluid", headingFont: '"Poppins", system-ui, sans-serif', radius: "2.5rem", buttonRadius: "9999px", cardShadow: "shadow-lg", uppercaseHeadings: false, heroStyle: "framed", headingTracking: "-0.03em", headingWeight: 700, navStyle: "floating", servicesStyle: "split", sectionStyle: "fullBleed", imageStyle: "arch", surfaceStyle: "tonal", motionStyle: "stagger", ctaStyle: "pill", paletteId: "spa_natural", sectionPlan: ["hero", "about", "benefits", "services", "gallery", "cta", "contact", "footer"] }),
+  "Corporate Professional": recipe({ id: "Corporate Professional", headingFont: '"Inter", system-ui, sans-serif', radius: "0.4rem", buttonRadius: "0.3rem", cardShadow: "shadow-sm", uppercaseHeadings: false, heroStyle: "split", headingTracking: "-0.02em", headingWeight: 700, navStyle: "bar", servicesStyle: "bordered", sectionStyle: "contained", imageStyle: "square", surfaceStyle: "plain", motionStyle: "subtle", ctaStyle: "solid", paletteId: "corporate", sectionPlan: ["hero", "services", "benefits", "process", "about", "faq", "cta", "contact", "footer"] }),
+  "Tech Forward": recipe({ id: "Tech Forward", headingFont: '"Space Grotesk", system-ui, sans-serif', radius: "1rem", buttonRadius: "9999px", cardShadow: "shadow-lg", uppercaseHeadings: false, heroStyle: "framed", headingTracking: "-0.04em", headingWeight: 700, navStyle: "floating", servicesStyle: "bento", sectionStyle: "grid", imageStyle: "offset", surfaceStyle: "glass", motionStyle: "stagger", ctaStyle: "pill", paletteId: "tech_saas", sectionPlan: ["hero", "benefits", "process", "services", "faq", "cta", "contact", "footer"] }),
+  "Luxury Minimal": recipe({ id: "Luxury Minimal", headingFont: '"Playfair Display", Georgia, serif', radius: "0rem", buttonRadius: "0rem", cardShadow: "shadow-none", uppercaseHeadings: false, heroStyle: "editorial", headingTracking: "0", headingWeight: 500, navStyle: "minimal", servicesStyle: "editorial", sectionStyle: "fullBleed", imageStyle: "arch", surfaceStyle: "plain", motionStyle: "subtle", ctaStyle: "link", paletteId: "luxury_light", sectionPlan: ["hero", "about", "gallery", "services", "cta", "contact", "footer"] }),
+  "Neo-Geo": recipe({ id: "Neo-Geo", headingFont: '"Montserrat", system-ui, sans-serif', radius: "0rem", buttonRadius: "0rem", cardShadow: "shadow-[4px_4px_0_rgba(15,23,42,.3)]", uppercaseHeadings: true, heroStyle: "poster", headingTracking: "0.02em", headingWeight: 800, navStyle: "bordered", servicesStyle: "bento", sectionStyle: "grid", imageStyle: "offset", surfaceStyle: "outlined", motionStyle: "kinetic", ctaStyle: "offset", paletteId: "startup_modern", sectionPlan: ["hero", "benefits", "gallery", "services", "process", "cta", "contact", "footer"] }),
+  Kinetic: recipe({ id: "Kinetic", headingFont: '"Montserrat", system-ui, sans-serif', radius: "0.35rem", buttonRadius: "9999px", cardShadow: "shadow-md", uppercaseHeadings: true, heroStyle: "immersive", headingTracking: "-0.05em", headingWeight: 900, navStyle: "dark", servicesStyle: "split", sectionStyle: "asymmetric", imageStyle: "fullBleed", surfaceStyle: "brutal", motionStyle: "kinetic", ctaStyle: "pill", paletteId: "bold", sectionPlan: ["hero", "process", "benefits", "services", "gallery", "cta", "contact", "footer"] }),
+  "Gradient Modern": recipe({ id: "Gradient Modern", headingFont: '"Space Grotesk", system-ui, sans-serif', radius: "1.25rem", buttonRadius: "9999px", cardShadow: "shadow-xl", uppercaseHeadings: false, heroStyle: "gradient", headingTracking: "-0.04em", headingWeight: 800, navStyle: "floating", servicesStyle: "cards", sectionStyle: "fullBleed", imageStyle: "rounded", surfaceStyle: "glass", motionStyle: "stagger", ctaStyle: "pill", paletteId: "startup_modern", sectionPlan: ["hero", "services", "benefits", "process", "gallery", "faq", "cta", "contact", "footer"] }),
+  "Typography First": recipe({ id: "Typography First", headingFont: '"Montserrat", system-ui, sans-serif', radius: "0rem", buttonRadius: "0rem", cardShadow: "shadow-none", uppercaseHeadings: true, heroStyle: "poster", useImages: false, headingTracking: "-0.06em", headingWeight: 900, navStyle: "minimal", servicesStyle: "editorial", sectionStyle: "asymmetric", imageStyle: "square", surfaceStyle: "plain", motionStyle: "kinetic", ctaStyle: "link", paletteId: "bold", sectionPlan: ["hero", "about", "benefits", "services", "faq", "cta", "contact", "footer"] }),
+  Metropolitan: recipe({ id: "Metropolitan", headingFont: '"Playfair Display", Georgia, serif', radius: "0.25rem", buttonRadius: "0.25rem", cardShadow: "shadow-lg", uppercaseHeadings: false, heroStyle: "editorial", headingTracking: "-0.02em", headingWeight: 700, navStyle: "dark", servicesStyle: "split", sectionStyle: "grid", imageStyle: "monochrome", surfaceStyle: "outlined", motionStyle: "subtle", ctaStyle: "outline", paletteId: "corporate", sectionPlan: ["hero", "about", "services", "process", "gallery", "faq", "cta", "contact", "footer"] }),
 };
 
-const DEFAULT_PRESET = PRESETS.modern_clean;
+const LEGACY_STYLE_MAP: Record<string, string> = {
+  modern_clean: "Flat", premium_elegant: "Luxury Minimal", local_trustworthy: "Scandinavian",
+  corporate: "Corporate Professional", creative: "Tech Forward", minimalist: "Minimal", bold: "Neobrutalist",
+};
+
+const DEFAULT_PRESET = PRESETS.Flat;
 
 export function getDesignPreset(visualStyle?: string | null): DesignPreset {
   if (!visualStyle) return DEFAULT_PRESET;
-  return PRESETS[visualStyle] ?? DEFAULT_PRESET;
+  return PRESETS[visualStyle] ?? PRESETS[LEGACY_STYLE_MAP[visualStyle]] ?? DEFAULT_PRESET;
+}
+
+export function getDesignRecipeFingerprint(preset: DesignPreset): string {
+  return [preset.heroStyle, preset.navStyle, preset.servicesStyle, preset.sectionStyle,
+    preset.imageStyle, preset.surfaceStyle, preset.motionStyle, preset.ctaStyle,
+    preset.footerStyle, preset.radius, preset.buttonRadius, preset.headingFont, preset.headingTracking,
+    preset.sectionPlan.join(">")].join("|");
+}
+
+export function getAllDesignPresets(): DesignPreset[] {
+  return Object.values(PRESETS);
 }
 
 /* ------------------------------------------------------------------ */

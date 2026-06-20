@@ -4,8 +4,12 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "check:layout": "node scripts/check-module-layout.mjs",
+    "check:design": "node --no-warnings --experimental-strip-types scripts/check-design-diversity.mjs",
+    "prebuild": "npm run check:layout && npm run check:design",
     "build": "next build",
     "start": "next start",
+    "prelint": "npm run check:layout && npm run check:design",
     "lint": "eslint .",
     "postinstall": "prisma generate",
     "db:generate": "prisma generate",

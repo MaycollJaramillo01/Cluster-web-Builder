@@ -15,6 +15,8 @@ import { applyPageStructure } from "@/lib/site/structure";
 import { getPalette } from "@/lib/site/design";
 import {
   buildLandingDesignBrief,
+  getLandingSectionPlan,
+  LANDING_DESIGN_STYLES,
   mapLandingStyleToPaletteId,
   mapLandingStyleToVisualStyle,
   selectRandomLandingStyle,
@@ -52,19 +54,13 @@ export async function POST(req: NextRequest) {
   let originalRequest: string | undefined;
   let selectedDesignStyle: LandingDesignStyle | undefined;
   let designBrief: string | undefined;
+  let sectionPlan: string[] | undefined;
   try {
     const body = await req.json();
     if (typeof body === "object" && body !== null && "prompt" in body) {
       const request = sitePromptSchema.parse(body);
       originalRequest = request.prompt;
       input = promptToOnboardingInput(request.prompt);
-      selectedDesignStyle = selectRandomLandingStyle();
-      designBrief = buildLandingDesignBrief(selectedDesignStyle, request.prompt);
-      input = {
-        ...input,
-        structureType: "one_page",
-        visualStyle: mapLandingStyleToVisualStyle(selectedDesignStyle),
-      };
     } else {
       input = onboardingSchema.parse(body);
     }
@@ -81,10 +77,37 @@ export async function POST(req: NextRequest) {
     return jsonError("No se pudo leer la solicitud.", 400);
   }
 
+  if (originalRequest) {
+    let recentStyles: string[] = [];
+    try {
+      const recentSites = await prisma.site.findMany({
+        where: { visualStyle: { in: [...LANDING_DESIGN_STYLES] } },
+        orderBy: { createdAt: "desc" },
+        take: LANDING_DESIGN_STYLES.length - 1,
+        select: { visualStyle: true },
+      });
+      recentStyles = recentSites.flatMap((site) =>
+        site.visualStyle ? [site.visualStyle] : []
+      );
+    } catch {
+      // Persistence errors are reported later; style selection can still proceed.
+    }
+
+    selectedDesignStyle = selectRandomLandingStyle(recentStyles);
+    designBrief = buildLandingDesignBrief(selectedDesignStyle, originalRequest);
+    sectionPlan = getLandingSectionPlan(selectedDesignStyle);
+    input = {
+      ...input,
+      structureType: "one_page",
+      visualStyle: mapLandingStyleToVisualStyle(selectedDesignStyle),
+    };
+  }
+
   const { system, user } = buildSiteGenerationPrompt(
     input,
     originalRequest,
-    designBrief
+    designBrief,
+    sectionPlan
   );
 
   const stream = new ReadableStream<Uint8Array>({
@@ -150,7 +173,7 @@ export async function POST(req: NextRequest) {
           if (!canUseLocalGenerator(err)) throw err;
           send("status", { message: localGeneratorMessage(err) });
           normalizedSite = normalizeSiteBlueprint(
-            buildFallbackSiteBlueprint(input)
+            buildFallbackSiteBlueprint(input, sectionPlan)
           );
         }
 
@@ -160,8 +183,8 @@ export async function POST(req: NextRequest) {
 
         const { blueprint, sections: aiSections } = normalizedSite;
 
-        // Structure is enforced in code (the LLM ignores page/structure rules):
-        // distribute sections across real pages per the chosen structureType.
+        // Keep the generated order on one-page sites; only legacy multipage
+        // requests use predefined page distribution.
         const { sections, navPages } = applyPageStructure(
           aiSections,
           input.structureType,
@@ -193,9 +216,9 @@ export async function POST(req: NextRequest) {
             businessName: input.businessName,
             businessType: resolveBusinessTypeLabel(input),
             goal: input.goal,
-            visualStyle: input.visualStyle,
+            visualStyle: selectedDesignStyle ?? input.visualStyle,
             structureType: input.structureType,
-            location: input.location || null,
+            location: input.location === "Zona por definir" ? null : input.location || null,
             phone: input.phone || null,
             email: input.email || null,
             domain: input.domain || null,

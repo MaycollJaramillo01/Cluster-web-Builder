@@ -7,6 +7,23 @@ export function getThemeSurface(theme: SiteTheme) {
     : { section: "#f8fafc", panel: "#ffffff", muted: "#475569" };
 }
 
+export function getContrastText(background: string): string {
+  const dark = "#0f172a";
+  const light = "#ffffff";
+  return contrastRatio(background, dark) >= contrastRatio(background, light)
+    ? dark
+    : light;
+}
+
+function contrastRatio(first: string, second: string): number {
+  const firstLuminance = relativeLuminance(first);
+  const secondLuminance = relativeLuminance(second);
+  return (
+    (Math.max(firstLuminance, secondLuminance) + 0.05) /
+    (Math.min(firstLuminance, secondLuminance) + 0.05)
+  );
+}
+
 function relativeLuminance(hex: string): number {
   const value = hex.replace("#", "");
   if (!/^[0-9a-f]{6}$/i.test(value)) return 1;

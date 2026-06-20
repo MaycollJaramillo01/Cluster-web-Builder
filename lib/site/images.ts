@@ -1,19 +1,9 @@
 /**
  * Section imagery.
  *
- * Primary: ImageKit text-to-image (GenAI). When NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT
- * is set, we build a URL like:
- *   {endpoint}/ik-genimg-prompt-<prompt>/<hash>.jpg?tr=w-..,h-..,fo-auto,q-80
- * ImageKit generates the image once and caches it at that path, so each unique
- * prompt maps to a stable image (the hash filename keeps it deterministic).
- *
- * Fallback: free topical photos via LoremFlickr (no key needed) when ImageKit
- * is not configured, so the app still renders images out of the box.
+ * Free topical photos via LoremFlickr. The configured ImageKit GenAI endpoint
+ * returns 403, so using it made some generated layouts render empty images.
  */
-
-const IMAGEKIT_ENDPOINT = (
-  process.env.NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT || ""
-).replace(/\/$/, "");
 
 // Maps the leading English word of the stored businessType label to good tags.
 const KEYWORDS: Record<string, string> = {
@@ -27,6 +17,7 @@ const KEYWORDS: Record<string, string> = {
   medical: "clinic,medical,doctor",
   beauty: "beauty,salon,spa",
   fitness: "gym,fitness,workout",
+  estudio: "modernarchitecture,modernhouse,interiordesign",
 };
 
 const DEFAULT_TAGS = "business,office,modern";
@@ -57,32 +48,13 @@ export type ImageRequest = {
  * Uses ImageKit GenAI when configured, otherwise LoremFlickr.
  */
 export function sectionImageUrl(req: ImageRequest): string {
-  if (IMAGEKIT_ENDPOINT) {
-    return imageKitGenUrl(req);
-  }
-  return loremFlickrUrl(businessKeyword(req.businessType), req.seed, req.width, req.height);
-}
-
-/** Builds an ImageKit text-to-image URL with sizing/optimization transforms. */
-function imageKitGenUrl(req: ImageRequest): string {
-  const prompt = buildPrompt(req.prompt, req.businessType);
-  const hash = stableLock(`${prompt}-${req.seed}`);
-  const tr = `w-${req.width},h-${req.height},fo-auto,q-80`;
-  return `${IMAGEKIT_ENDPOINT}/ik-genimg-prompt-${encodeURIComponent(
-    prompt
-  )}/site-${hash}.jpg?tr=${tr}`;
-}
-
-/** Crafts an English, photo-oriented prompt for better generation results. */
-function buildPrompt(prompt: string | undefined, businessType: string): string {
-  const base = (prompt && prompt.trim()) || businessKeyword(businessType).replace(/,/g, " ");
-  return `Professional high-quality realistic photograph, ${base}, ${cleanBusiness(
-    businessType
-  )}, natural lighting, no text`;
-}
-
-function cleanBusiness(businessType: string): string {
-  return businessType.split("/")[0].trim();
+  const promptTags = imagePromptTags(req.prompt);
+  return loremFlickrUrl(
+    promptTags || businessKeyword(req.businessType),
+    req.seed,
+    req.width,
+    req.height
+  );
 }
 
 /**
@@ -118,4 +90,36 @@ function stableLock(seed: string): number {
     hash = (hash * 31 + seed.charCodeAt(i)) >>> 0;
   }
   return (hash % 9000) + 1;
+}
+
+function imagePromptTags(prompt?: string): string {
+  if (!prompt) return "";
+  const translations: Record<string, string> = {
+    architecture: "modernarchitecture",
+    architectural: "modernarchitecture",
+    arquitectura: "modernarchitecture",
+    residential: "modernhouse",
+    residencial: "modernhouse",
+    interior: "interiordesign",
+    sustainable: "sustainablearchitecture",
+    sostenible: "sustainablearchitecture",
+    restaurant: "restaurant",
+    roofing: "roofing",
+    landscaping: "landscaping",
+    garden: "garden",
+    cleaning: "cleaning",
+    clinic: "clinic",
+    medical: "medical",
+    beauty: "beautysalon",
+    salon: "beautysalon",
+    fitness: "fitness",
+    gym: "gym",
+  };
+  const tags = prompt
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .match(/[a-z]+/g)
+    ?.flatMap((word) => translations[word] ? [translations[word]] : []) ?? [];
+  return [...new Set(tags)].slice(0, 4).join(",");
 }

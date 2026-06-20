@@ -1,34 +1,10 @@
 import { randomInt } from "node:crypto";
 
 import type { OnboardingInput } from "@/lib/validators/site-onboarding";
+import type { SectionType } from "@/lib/site/blueprint";
+import { DESIGN_STYLE_IDS, getDesignPreset } from "@/lib/site/design";
 
-export const LANDING_DESIGN_STYLES = [
-  "Neobrutalist",
-  "Swiss/International",
-  "Editorial",
-  "Glassmorphism",
-  "Retro-futuristic",
-  "Bauhaus",
-  "Art Deco",
-  "Minimal",
-  "Flat",
-  "Material",
-  "Neumorphic",
-  "Monochromatic",
-  "Scandinavian",
-  "Japandi",
-  "Dark Mode First",
-  "Modernist",
-  "Organic/Fluid",
-  "Corporate Professional",
-  "Tech Forward",
-  "Luxury Minimal",
-  "Neo-Geo",
-  "Kinetic",
-  "Gradient Modern",
-  "Typography First",
-  "Metropolitan",
-] as const;
+export const LANDING_DESIGN_STYLES = DESIGN_STYLE_IDS;
 
 export type LandingDesignStyle = (typeof LANDING_DESIGN_STYLES)[number];
 
@@ -55,9 +31,9 @@ const PROFILES: Record<LandingDesignStyle, StyleProfile> = {
   Flat: profile("amable, clara y accesible", "formas simples, color sólido y lectura inmediata", "directa, redonda y acogedora", "ágil, simple y predecible", "sistemas gráficos públicos, ilustración geométrica y señalética amistosa", "modern_clean"),
   Material: profile("familiar, ordenada y táctil", "superficies jerárquicas y profundidad sutil", "clara, equilibrada y funcional", "natural, receptiva y basada en causa y efecto", "papel, tinta, luz suave y objetos físicos bien construidos", "modern_clean"),
   Neumorphic: profile("suave, íntima y táctil", "controles moldeados dentro de superficies continuas", "serena, redondeada y contenida", "gentil, elástica y sensorial", "objetos moldeados, interiores silenciosos y materiales satinados", "minimalist"),
-  Monochromatic: profile("cohesiva, segura y contemplativa", "profundidad creada por tono, escala y contraste", "disciplinada, elegante y consistente", "sutil, tonal y continua", "fotografía en duotono, grabado y espacios de una sola materia", "premium_elegant"),
+  Monochromatic: profile("cohesiva, segura y contemplativa", "profundidad creada por tono, escala y contraste", "disciplinada, elegante y consistente", "sutil, tonal y continua", "fotografía en duotono, grabado y espacios de una sola materia", "minimalist"),
   Scandinavian: profile("cálida, honesta y luminosa", "orden relajado, aire y detalles humanos", "amable, funcional y sin pretensión", "gentil, orgánica y reconfortante", "interiores nórdicos, madera clara, textiles naturales y luz de invierno", "local_trustworthy"),
-  Japandi: profile("serena, artesanal y equilibrada", "asimetría tranquila y espacio con propósito", "discreta, cálida y muy legible", "lenta, orgánica y respetuosa", "casas de té, carpintería precisa, cerámica y calma nórdica", "premium_elegant"),
+  Japandi: profile("serena, artesanal y equilibrada", "asimetría tranquila y espacio con propósito", "discreta, cálida y muy legible", "lenta, orgánica y respetuosa", "casas de té, carpintería precisa, cerámica y calma nórdica", "minimalist"),
   "Dark Mode First": profile("inmersiva, premium y concentrada", "contraste luminoso sobre profundidad oscura", "nítida, moderna y de alto impacto", "sedosa, luminosa y cinematográfica", "salas de proyección, iluminación nocturna y controles de precisión", "bold"),
   Modernist: profile("atemporal, confiada y funcional", "líneas limpias, proporción y orden visible", "sobria, autoritativa y honesta", "precisa, silenciosa y útil", "arquitectura del siglo XX, mobiliario racional y claridad estructural", "modern_clean"),
   "Organic/Fluid": profile("vital, cercana y natural", "curvas que conducen la mirada sin rigidez", "humana, suave y expresiva", "líquida, continua y respirada", "paisajes erosionados, botánica, agua y arquitectura biomórfica", "creative"),
@@ -68,7 +44,7 @@ const PROFILES: Record<LandingDesignStyle, StyleProfile> = {
   Kinetic: profile("enérgica, progresiva y viva", "dirección visual que siempre impulsa hacia adelante", "dinámica, condensada y expresiva", "rápida, elástica y coreografiada", "títulos de cine, danza contemporánea y escultura cinética", "bold"),
   "Gradient Modern": profile("luminosa, optimista y envolvente", "transiciones de color que separan momentos del relato", "amable, moderna y de alto contraste", "suave, continua y atmosférica", "luz al amanecer, vidrio coloreado y espacios inmersivos", "creative"),
   "Typography First": profile("expresiva, inteligente y memorable", "la letra como imagen, ritmo y navegación", "protagonista, distintiva y cuidadosamente compuesta", "precisa, editorial y guiada por el texto", "carteles culturales, composición tipográfica y poesía visual", "bold"),
-  Metropolitan: profile("cosmopolita, culta y segura", "capas editoriales con ritmo urbano", "sofisticada, compacta y contemporánea", "fluida, veloz y elegante", "vestíbulos urbanos, mapas, piedra, metal y cultura de gran ciudad", "premium_elegant"),
+  Metropolitan: profile("cosmopolita, culta y segura", "capas editoriales con ritmo urbano", "sofisticada, compacta y contemporánea", "fluida, veloz y elegante", "vestíbulos urbanos, mapas, piedra, metal y cultura de gran ciudad", "corporate"),
 };
 
 function profile(
@@ -82,8 +58,13 @@ function profile(
   return { mood, hierarchy, typography, interaction, references, visualStyle };
 }
 
-export function selectRandomLandingStyle(): LandingDesignStyle {
-  return LANDING_DESIGN_STYLES[randomInt(LANDING_DESIGN_STYLES.length)];
+export function selectRandomLandingStyle(
+  excluded: readonly string[] = []
+): LandingDesignStyle {
+  const excludedSet = new Set(excluded);
+  const available = LANDING_DESIGN_STYLES.filter((style) => !excludedSet.has(style));
+  const pool = available.length > 0 ? available : LANDING_DESIGN_STYLES;
+  return pool[randomInt(pool.length)];
 }
 
 export function mapLandingStyleToVisualStyle(style: LandingDesignStyle): VisualStyle {
@@ -91,19 +72,11 @@ export function mapLandingStyleToVisualStyle(style: LandingDesignStyle): VisualS
 }
 
 export function mapLandingStyleToPaletteId(style: LandingDesignStyle): string {
-  const paletteByStyle: Partial<Record<LandingDesignStyle, string>> = {
-    Editorial: "luxury_light",
-    "Art Deco": "luxury_light",
-    Scandinavian: "spa_natural",
-    Japandi: "spa_natural",
-    "Dark Mode First": "cybersecurity",
-    "Organic/Fluid": "spa_natural",
-    "Tech Forward": "tech_saas",
-    "Luxury Minimal": "luxury_light",
-    "Retro-futuristic": "cybersecurity",
-    "Gradient Modern": "startup_modern",
-  };
-  return paletteByStyle[style] ?? PROFILES[style].visualStyle;
+  return getDesignPreset(style).paletteId;
+}
+
+export function getLandingSectionPlan(style: LandingDesignStyle): SectionType[] {
+  return [...getDesignPreset(style).sectionPlan] as SectionType[];
 }
 
 /** Creates the exact three-paragraph art-direction prompt requested by the builder. */

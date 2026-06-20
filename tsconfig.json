@@ -15,11 +15,6 @@
     "incremental": true,
     "plugins": [{ "name": "next" }],
     "paths": {
-      "@/components/builder/OnboardingWizard": ["./OnboardingWizard.tsx"],
-      "@/lib/validators/site-onboarding": ["./site-onboarding.ts"],
-      "@/lib/prompts/site-generator": ["./site-generator.ts"],
-      "@/lib/site/fallback-site-blueprint": ["./fallback-site-blueprint.ts"],
-      "@/lib/site/structure": ["./site-structure.ts"],
       "@/*": ["./*"]
     }
   },

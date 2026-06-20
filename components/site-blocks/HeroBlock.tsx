@@ -1,4 +1,5 @@
 import { sectionImageUrl } from "@/lib/site/images";
+import { getContrastText } from "@/lib/site/theme-surface";
 import type { BlockProps } from "./types";
 
 export function HeroBlock({ section, theme, preset, site }: BlockProps) {
@@ -28,16 +29,87 @@ export function HeroBlock({ section, theme, preset, site }: BlockProps) {
   const ctaButton = section.ctaText ? (
     <a
       href={section.ctaLink || "#contact"}
-      className="inline-flex items-center justify-center px-8 py-3.5 text-base font-semibold shadow-sm transition-[filter] duration-200 hover:brightness-95"
+      className="inline-flex min-h-12 items-center justify-center px-8 py-3.5 text-base font-semibold transition-all duration-200 hover:brightness-95 focus-visible:outline-none focus-visible:ring-4"
       style={{
-        backgroundColor: theme.accent,
-        color: "#0f172a",
-        borderRadius: "var(--site-btn-radius)",
+        backgroundColor: preset.ctaStyle === "outline" || preset.ctaStyle === "link" ? "transparent" : theme.accent,
+        color: preset.ctaStyle === "outline" || preset.ctaStyle === "link" ? theme.accent : getContrastText(theme.accent),
+        border: preset.ctaStyle === "outline" ? `2px solid ${theme.accent}` : "2px solid transparent",
+        borderRadius: preset.ctaStyle === "pill" ? "9999px" : "var(--site-btn-radius)",
+        boxShadow: preset.ctaStyle === "offset" ? `5px 5px 0 ${theme.text}` : undefined,
+        textDecoration: preset.ctaStyle === "link" ? "underline" : "none",
       }}
     >
       {section.ctaText}
     </a>
   ) : null;
+
+  if (preset.heroStyle === "poster") {
+    return (
+      <section className="relative overflow-hidden border-b-4 px-6 py-20 sm:py-28" style={{ backgroundColor: theme.accent, borderColor: theme.text }}>
+        <div className="pointer-events-none absolute -right-16 -top-20 h-72 w-72 rounded-full border-[28px] opacity-30" style={{ borderColor: theme.text }} />
+        <div className="relative mx-auto grid max-w-6xl gap-12 lg:grid-cols-[1fr_auto] lg:items-end">
+          <div style={{ color: getContrastText(theme.accent) }}>
+            <p className="mb-8 border-b-2 pb-3 text-sm font-bold uppercase tracking-[0.2em]" style={{ borderColor: "currentColor" }}>{section.subtitle || site.businessType}</p>
+            <div className="max-w-5xl [&_h1]:text-5xl [&_h1]:sm:text-8xl">{heading}</div>
+            {section.body && <p className="mt-8 max-w-2xl text-lg font-medium">{section.body}</p>}
+          </div>
+          {ctaButton && <div className="pb-2">{ctaButton}</div>}
+        </div>
+      </section>
+    );
+  }
+
+  if (preset.heroStyle === "editorial") {
+    return (
+      <section className="px-6 py-16 sm:py-24" style={{ backgroundColor: theme.background }}>
+        <div className="mx-auto grid max-w-6xl gap-8 border-y py-10 lg:grid-cols-12" style={{ borderColor: `${theme.text}33` }}>
+          <div className="lg:col-span-7" style={{ color: theme.text }}>
+            <p className="mb-10 text-xs font-semibold uppercase tracking-[0.25em]" style={{ color: theme.primary }}>Edición 01 · {site.businessType}</p>
+            <div className="[&_h1]:text-5xl [&_h1]:sm:text-7xl">{heading}</div>
+            {section.subtitle && <p className="mt-7 max-w-xl text-xl italic opacity-75">{section.subtitle}</p>}
+            {section.body && <p className="mt-5 max-w-xl leading-relaxed opacity-65">{section.body}</p>}
+            {ctaButton && <div className="mt-10">{ctaButton}</div>}
+          </div>
+          <div className="lg:col-span-5">
+            <img src={heroImg(760, 940, "hero-editorial")} alt={site.businessName} className="h-[34rem] w-full object-cover" style={{ filter: preset.imageStyle === "monochrome" ? "grayscale(1)" : undefined }} />
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (preset.heroStyle === "framed") {
+    return (
+      <section className="px-6 py-16 sm:py-24" style={{ backgroundColor: theme.secondary }}>
+        <div className="relative mx-auto min-h-[34rem] max-w-6xl overflow-hidden border" style={{ borderColor: `${theme.accent}80`, borderRadius: "var(--site-radius)" }}>
+          <div className="absolute inset-0 bg-cover bg-center opacity-60" style={{ backgroundImage: `url("${heroImg(1500, 900, "hero-framed")}")`, filter: preset.imageStyle === "monochrome" ? "grayscale(1)" : undefined }} />
+          <div className="absolute inset-0" style={{ background: `linear-gradient(90deg, ${theme.secondary} 0%, ${theme.secondary}E8 45%, ${theme.secondary}22 100%)` }} />
+          <div className="relative flex min-h-[34rem] max-w-3xl flex-col justify-center p-8 text-white sm:p-14">
+            {section.subtitle && <p className="mb-5 text-sm font-semibold uppercase tracking-[0.18em]" style={{ color: theme.accent }}>{section.subtitle}</p>}
+            {heading}
+            {section.body && <p className="mt-6 max-w-xl text-lg opacity-85">{section.body}</p>}
+            {ctaButton && <div className="mt-9">{ctaButton}</div>}
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (preset.heroStyle === "immersive") {
+    return (
+      <section className="relative flex min-h-[78vh] items-end overflow-hidden">
+        <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url("${heroImg(1800, 1100, "hero-immersive")}")` }} />
+        <div className="absolute inset-0" style={{ background: `linear-gradient(180deg, ${theme.secondary}22 0%, ${theme.secondary}F5 92%)` }} />
+        <div className="relative mx-auto w-full max-w-6xl px-6 pb-20 text-white sm:pb-28">
+          <div className="max-w-4xl [&_h1]:text-5xl [&_h1]:sm:text-8xl">{heading}</div>
+          <div className="mt-8 flex flex-col gap-7 border-t border-white/30 pt-7 md:flex-row md:items-end md:justify-between">
+            <p className="max-w-2xl text-lg opacity-90">{section.body || section.subtitle}</p>
+            {ctaButton}
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   // --- Minimal: no image, generous whitespace, accent rule ---
   if (preset.heroStyle === "minimal") {
@@ -103,7 +175,9 @@ export function HeroBlock({ section, theme, preset, site }: BlockProps) {
       <section
         className="px-6 py-28 sm:py-36"
         style={{
-          backgroundColor: theme.secondary,
+          background: preset.id === "Gradient Modern"
+            ? `linear-gradient(135deg, ${theme.secondary}, ${theme.primary} 55%, ${theme.accent})`
+            : theme.secondary,
           color: "#ffffff",
         }}
       >
