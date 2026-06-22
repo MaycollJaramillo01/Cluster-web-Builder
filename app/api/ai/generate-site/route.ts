@@ -7,6 +7,7 @@ import {
   parseOpenRouterStream,
   OpenRouterError,
 } from "@/lib/openrouter";
+import { nvidiaChatStream, NvidiaError } from "@/lib/nvidia";
 import { buildSiteGenerationPrompt } from "@/lib/prompts/site-generator";
 import { extractJsonFromModelResponse } from "@/lib/json/extract-json";
 import { buildFallbackSiteBlueprint } from "@/lib/site/fallback-site-blueprint";
@@ -139,19 +140,34 @@ export async function POST(req: NextRequest) {
         let normalizedSite: ReturnType<typeof normalizeSiteBlueprint>;
 
         try {
-          const response = await openRouterChatStream(
-            [
-              { role: "system", content: system },
-              { role: "user", content: user },
-            ],
-            { temperature: 0.4 }
-          );
+          // NVIDIA NIM is the primary provider when configured.
+          // Falls back to OpenRouter, then to the local generator.
+          let aiResponse: Response;
+          try {
+            aiResponse = await nvidiaChatStream(
+              [
+                { role: "system", content: system },
+                { role: "user", content: user },
+              ],
+              { temperature: 0.4 }
+            );
+          } catch (nvidiaErr) {
+            if (!(nvidiaErr instanceof NvidiaError)) throw nvidiaErr;
+            // NVIDIA unavailable or not configured — try OpenRouter.
+            aiResponse = await openRouterChatStream(
+              [
+                { role: "system", content: system },
+                { role: "user", content: user },
+              ],
+              { temperature: 0.4 }
+            );
+          }
 
           advanceStage();
 
           let full = "";
           let charsSinceStage = 0;
-          for await (const delta of parseOpenRouterStream(response.body!)) {
+          for await (const delta of parseOpenRouterStream(aiResponse.body!)) {
             full += delta;
             send("token", { content: delta });
 
@@ -274,6 +290,7 @@ function jsonError(message: string, status: number) {
 
 function canUseLocalGenerator(err: unknown): boolean {
   if (err instanceof OpenRouterError) return true;
+  if (err instanceof NvidiaError) return true;
   if (err instanceof ZodError) return true;
   if (err instanceof Error) {
     const message = err.message.toLowerCase();
@@ -289,6 +306,12 @@ function canUseLocalGenerator(err: unknown): boolean {
 }
 
 function localGeneratorMessage(err: unknown): string {
+  if (err instanceof NvidiaError && err.status === 429) {
+    return "NVIDIA NIM está ocupado; generando el sitio con el motor local...";
+  }
+  if (err instanceof NvidiaError) {
+    return "NVIDIA NIM no respondió; generando el sitio con el motor local...";
+  }
   if (err instanceof OpenRouterError && err.status === 429) {
     return "OpenRouter esta ocupado; generando el sitio con el motor local...";
   }
@@ -300,6 +323,7 @@ function localGeneratorMessage(err: unknown): string {
 
 /** Converts internal errors into user-friendly Spanish messages (no stack traces). */
 function humanizeError(err: unknown): string {
+  if (err instanceof NvidiaError) return err.message;
   if (err instanceof OpenRouterError) return err.message;
   if (err instanceof ZodError) {
     return "La estructura generada por la IA no es valida. Intenta nuevamente.";

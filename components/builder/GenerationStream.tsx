@@ -131,23 +131,21 @@ export function GenerationStream() {
         role="dialog"
         aria-live="assertive"
         aria-label="Error al generar el sitio"
-        className="mx-auto w-full max-w-xl rounded-3xl border border-red-200 bg-white p-7 text-center shadow-xl shadow-slate-200/60"
+        className="mx-auto w-full max-w-xl rounded-lg border border-red-900 bg-card p-7 text-center shadow-[var(--shadow-md)]"
       >
-        <div className="mx-auto mb-4 flex h-11 w-11 items-center justify-center rounded-xl border border-red-200 bg-red-50">
-          <AlertCircle className="h-6 w-6 text-red-600" />
+        <div className="mx-auto mb-4 flex h-11 w-11 items-center justify-center rounded-lg border border-red-900 bg-red-950/50">
+          <AlertCircle className="h-6 w-6 text-[#ffb4ab]" />
         </div>
-        <h2 className="text-lg font-semibold text-slate-950">No se pudo generar el sitio</h2>
-        <p className="mt-2 text-sm text-slate-500">{error}</p>
+        <h2 className="text-lg font-semibold text-foreground">No se pudo generar el sitio</h2>
+        <p className="mt-2 text-sm text-muted-foreground">{error}</p>
         <div className="mt-6 flex justify-center gap-3">
           <Button
             variant="outline"
-            className="border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
             onClick={() => router.replace("/builder")}
           >
             Volver al formulario
           </Button>
           <Button
-            className="bg-violet-700 text-white hover:bg-violet-800"
             onClick={() => {
               startedRef.current = true;
               void run();
@@ -162,16 +160,16 @@ export function GenerationStream() {
 
   return (
     <MotionSurface className="mx-auto w-full max-w-2xl">
-      <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-xl shadow-slate-200/70">
-        <div className="flex items-center gap-4 border-b border-slate-100 px-6 py-5 sm:px-8">
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-violet-100">
-            <Loader2 className="h-5 w-5 animate-spin text-violet-700" />
+      <div className="overflow-hidden rounded-lg border border-border bg-card shadow-[var(--shadow-md)]">
+        <div className="flex items-center gap-4 border-b border-border px-6 py-5 sm:px-8">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-secondary">
+            <Loader2 className="h-5 w-5 animate-spin text-[#a078ff]" />
           </span>
           <div>
-            <h2 className="text-lg font-semibold tracking-tight text-slate-950">
+            <h2 className="text-lg font-semibold tracking-tight text-foreground">
               {phase === "saving" ? "Guardando tu sitio..." : "Generando tu sitio con IA"}
             </h2>
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-muted-foreground">
               Estamos construyendo cada sección. Esto toma unos segundos.
             </p>
           </div>
@@ -186,14 +184,14 @@ export function GenerationStream() {
                 <li key={s} className="flex items-start gap-3 py-1.5">
                   <span className="relative flex flex-col items-center">
                     {active ? (
-                      <Loader2 className="h-5 w-5 animate-spin text-violet-700" />
+                      <Loader2 className="h-5 w-5 animate-spin text-[#a078ff]" />
                     ) : (
                       <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-100">
                         <Check className="h-3 w-3 text-emerald-700" />
                       </span>
                     )}
                   </span>
-                  <span className={active ? "pt-0.5 text-sm font-medium text-slate-950" : "pt-0.5 text-sm text-slate-500"}>
+                  <span className={active ? "pt-0.5 text-sm font-medium text-foreground" : "pt-0.5 text-sm text-muted-foreground"}>
                     {s}
                   </span>
                 </li>
@@ -205,18 +203,18 @@ export function GenerationStream() {
             <div className="mt-6">
               <div className="mb-2 flex items-center gap-2">
                 <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
+                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                   Contenido generándose en vivo
                 </p>
               </div>
-              <pre className="max-h-44 overflow-hidden rounded-xl border border-slate-200 bg-slate-950 p-4 text-xs leading-relaxed text-emerald-300">
+              <pre className="max-h-44 overflow-hidden rounded border border-border bg-[#0f0d15] p-4 text-xs leading-relaxed text-[#d0bcff]">
                 {preview}
               </pre>
             </div>
           )}
         </div>
       </div>
-      <p className="mt-4 text-center text-xs text-slate-400">
+      <p className="mt-4 text-center text-xs text-muted-foreground">
         No cierres esta ventana mientras generamos tu sitio.
       </p>
     </MotionSurface>
@@ -243,7 +241,7 @@ export function StoredPromptPreview() {
     // Keep the generic preview when storage is stale.
   }
 
-  return <p className="text-sm leading-6 text-slate-700">{prompt}</p>;
+  return <p className="text-sm leading-6 text-[#cbc3d7]">{prompt}</p>;
 }
 
 function MotionSurface({ className, children, ...props }: ComponentProps<"div">) {

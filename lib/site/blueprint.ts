@@ -10,6 +10,7 @@ export const SECTION_TYPES = [
   "hero",
   "services",
   "about",
+  "about_us",
   "benefits",
   "testimonials",
   "gallery",

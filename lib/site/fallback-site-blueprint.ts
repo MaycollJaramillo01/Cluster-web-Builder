@@ -9,7 +9,7 @@ import {
 
 export function buildFallbackSiteBlueprint(
   input: OnboardingInput,
-  sectionPlan: string[] = ["hero", "services", "about", "cta", "contact", "footer"]
+  sectionPlan: string[] = ["hero", "services", "about_us", "cta", "contact", "footer"]
 ): Blueprint {
   const businessType = resolveBusinessTypeLabel(input);
   const services = parseServiceFacts(input.services);
@@ -46,13 +46,18 @@ export function buildFallbackSiteBlueprint(
         { title: "Contacto directo", description: "Una siguiente accion visible para continuar la conversacion." },
       ] },
     }),
-    section("about", {
+    section("about_us", {
       title: `Sobre ${input.businessName}`,
       body: [
         `${input.businessName} atiende a ${input.targetCustomer}${hasLocation ? ` en ${input.location}` : ""}. Ofrece ${naturalList(serviceNames)}.`,
         proofPoints.length > 0 ? `Datos confirmados: ${naturalList(proofPoints)}.` : "",
       ].filter(Boolean).join(" "),
       imagePrompt: `professional ${businessType} service for local customers, realistic photography`,
+      settings: { highlights: [
+        { title: "Actividad", description: businessType },
+        { title: "Servicios", description: naturalList(serviceNames) },
+        ...(hasLocation ? [{ title: "Zona de atención", description: input.location }] : []),
+      ] },
     }),
     section("process", {
       title: "Cómo empezar",

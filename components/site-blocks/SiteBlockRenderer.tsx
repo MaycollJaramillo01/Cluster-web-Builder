@@ -18,6 +18,7 @@ import { TrustBadgesBlock } from "./TrustBadgesBlock";
 import { LocationBlock } from "./LocationBlock";
 import { GalleryBlock } from "./GalleryBlock";
 import { GenericBlock } from "./GenericBlock";
+import { ProcessBlock } from "./ProcessBlock";
 import { Reveal } from "./Reveal";
 import { SiteNav } from "./SiteNav";
 import type { BlockProps, BlockSiteInfo } from "./types";
@@ -28,6 +29,7 @@ const BLOCK_MAP: Record<string, BlockComponent> = {
   hero: HeroBlock,
   services: ServicesBlock,
   about: AboutBlock,
+  about_us: AboutBlock,
   benefits: BenefitsBlock,
   testimonials: TestimonialsBlock,
   faq: FaqBlock,
@@ -37,7 +39,7 @@ const BLOCK_MAP: Record<string, BlockComponent> = {
   trust_badges: TrustBadgesBlock,
   location: LocationBlock,
   gallery: GalleryBlock,
-  process: GenericBlock,
+  process: ProcessBlock,
   pricing: GenericBlock,
 };
 
@@ -94,6 +96,7 @@ export function SiteBlockRenderer({
   const sectionNames: Record<string, string> = {
     services: "Servicios",
     about: "Nosotros",
+    about_us: "Nosotros",
     benefits: "Beneficios",
     gallery: "Galería",
     process: "Proceso",

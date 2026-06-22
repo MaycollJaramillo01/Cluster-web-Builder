@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 import { getItems } from "@/lib/site/section";
 import { stockImageUrl } from "@/lib/site/images";
 import { getThemeSurface } from "@/lib/site/theme-surface";

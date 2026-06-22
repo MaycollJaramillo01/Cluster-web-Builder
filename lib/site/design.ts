@@ -29,6 +29,50 @@ export type SurfaceStyle = "plain" | "soft" | "outlined" | "glass" | "brutal" | 
 export type MotionStyle = "none" | "subtle" | "stagger" | "kinetic";
 export type CtaStyle = "solid" | "outline" | "pill" | "offset" | "link";
 export type FooterStyle = "minimal" | "columns" | "editorial" | "brutal" | "darkBand" | "centered";
+export type AboutUsStyle =
+  | "split" | "editorial" | "manifesto" | "statement" | "grid" | "immersive"
+  | "overlap" | "polaroid" | "banner" | "collage" | "portrait" | "reverse"
+  | "masthead" | "framed" | "stats" | "checklist" | "quote" | "timeline"
+  | "columns" | "accent" | "numbered" | "bigtype" | "splitstats" | "minimalline"
+  | "badges" | "mosaic";
+
+/** All About-Us variant ids (for validation + the AI override). */
+export const ABOUT_US_STYLES: AboutUsStyle[] = [
+  "split", "editorial", "manifesto", "statement", "grid", "immersive",
+  "overlap", "polaroid", "banner", "collage", "portrait", "reverse",
+  "masthead", "framed", "stats", "checklist", "quote", "timeline",
+  "columns", "accent", "numbered", "bigtype", "splitstats", "minimalline",
+  "badges", "mosaic",
+];
+
+/** Each design style gets a deliberate About design (the AI picks the style). */
+const ABOUT_BY_STYLE: Record<string, AboutUsStyle> = {
+  Neobrutalist: "manifesto",
+  "Swiss/International": "grid",
+  Editorial: "editorial",
+  Glassmorphism: "framed",
+  "Retro-futuristic": "immersive",
+  Bauhaus: "collage",
+  "Art Deco": "portrait",
+  Minimal: "minimalline",
+  Flat: "split",
+  Material: "overlap",
+  Neumorphic: "stats",
+  Monochromatic: "columns",
+  Scandinavian: "polaroid",
+  Japandi: "reverse",
+  "Dark Mode First": "immersive",
+  Modernist: "numbered",
+  "Organic/Fluid": "masthead",
+  "Corporate Professional": "checklist",
+  "Tech Forward": "splitstats",
+  "Luxury Minimal": "banner",
+  "Neo-Geo": "mosaic",
+  Kinetic: "bigtype",
+  "Gradient Modern": "framed",
+  "Typography First": "bigtype",
+  Metropolitan: "quote",
+};
 
 export type DesignPreset = {
   id: string;
@@ -60,12 +104,13 @@ export type DesignPreset = {
   motionStyle: MotionStyle;
   ctaStyle: CtaStyle;
   footerStyle: FooterStyle;
+  aboutUsStyle: AboutUsStyle;
   paletteId: string;
   sectionPlan: string[];
 };
 
-type RecipeInput = Omit<DesignPreset, "bodyFont" | "useImages" | "footerStyle"> &
-  Partial<Pick<DesignPreset, "bodyFont" | "useImages" | "footerStyle">>;
+type RecipeInput = Omit<DesignPreset, "bodyFont" | "useImages" | "footerStyle" | "aboutUsStyle"> &
+  Partial<Pick<DesignPreset, "bodyFont" | "useImages" | "footerStyle" | "aboutUsStyle">>;
 
 function recipe(input: RecipeInput): DesignPreset {
   const footerStyle: FooterStyle = input.footerStyle
@@ -75,12 +120,22 @@ function recipe(input: RecipeInput): DesignPreset {
           : input.navStyle === "floating" ? "columns"
             : input.sectionStyle === "centered" ? "centered"
               : "minimal");
+  const aboutUsStyle: AboutUsStyle = input.aboutUsStyle
+    ?? ABOUT_BY_STYLE[input.id]
+    ?? (input.surfaceStyle === "brutal" ? "manifesto"
+      : input.heroStyle === "editorial" || input.servicesStyle === "editorial" ? "editorial"
+        : input.sectionStyle === "fullBleed" ? "immersive"
+          : input.sectionStyle === "grid" ? "grid"
+            : input.sectionStyle === "centered" ? "statement"
+              : "split");
 
   return {
     bodyFont: '"Inter", system-ui, sans-serif',
     useImages: true,
     ...input,
     footerStyle,
+    aboutUsStyle,
+    sectionPlan: input.sectionPlan.map((type) => type === "about" ? "about_us" : type),
   };
 }
 
@@ -127,7 +182,7 @@ export function getDesignPreset(visualStyle?: string | null): DesignPreset {
 export function getDesignRecipeFingerprint(preset: DesignPreset): string {
   return [preset.heroStyle, preset.navStyle, preset.servicesStyle, preset.sectionStyle,
     preset.imageStyle, preset.surfaceStyle, preset.motionStyle, preset.ctaStyle,
-    preset.footerStyle, preset.radius, preset.buttonRadius, preset.headingFont, preset.headingTracking,
+    preset.footerStyle, preset.aboutUsStyle, preset.radius, preset.buttonRadius, preset.headingFont, preset.headingTracking,
     preset.sectionPlan.join(">")].join("|");
 }
 

@@ -176,7 +176,9 @@ export function promptToOnboardingInput(prompt: string): OnboardingInput {
     customBusinessType,
     location,
     services: extractServices(value, businessLabel),
-    targetCustomer: `Personas interesadas en ${businessLabel.toLocaleLowerCase("es")}`,
+    targetCustomer: businessLabel === "Negocio"
+      ? "Clientes potenciales"
+      : `Personas que buscan ${businessLabel.toLocaleLowerCase("es")}`,
     proofPoints: "",
     goal: detectGoal(lower),
     phone,

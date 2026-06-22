@@ -21,23 +21,23 @@ const RECIPES: Record<string, PageDef[]> = {
   one_page: [{
     slug: "home",
     name: "Inicio",
-    types: ["hero", "services", "about", "faq", "location", "cta", "contact"],
+    types: ["hero", "services", "about_us", "faq", "location", "cta", "contact"],
   }],
   pages_3: [
-    { slug: "home", name: "Inicio", types: ["hero", "about", "cta"] },
+    { slug: "home", name: "Inicio", types: ["hero", "about_us", "cta"] },
     { slug: "servicios", name: "Servicios", types: ["services", "cta"] },
     { slug: "contacto", name: "Contacto", types: ["contact", "location"] },
   ],
   pages_4: [
     { slug: "home", name: "Inicio", types: ["hero", "cta"] },
     { slug: "servicios", name: "Servicios", types: ["services", "cta"] },
-    { slug: "nosotros", name: "Nosotros", types: ["about"] },
+    { slug: "nosotros", name: "Nosotros", types: ["about_us"] },
     { slug: "contacto", name: "Contacto", types: ["contact", "location"] },
   ],
   pages_full: [
     { slug: "home", name: "Inicio", types: ["hero", "cta"] },
     { slug: "servicios", name: "Servicios", types: ["services", "cta"] },
-    { slug: "nosotros", name: "Nosotros", types: ["about"] },
+    { slug: "nosotros", name: "Nosotros", types: ["about_us"] },
     { slug: "contacto", name: "Contacto", types: ["contact", "location"] },
   ],
 };
@@ -53,7 +53,7 @@ export function applyPageStructure(
   ctx: { businessName: string }
 ): StructuredSite {
   const allowedTypes = new Set([
-    "hero", "services", "about", "benefits", "gallery", "faq", "contact",
+    "hero", "services", "about", "about_us", "benefits", "gallery", "faq", "contact",
     "cta", "trust_badges", "process", "pricing", "location", "footer",
   ]);
   const byType = new Map<string, NormalizedSection>();
@@ -144,6 +144,7 @@ function synthesizeSection(
     case "services":
       return { ...base, title: "Servicios y productos" };
     case "about":
+    case "about_us":
       return { ...base, title: `Sobre ${ctx.businessName}` };
     case "location":
       return { ...base, title: "Zona de servicio" };

@@ -42,6 +42,8 @@ REGLA PRINCIPAL: el objeto FACTS es la unica fuente de verdad.
 - No inventes anos de experiencia, licencias, seguros, premios, garantias, cifras, clientes ni resultados.
 - No generes testimonios, resenas, nombres de clientes, ratings ni casos de exito.
 - No uses placeholders ni afirmaciones como "somos lideres", "calidad garantizada" o "equipo experto".
+- Evita frases vacias como "experiencia premium", "lleva tu negocio al siguiente nivel", "soluciones innovadoras" o "transformamos tus ideas".
+- No uses la palabra generica "negocio" como propuesta de valor, audiencia o nombre de servicio. Si faltan detalles, escribe copy breve, factual y neutral.
 - Si un dato no aparece en FACTS, omitelo. No completes huecos.
 - Conserva exactamente los nombres de verifiedServices. Puedes mejorar la redaccion de su descripcion sin agregar prestaciones.
 - verifiedTrustFacts solo puede usarse cuando contiene datos. No lo conviertas en una afirmacion mas amplia.
@@ -58,7 +60,7 @@ OBJETIVO DE EXPERIENCIA:
 
 No uses una receta fija. Elige la cantidad y secuencia que mejor cuente esta historia, tomando sectionPlan como punto de partida. No agregues una seccion solo para llenar espacio.
 
-Tipos permitidos: hero, services, about, benefits, gallery, faq, contact, cta, trust_badges, process, pricing, location, footer.
+Tipos permitidos: hero, services, about_us, benefits, gallery, faq, contact, cta, trust_badges, process, pricing, location, footer.
 imagePrompt debe estar en ingles y describir una foto profesional generica de la actividad, sin logos ni personas identificables.
 El idioma visible debe respetar FACTS.language.
 
@@ -100,6 +102,7 @@ Schema exacto:
   }
 }
 
+En about_us, el diseño se elige automáticamente; opcionalmente settings.highlights puede incluir 2 a 4 objetos { "title": "", "description": "", "value": "" } SOLO con datos respaldados por FACTS (no inventes cifras ni años).
 En services, settings.items usa { "name": "", "description": "" }.
 En benefits y process, settings.items usa { "title": "", "description": "" }.
 En faq, settings.items usa { "question": "", "answer": "" } y solo contenido respaldado por FACTS.

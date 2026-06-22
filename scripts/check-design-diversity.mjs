@@ -4,11 +4,13 @@ import {
   getDesignRecipeFingerprint,
   getPalette,
 } from "../lib/site/design.ts";
+import { promptToOnboardingInput } from "../lib/validators/site-onboarding.ts";
 
 const presets = getAllDesignPresets();
 const fingerprints = presets.map(getDesignRecipeFingerprint);
 const plans = presets.map((preset) => preset.sectionPlan.join(">"));
 const footerStyles = presets.map((preset) => preset.footerStyle);
+const aboutUsStyles = presets.map((preset) => preset.aboutUsStyle);
 const expectedIds = [...DESIGN_STYLE_IDS].sort();
 const actualIds = presets.map((preset) => preset.id).sort();
 const expectedFooterStyles = ["brutal", "centered", "columns", "darkBand", "editorial", "minimal"];
@@ -29,6 +31,9 @@ assert(
   JSON.stringify([...new Set(footerStyles)].sort()) === JSON.stringify(expectedFooterStyles),
   "faltan variantes de footer o alguna receta usa una variante desconocida."
 );
+assert(new Set(aboutUsStyles).size >= 12, "las recetas no ofrecen suficiente variedad para About Us.");
+assert(presets.some((preset) => preset.sectionPlan.includes("about_us")), "ninguna receta genera About Us.");
+assert(presets.every((preset) => !preset.sectionPlan.includes("about")), "una receta nueva sigue usando el bloque About anterior.");
 
 for (const preset of presets) {
   assert(preset.sectionPlan[0] === "hero", `${preset.id} no empieza con hero.`);
@@ -46,7 +51,10 @@ for (const preset of presets) {
   assert(ctaContrast >= 4.5, `${preset.id} no tiene un color de CTA legible.`);
 }
 
-console.log("Design diversity: 25 estilos, 25 recetas, 25 planes unicos y 6 footers.");
+const genericInput = promptToOnboardingInput("Crea un sitio profesional para mi negocio local");
+assert(genericInput.targetCustomer === "Clientes potenciales", "el parser produce una audiencia genérica o robótica.");
+
+console.log(`Design diversity: 25 estilos, 25 recetas, 25 planes, 6 footers y ${new Set(aboutUsStyles).size} variantes About Us.`);
 
 function contrastRatio(first, second) {
   const firstLuminance = luminance(first);

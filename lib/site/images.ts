@@ -12,24 +12,61 @@ const KEYWORDS: Record<string, string> = {
   landscaping: "garden,landscaping,lawn",
   cleaning: "cleaning,clean,home",
   restaurant: "restaurant,food,dining",
+  cafe: "cafe,coffee,coffeeshop",
+  bakery: "bakery,pastry,bread",
   law: "office,law,lawyer",
+  legal: "office,law,professional",
   real: "house,realestate,modern",
   medical: "clinic,medical,doctor",
+  dental: "dental,clinic,teeth",
   beauty: "beauty,salon,spa",
   fitness: "gym,fitness,workout",
+  gym: "gym,fitness,workout",
   estudio: "modernarchitecture,modernhouse,interiordesign",
+  architecture: "modernarchitecture,building,design",
+  automotive: "car,automobile,showroom",
+  auto: "car,automobile,showroom",
+  vehicle: "car,automobile,garage",
+  tech: "technology,computer,office",
+  technology: "technology,computer,office",
+  software: "technology,computer,coding",
+  construction: "construction,building,contractor",
+  plumbing: "plumbing,tools,pipe",
+  electrical: "electrical,wiring,tools",
+  financial: "finance,business,professional",
+  finance: "finance,business,professional",
+  accounting: "accounting,finance,office",
+  education: "education,school,classroom",
+  childcare: "childcare,kids,playground",
+  event: "event,wedding,celebration",
+  photography: "photography,camera,studio",
+  marketing: "marketing,branding,office",
+  consulting: "consulting,meeting,office",
+  logistics: "logistics,warehouse,transport",
+  hotel: "hotel,hospitality,luxury",
+  travel: "travel,adventure,landscape",
+  retail: "retail,store,shopping",
+  ecommerce: "ecommerce,store,products",
+  fashion: "fashion,clothing,style",
+  food: "food,cuisine,gourmet",
+  nonprofit: "community,volunteer,charity",
+  security: "security,professional,technology",
 };
 
-const DEFAULT_TAGS = "business,office,modern";
+const DEFAULT_TAGS = "business,professional,modern";
 
-/** Extracts the leading English word from a label like "Roofing / Techos". */
+/** Extracts the best keyword tags from a label like "Automotive / Automotriz". */
 export function businessKeyword(businessType: string): string {
-  const firstWord = businessType
-    .split("/")[0]
-    .trim()
-    .toLowerCase()
-    .split(/\s+/)[0];
-  return KEYWORDS[firstWord] ?? DEFAULT_TAGS;
+  const parts = businessType.split(/[/|,]/).map((s) => s.trim().toLowerCase());
+  for (const part of parts) {
+    const firstWord = part.split(/\s+/)[0];
+    if (KEYWORDS[firstWord]) return KEYWORDS[firstWord];
+    // Try each word in the part, not just the first
+    for (const word of part.split(/\s+/)) {
+      if (KEYWORDS[word]) return KEYWORDS[word];
+    }
+  }
+  return DEFAULT_TAGS;
 }
 
 export type ImageRequest = {
@@ -114,6 +151,64 @@ function imagePromptTags(prompt?: string): string {
     salon: "beautysalon",
     fitness: "fitness",
     gym: "gym",
+    automotive: "car",
+    automobile: "car",
+    automotriz: "car",
+    automotor: "car",
+    car: "car",
+    cars: "car",
+    vehicle: "car",
+    vehicles: "car",
+    dealership: "car",
+    showroom: "car",
+    garage: "garage",
+    workshop: "garage",
+    taller: "garage",
+    technology: "technology",
+    software: "technology",
+    coding: "coding",
+    tech: "technology",
+    dental: "dental",
+    teeth: "dental",
+    dentist: "dental",
+    law: "law",
+    legal: "law",
+    lawyer: "law",
+    attorney: "law",
+    finance: "finance",
+    financial: "finance",
+    accounting: "accounting",
+    construction: "construction",
+    building: "construction",
+    contractor: "construction",
+    plumbing: "plumbing",
+    electrical: "electrical",
+    education: "education",
+    school: "education",
+    classroom: "education",
+    bakery: "bakery",
+    bread: "bakery",
+    coffee: "coffee",
+    cafe: "coffee",
+    hotel: "hotel",
+    hospitality: "hotel",
+    fashion: "fashion",
+    clothing: "fashion",
+    marketing: "marketing",
+    branding: "marketing",
+    photography: "photography",
+    camera: "photography",
+    consulting: "business",
+    logistics: "logistics",
+    warehouse: "logistics",
+    event: "event",
+    wedding: "wedding",
+    travel: "travel",
+    landscape: "landscape",
+    luxury: "luxury",
+    modern: "modern",
+    professional: "professional",
+    office: "office",
   };
   const tags = prompt
     .toLowerCase()

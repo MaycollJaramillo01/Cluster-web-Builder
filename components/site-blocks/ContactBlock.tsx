@@ -1,13 +1,29 @@
 import type { BlockProps } from "./types";
 import { getThemeSurface } from "@/lib/site/theme-surface";
+import { getContrastText } from "@/lib/site/theme-surface";
 
 export function ContactBlock({ section, theme, preset, site }: BlockProps) {
-  const inputStyle = { borderRadius: "var(--site-btn-radius)" };
   const surface = getThemeSurface(theme);
+  const fieldPrefix = `contact-${section.id}`;
+  const inputRadius = preset.buttonRadius === "9999px" ? "0.5rem" : "var(--site-btn-radius)";
+
+  const inputStyle = {
+    borderRadius: inputRadius,
+    border: `1px solid ${theme.text}22`,
+    backgroundColor: `${theme.background}`,
+    color: theme.text,
+    outline: "none",
+  };
+
+  const labelStyle = {
+    color: surface.muted,
+  };
 
   return (
     <section id="contact" className="px-6 py-20 sm:py-24" style={{ backgroundColor: surface.section }}>
       <div className="mx-auto grid max-w-5xl gap-12 md:grid-cols-2">
+
+        {/* Left: info */}
         <div>
           {section.title && (
             <h2
@@ -22,64 +38,194 @@ export function ContactBlock({ section, theme, preset, site }: BlockProps) {
               {section.title}
             </h2>
           )}
-          {section.body && <p className="mt-4" style={{ color: surface.muted }}>{section.body}</p>}
-          <ul className="mt-7 space-y-4" style={{ color: surface.muted }}>
-            {site.phone && (
-              <li className="flex items-start gap-3">
-                <Dot color={theme.primary} />
-                <span>
-                  <strong style={{ color: theme.primary }}>Telefono:</strong> {site.phone}
-                </span>
-              </li>
-            )}
-            {site.email && (
-              <li className="flex items-start gap-3">
-                <Dot color={theme.primary} />
-                <span>
-                  <strong style={{ color: theme.primary }}>Email:</strong> {site.email}
-                </span>
-              </li>
-            )}
-            {site.location && (
-              <li className="flex items-start gap-3">
-                <Dot color={theme.primary} />
-                <span>
-                  <strong style={{ color: theme.primary }}>Ubicacion:</strong> {site.location}
-                </span>
-              </li>
-            )}
-          </ul>
+          {section.body && (
+            <p className="mt-4 leading-relaxed" style={{ color: surface.muted }}>
+              {section.body}
+            </p>
+          )}
+
+          {/* Contact details */}
+          {(site.phone || site.email || site.location) && (
+            <ul className="mt-8 space-y-4">
+              {site.phone && (
+                <li className="flex items-start gap-3">
+                  <span
+                    className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold"
+                    style={{
+                      backgroundColor: `${theme.primary}18`,
+                      color: theme.primary,
+                      borderRadius: "var(--site-radius)",
+                    }}
+                  >
+                    T
+                  </span>
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: theme.primary }}>
+                      Teléfono
+                    </p>
+                    <a
+                      href={`tel:${site.phone}`}
+                      className="mt-0.5 text-sm transition-opacity hover:opacity-80"
+                      style={{ color: theme.text }}
+                    >
+                      {site.phone}
+                    </a>
+                  </div>
+                </li>
+              )}
+              {site.email && (
+                <li className="flex items-start gap-3">
+                  <span
+                    className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold"
+                    style={{
+                      backgroundColor: `${theme.primary}18`,
+                      color: theme.primary,
+                      borderRadius: "var(--site-radius)",
+                    }}
+                  >
+                    @
+                  </span>
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: theme.primary }}>
+                      Email
+                    </p>
+                    <a
+                      href={`mailto:${site.email}`}
+                      className="mt-0.5 text-sm transition-opacity hover:opacity-80"
+                      style={{ color: theme.text }}
+                    >
+                      {site.email}
+                    </a>
+                  </div>
+                </li>
+              )}
+              {site.location && (
+                <li className="flex items-start gap-3">
+                  <span
+                    className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold"
+                    style={{
+                      backgroundColor: `${theme.primary}18`,
+                      color: theme.primary,
+                      borderRadius: "var(--site-radius)",
+                    }}
+                  >
+                    ↗
+                  </span>
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: theme.primary }}>
+                      Ubicación
+                    </p>
+                    <p className="mt-0.5 text-sm" style={{ color: theme.text }}>
+                      {site.location}
+                    </p>
+                  </div>
+                </li>
+              )}
+            </ul>
+          )}
         </div>
 
+        {/* Right: form */}
         <form
-          className={`space-y-4 border bg-white p-7 ${preset.cardShadow}`}
-          style={{ borderRadius: "var(--site-radius)" }}
+          className={`space-y-5 p-7 sm:p-8 ${preset.cardShadow}`}
+          style={{
+            borderRadius: "var(--site-radius)",
+            backgroundColor: surface.panel,
+            border: `1px solid ${theme.text}10`,
+          }}
         >
-          <div>
-            <label className="text-sm font-medium text-slate-700">Nombre</label>
-            <input className="mt-1 w-full border px-3 py-2.5 text-sm" placeholder="Tu nombre" style={inputStyle} />
+          <div className="grid gap-5 sm:grid-cols-2">
+            <div>
+              <label
+                htmlFor={`${fieldPrefix}-name`}
+                className="mb-1.5 block text-xs font-semibold uppercase tracking-wide"
+                style={labelStyle}
+              >
+                Nombre
+              </label>
+              <input
+                id={`${fieldPrefix}-name`}
+                name="name"
+                autoComplete="name"
+                placeholder="Tu nombre"
+                className="w-full px-3.5 py-2.5 text-sm transition-[border-color] focus:outline-none"
+                style={inputStyle}
+              />
+            </div>
+            <div>
+              <label
+                htmlFor={`${fieldPrefix}-email`}
+                className="mb-1.5 block text-xs font-semibold uppercase tracking-wide"
+                style={labelStyle}
+              >
+                Email
+              </label>
+              <input
+                id={`${fieldPrefix}-email`}
+                name="email"
+                type="email"
+                autoComplete="email"
+                placeholder="tu@email.com"
+                className="w-full px-3.5 py-2.5 text-sm transition-[border-color] focus:outline-none"
+                style={inputStyle}
+              />
+            </div>
           </div>
+
           <div>
-            <label className="text-sm font-medium text-slate-700">Email</label>
-            <input className="mt-1 w-full border px-3 py-2.5 text-sm" placeholder="tu@email.com" style={inputStyle} />
+            <label
+              htmlFor={`${fieldPrefix}-phone`}
+              className="mb-1.5 block text-xs font-semibold uppercase tracking-wide"
+              style={labelStyle}
+            >
+              Teléfono <span className="normal-case font-normal opacity-60">(opcional)</span>
+            </label>
+            <input
+              id={`${fieldPrefix}-phone`}
+              name="phone"
+              type="tel"
+              autoComplete="tel"
+              placeholder="+52 55 1234 5678"
+              className="w-full px-3.5 py-2.5 text-sm transition-[border-color] focus:outline-none"
+              style={inputStyle}
+            />
           </div>
+
           <div>
-            <label className="text-sm font-medium text-slate-700">Mensaje</label>
-            <textarea className="mt-1 w-full border px-3 py-2.5 text-sm" rows={3} placeholder="En que podemos ayudarte?" style={inputStyle} />
+            <label
+              htmlFor={`${fieldPrefix}-message`}
+              className="mb-1.5 block text-xs font-semibold uppercase tracking-wide"
+              style={labelStyle}
+            >
+              Mensaje
+            </label>
+            <textarea
+              id={`${fieldPrefix}-message`}
+              name="message"
+              rows={4}
+              placeholder="¿En qué podemos ayudarte?"
+              className="w-full resize-none px-3.5 py-2.5 text-sm transition-[border-color] focus:outline-none"
+              style={inputStyle}
+            />
           </div>
+
           <button
             type="button"
-            className="w-full py-3 text-sm font-semibold text-white transition-[filter] duration-200 hover:brightness-95"
-            style={{ backgroundColor: theme.primary, borderRadius: "var(--site-btn-radius)" }}
+            className="w-full py-3 text-sm font-semibold transition-[filter,opacity] duration-200 hover:brightness-95 active:opacity-90"
+            style={{
+              backgroundColor: theme.primary,
+              color: getContrastText(theme.primary),
+              borderRadius: inputRadius,
+            }}
           >
-            {section.ctaText || "Enviar"}
+            {section.ctaText || "Enviar mensaje"}
           </button>
+
+          <p className="text-center text-xs" style={{ color: surface.muted, opacity: 0.6 }}>
+            Responderemos a la brevedad posible.
+          </p>
         </form>
       </div>
     </section>
   );
-}
-
-function Dot({ color }: { color: string }) {
-  return <span className="mt-2 h-2 w-2 shrink-0 rounded-sm" style={{ backgroundColor: color }} />;
 }

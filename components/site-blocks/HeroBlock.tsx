@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 import { sectionImageUrl } from "@/lib/site/images";
 import { getContrastText } from "@/lib/site/theme-surface";
 import type { BlockProps } from "./types";
@@ -64,10 +65,10 @@ export function HeroBlock({ section, theme, preset, site }: BlockProps) {
       <section className="px-6 py-16 sm:py-24" style={{ backgroundColor: theme.background }}>
         <div className="mx-auto grid max-w-6xl gap-8 border-y py-10 lg:grid-cols-12" style={{ borderColor: `${theme.text}33` }}>
           <div className="lg:col-span-7" style={{ color: theme.text }}>
-            <p className="mb-10 text-xs font-semibold uppercase tracking-[0.25em]" style={{ color: theme.primary }}>Edición 01 · {site.businessType}</p>
+            <p className="mb-10 text-xs font-semibold uppercase tracking-[0.25em]" style={{ color: theme.primary }}>{site.businessType}</p>
             <div className="[&_h1]:text-5xl [&_h1]:sm:text-7xl">{heading}</div>
-            {section.subtitle && <p className="mt-7 max-w-xl text-xl italic opacity-75">{section.subtitle}</p>}
-            {section.body && <p className="mt-5 max-w-xl leading-relaxed opacity-65">{section.body}</p>}
+            {section.subtitle && <p className="mt-7 max-w-xl text-xl italic" style={{ opacity: 0.85 }}>{section.subtitle}</p>}
+            {section.body && <p className="mt-5 max-w-xl leading-relaxed" style={{ opacity: 0.75 }}>{section.body}</p>}
             {ctaButton && <div className="mt-10">{ctaButton}</div>}
           </div>
           <div className="lg:col-span-5">

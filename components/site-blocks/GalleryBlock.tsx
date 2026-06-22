@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 import { stockImageUrl } from "@/lib/site/images";
 import { SectionHeading } from "./shared";
 import type { BlockProps } from "./types";

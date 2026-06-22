@@ -4,24 +4,32 @@
 
 @layer base {
   :root {
-    --background: 240 20% 99%;
-    --foreground: 252 21% 12%;
-    --card: 0 0% 100%;
-    --card-foreground: 252 21% 12%;
-    --primary: 262 72% 50%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 255 40% 96%;
-    --secondary-foreground: 262 48% 30%;
-    --muted: 240 18% 96%;
-    --muted-foreground: 245 8% 43%;
-    --accent: 255 50% 95%;
-    --accent-foreground: 262 72% 40%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 244 18% 89%;
-    --input: 244 18% 89%;
-    --ring: 262 72% 50%;
-    --radius: 0.85rem;
+    --background: 268 23% 9%;
+    --foreground: 276 26% 90%;
+    --card: 267 15% 13%;
+    --card-foreground: 276 26% 90%;
+    --primary: 257 100% 87%;
+    --primary-foreground: 265 100% 28%;
+    --secondary: 271 18% 35%;
+    --secondary-foreground: 276 26% 90%;
+    --muted: 270 14% 18%;
+    --muted-foreground: 273 16% 80%;
+    --accent: 258 90% 66%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 6 100% 85%;
+    --destructive-foreground: 358 100% 21%;
+    --border: 268 10% 29%;
+    --input: 268 10% 29%;
+    --ring: 258 90% 66%;
+    --radius: 0.25rem;
+    --surface-lowest: #0f0d15;
+    --surface-low: #1d1a23;
+    --surface-high: #2c2832;
+    --surface-highest: #37333d;
+    --brand-violet: #8b5cf6;
+    --shadow-sm: 0 0 0 1px rgb(208 188 255 / 0.04);
+    --shadow-md: 0 16px 40px rgb(0 0 0 / 0.28);
+    --shadow-glow: 0 0 24px rgb(139 92 246 / 0.16);
     --modal-open-dur: 250ms;
     --modal-close-dur: 150ms;
     --modal-scale: 0.96;
@@ -36,7 +44,12 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-family: var(--font-inter), sans-serif;
     font-feature-settings: "rlig" 1, "calt" 1;
+  }
+  :focus-visible {
+    outline: 2px solid #8b5cf6;
+    outline-offset: 2px;
   }
   ::selection {
     background: hsl(var(--primary) / 0.2);
@@ -45,15 +58,15 @@
 
 .marketing-shell {
   background:
-    radial-gradient(circle at 50% -10%, rgba(130, 73, 220, 0.2), transparent 34rem),
-    linear-gradient(135deg, #100a1f 0%, #1b1230 48%, #2b1d4b 100%);
+    radial-gradient(circle at 50% -10%, rgb(139 92 246 / 0.13), transparent 34rem),
+    #0f0d15;
 }
 
 .soft-grid {
   background-image:
-    linear-gradient(rgba(124, 58, 237, 0.055) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(124, 58, 237, 0.055) 1px, transparent 1px);
-  background-size: 32px 32px;
+    linear-gradient(rgb(208 188 255 / 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(208 188 255 / 0.035) 1px, transparent 1px);
+  background-size: 40px 40px;
 }
 
 /* ---- Dialog motion ---- */
@@ -89,7 +102,36 @@
   .design-reveal {
     animation: none !important;
   }
+  .about-kenburns,
+  .about-float,
+  .about-clip,
+  .about-rise,
+  .about-pop,
+  .about-stagger > * {
+    animation: none !important;
+  }
 }
+
+/* ---- About Us section animations ---- */
+@keyframes about-kenburns { from { transform: scale(1.16); } to { transform: scale(1); } }
+@keyframes about-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+@keyframes about-clip-in { from { clip-path: inset(0 100% 0 0); opacity: 0.5; } to { clip-path: inset(0 0 0 0); opacity: 1; } }
+@keyframes about-rise { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes about-pop { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
+@keyframes about-tilt-in { from { opacity: 0; transform: rotate(-6deg) translateY(16px); } to { opacity: 1; transform: rotate(-3deg) translateY(0); } }
+
+.about-kenburns { animation: about-kenburns 9s ease-out both; }
+.about-float { animation: about-float 6s ease-in-out infinite; }
+.about-clip { animation: about-clip-in 900ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+.about-rise { animation: about-rise 700ms ease-out both; }
+.about-pop { animation: about-pop 650ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+.about-tilt { animation: about-tilt-in 700ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+.about-stagger > * { animation: about-rise 700ms ease-out both; }
+.about-stagger > *:nth-child(2) { animation-delay: 90ms; }
+.about-stagger > *:nth-child(3) { animation-delay: 180ms; }
+.about-stagger > *:nth-child(4) { animation-delay: 270ms; }
+.about-img-hover { transition: transform 600ms cubic-bezier(0.22, 1, 0.36, 1); }
+.group:hover .about-img-hover { transform: scale(1.05); }
 
 @keyframes site-reveal-subtle {
   from { opacity: 0; transform: translateY(14px); }

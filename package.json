@@ -11,6 +11,7 @@
     "start": "next start",
     "prelint": "npm run check:layout && npm run check:design",
     "lint": "eslint .",
+    "test:ui": "node scripts/smoke-ui.mjs",
     "postinstall": "prisma generate",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
