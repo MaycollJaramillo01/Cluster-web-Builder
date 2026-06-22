@@ -1,10 +1,12 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   ArrowLeft,
   Briefcase,
+  CircleCheck,
   CheckSquare,
   ChevronDown,
   ChevronUp,
@@ -23,6 +25,7 @@ import {
   Megaphone,
   MessageCircle,
   Palette,
+  Rocket,
   Save,
   Shield,
   Sparkles,
@@ -463,6 +466,9 @@ export function SiteEditorPanel({
   initialSections: RenderSection[];
   navPages?: NavPage[];
 }) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const publishStartedRef = useRef(false);
   const isMultipage = navPages.length > 1;
   const [previewPage, setPreviewPage] = useState(navPages[0]?.slug ?? "home");
   const [panel, setPanel] = useState<"content" | "design">("content");
@@ -480,6 +486,8 @@ export function SiteEditorPanel({
   const [openId, setOpenId] = useState<string | null>(initialSections[0]?.id ?? null);
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [publishing, setPublishing] = useState(false);
+  const [published, setPublished] = useState(initialSite.status === "PUBLISHED");
   const [error, setError] = useState<string | null>(null);
 
   const previewTheme: SiteTheme = useMemo(
@@ -577,6 +585,41 @@ export function SiteEditorPanel({
     }
   };
 
+  const publish = useCallback(async () => {
+    setPublishing(true);
+    setError(null);
+
+    try {
+      const response = await fetch(`/api/sites/${initialSite.id}/publish`, {
+        method: "POST",
+      });
+
+      if (response.status === 401) {
+        const returnTo = `/builder/${initialSite.id}?publish=1`;
+        router.push(`/login?from=${encodeURIComponent(returnTo)}`);
+        return;
+      }
+
+      const data = await response.json().catch(() => null);
+      if (!response.ok) {
+        throw new Error(data?.error ?? "No se pudo publicar el sitio.");
+      }
+
+      setPublished(true);
+      router.replace(`/builder/${initialSite.id}`, { scroll: false });
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "Error al publicar.");
+    } finally {
+      setPublishing(false);
+    }
+  }, [initialSite.id, router]);
+
+  useEffect(() => {
+    if (searchParams.get("publish") !== "1" || publishStartedRef.current) return;
+    publishStartedRef.current = true;
+    void publish();
+  }, [publish, searchParams]);
+
   const change =
     (setter: (value: string) => void) =>
     (value: string) => {
@@ -621,6 +664,7 @@ export function SiteEditorPanel({
             </Button>
             <Button
               size="sm"
+              variant="outline"
               onClick={save}
               disabled={saving || !dirty}
               className="gap-2"
@@ -632,6 +676,22 @@ export function SiteEditorPanel({
               )}
               <span className="hidden sm:inline">Guardar cambios</span>
               <span className="sm:hidden">Guardar</span>
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => void publish()}
+              disabled={publishing || published || dirty}
+              title={dirty ? "Guarda tus cambios antes de publicar" : undefined}
+              className="gap-2"
+            >
+              {publishing ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : published ? (
+                <CircleCheck className="h-4 w-4" />
+              ) : (
+                <Rocket className="h-4 w-4" />
+              )}
+              <span>{publishing ? "Publicando…" : published ? "Publicado" : "Publicar sitio"}</span>
             </Button>
           </div>
         </div>

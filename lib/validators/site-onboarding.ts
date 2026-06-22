@@ -21,6 +21,8 @@ export const STRUCTURE_TYPES = [
 
 export const LANGUAGES = ["es", "en", "bilingual"] as const;
 
+const paletteColor = z.string().regex(/^#[0-9a-fA-F]{6}$/, "Color de paleta inválido.");
+
 export const onboardingSchema = z
   .object({
     businessName: z.string().trim().min(2, "Escribe el nombre del negocio.").max(120),
@@ -36,6 +38,15 @@ export const onboardingSchema = z
     domain: z.string().trim().max(160).optional().or(z.literal("")),
     language: z.enum(LANGUAGES),
     visualStyle: z.enum(VISUAL_STYLES),
+    palette: z
+      .object({
+        primary: paletteColor,
+        secondary: paletteColor,
+        accent: paletteColor,
+        background: paletteColor,
+        text: paletteColor,
+      })
+      .optional(),
     structureType: z.enum(STRUCTURE_TYPES),
   })
   .superRefine((input, ctx) => {

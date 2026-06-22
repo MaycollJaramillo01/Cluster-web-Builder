@@ -1,16 +1,23 @@
 import Link from "next/link";
+import { cookies } from "next/headers";
 import { ArrowLeft, LayoutGrid, PanelsTopLeft, Plus, Search } from "lucide-react";
 
 import { prisma } from "@/lib/db";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DashboardSiteCard, type DashboardSite } from "@/components/builder/DashboardSiteCard";
+import { LogoutButton } from "@/components/builder/LogoutButton";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Proyectos | Cluster Web Builder" };
 
 export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
+  const cookieStore = await cookies();
+  const sessionSecret = process.env.SESSION_SECRET;
+  const isAuthenticated = Boolean(
+    sessionSecret && cookieStore.get("__cluster_session")?.value === sessionSecret
+  );
   const query = (await searchParams).q?.trim() ?? "";
   const sites = await prisma.site.findMany({
     where: query ? {
@@ -50,7 +57,10 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
               <Input id="project-search" name="q" defaultValue={query} placeholder="Buscar por nombre o tipo…" className="pl-9" />
             </div>
           </form>
-          <Button asChild size="sm" className="shrink-0"><Link href="/builder"><Plus /> Nuevo sitio</Link></Button>
+          <div className="flex shrink-0 items-center gap-2">
+            <Button asChild size="sm"><Link href="/builder"><Plus /> Nuevo sitio</Link></Button>
+            {isAuthenticated && <LogoutButton />}
+          </div>
         </div>
       </header>
 

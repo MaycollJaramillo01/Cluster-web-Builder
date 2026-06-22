@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ArrowUpRight, LayoutDashboard, PanelsTopLeft, Sparkles, WandSparkles } from "lucide-react";
 
-import { PromptComposer } from "@/components/builder/OnboardingWizard";
+import { HomeCreationModes } from "@/components/builder/HomeCreationModes";
 import { Button } from "@/components/ui/button";
 
 export default function HomePage() {
@@ -24,14 +24,14 @@ export default function HomePage() {
             <Sparkles className="h-3.5 w-3.5 text-[#d0bcff]" /> Tu próximo sitio empieza aquí
           </div>
           <h1 className="font-[var(--font-outfit)] text-5xl font-bold leading-[0.98] tracking-[-0.045em] text-[#f7f2fb] sm:text-7xl lg:text-[5.25rem]">
-            Describe tu idea.<br />
+            Crea a tu manera.<br />
             <span className="text-[#a078ff]">Cluster diseña el sitio.</span>
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-base leading-7 text-[#cbc3d7] sm:text-lg">
-            Cuéntanos qué estás construyendo. La IA convierte tu mensaje en una web completa, editable y lista para revisar.
+            Usa una guía paso a paso si estás comenzando o describe todo con libertad si ya sabes lo que necesitas.
           </p>
           <div className="mt-10 text-left">
-            <PromptComposer variant="hero" />
+            <HomeCreationModes />
           </div>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-3 text-xs font-medium text-[#958ea0]">
             <span>Sin plantillas rígidas</span><span aria-hidden="true">•</span>

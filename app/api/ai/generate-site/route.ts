@@ -209,7 +209,7 @@ export async function POST(req: NextRequest) {
 
         // Colors come from curated palettes (not the LLM, which often returns
         // the same colors). Varies by style and business name.
-        const theme = getPalette(
+        const theme = input.palette ?? getPalette(
           selectedDesignStyle
             ? mapLandingStyleToPaletteId(selectedDesignStyle)
             : input.visualStyle,

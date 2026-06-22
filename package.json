@@ -12,6 +12,7 @@
     "prelint": "npm run check:layout && npm run check:design",
     "lint": "eslint .",
     "test:ui": "node scripts/smoke-ui.mjs",
+    "test:home-modes": "node scripts/test-home-modes.mjs",
     "postinstall": "prisma generate",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
