@@ -1,8 +1,8 @@
 /**
  * Section imagery.
  *
- * Free topical photos via LoremFlickr. The configured ImageKit GenAI endpoint
- * returns 403, so using it made some generated layouts render empty images.
+ * Free topical photos via the server-side Pexels proxy. The proxy keeps the
+ * API key private, caches searches and falls back when the provider is down.
  */
 
 // Maps the leading English word of the stored businessType label to good tags.
@@ -81,12 +81,11 @@ export type ImageRequest = {
 };
 
 /**
- * Resolves the best image URL for a section slot.
- * Uses ImageKit GenAI when configured, otherwise LoremFlickr.
+ * Resolves the best Pexels image URL for a section slot.
  */
 export function sectionImageUrl(req: ImageRequest): string {
   const promptTags = imagePromptTags(req.prompt);
-  return loremFlickrUrl(
+  return pexelsImageUrl(
     promptTags || businessKeyword(req.businessType),
     req.seed,
     req.width,
@@ -95,9 +94,7 @@ export function sectionImageUrl(req: ImageRequest): string {
 }
 
 /**
- * Free stock photo (LoremFlickr) for high-count slots like galleries and
- * service cards. We deliberately use stock here (not ImageKit GenAI) to avoid
- * burning the AI-generation quota on many small images.
+ * Free Pexels stock photo for high-count slots like galleries and service cards.
  */
 export function stockImageUrl(
   businessType: string,
@@ -105,28 +102,17 @@ export function stockImageUrl(
   width: number,
   height: number
 ): string {
-  return loremFlickrUrl(businessKeyword(businessType), seed, width, height);
+  return pexelsImageUrl(businessKeyword(businessType), seed, width, height);
 }
 
-function loremFlickrUrl(
+function pexelsImageUrl(
   tags: string,
   seed: string | number,
   width: number,
   height: number
 ): string {
-  const lock = stableLock(String(seed));
-  return `https://loremflickr.com/${width}/${height}/${encodeURIComponent(
-    tags
-  )}?lock=${lock}`;
-}
-
-/** Small deterministic hash so the same input always maps to the same image. */
-function stableLock(seed: string): number {
-  let hash = 0;
-  for (let i = 0; i < seed.length; i++) {
-    hash = (hash * 31 + seed.charCodeAt(i)) >>> 0;
-  }
-  return (hash % 9000) + 1;
+  const params = new URLSearchParams({ q: tags, seed: String(seed), w: String(width), h: String(height) });
+  return `/api/images/pexels?${params}`;
 }
 
 function imagePromptTags(prompt?: string): string {

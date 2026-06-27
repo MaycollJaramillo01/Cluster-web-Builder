@@ -4,6 +4,7 @@ import type { SiteTheme } from "@/lib/site/blueprint";
 import type { RenderSection } from "@/lib/site/section";
 import type { NavPage } from "@/lib/site/structure";
 import { getDesignPreset } from "@/lib/site/design";
+import { getContrastText } from "@/lib/site/theme-surface";
 
 import { HeroBlock } from "./HeroBlock";
 import { ServicesBlock } from "./ServicesBlock";
@@ -171,7 +172,12 @@ export function SiteBlockRenderer({
       {pageSections.map(renderSection)}
 
       {footer && (
-        <FooterBlock section={footer} theme={theme} preset={preset} site={site} index={footer.order} />
+        <>
+          <FooterBlock section={footer} theme={theme} preset={preset} site={site} index={footer.order} />
+          <div className="py-2 text-center text-[10px]" style={{ backgroundColor: theme.secondary, color: getContrastText(theme.secondary) }}>
+            Fotos provistas por <a href="https://www.pexels.com" target="_blank" rel="noreferrer" className="underline underline-offset-2">Pexels</a>
+          </div>
+        </>
       )}
     </div>
   );

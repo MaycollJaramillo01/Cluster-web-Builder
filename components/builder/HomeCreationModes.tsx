@@ -266,7 +266,11 @@ function GuidedHomeForm() {
 
     const palette = PALETTES.find((item) => item.id === paletteId) ?? PALETTES[0];
     const street = read(form, "street");
-    const hours = read(form, "hours");
+    const opensAt = read(form, "opensAt");
+    const closesAt = read(form, "closesAt");
+    const hours = opensAt && closesAt
+      ? `${read(form, "hoursDays") || "Lun–Vie"} ${opensAt}–${closesAt}`
+      : "";
     const instagram = read(form, "instagram");
     const facebook = read(form, "facebook");
     const targetCustomer = read(form, "targetCustomer") || `Clientes potenciales en ${city}`;
@@ -391,12 +395,33 @@ function GuidedHomeForm() {
             <Field label="Calle y número" hint="Opcional" className="sm:col-span-2">
               <input id={`${formId}-street`} name="street" maxLength={160} autoComplete="street-address" className={fieldClass(false)} placeholder="Ej. Avenida Principal, edificio 12" />
             </Field>
-            <Field label="Horario de atención" hint="Opcional" className="sm:col-span-2">
-              <div className="relative">
-                <Clock3 className="pointer-events-none absolute left-3 top-3.5 h-4 w-4 text-[#7f7589]" />
-                <input id={`${formId}-hours`} name="hours" maxLength={120} className={`${fieldClass(false)} pl-10`} placeholder="Lun–Vie 9:00–18:00 · Sáb 10:00–14:00" />
+            <fieldset className="sm:col-span-2">
+              <legend className="flex w-full items-center gap-2 text-sm font-semibold text-[#e7e0ed]">
+                <Clock3 className="h-4 w-4 text-[#a078ff]" aria-hidden="true" />
+                Horario de atención
+                <span className="ml-auto text-xs font-normal text-[#958ea0]">Opcional</span>
+              </legend>
+              <div className="mt-2 grid gap-3 rounded-lg border border-[#3d3549] bg-[#15121b] p-4 sm:grid-cols-[1.35fr_1fr_1fr]">
+                <label className="space-y-1.5">
+                  <span className="block text-xs font-medium text-[#aaa1b5]">Días</span>
+                  <select id={`${formId}-hours-days`} name="hoursDays" defaultValue="Lun–Vie" className={fieldClass(false)}>
+                    <option>Lun–Vie</option>
+                    <option>Lun–Sáb</option>
+                    <option>Todos los días</option>
+                    <option>Fin de semana</option>
+                  </select>
+                </label>
+                <label className="space-y-1.5">
+                  <span className="block text-xs font-medium text-[#aaa1b5]">Abre</span>
+                  <input id={`${formId}-opens-at`} name="opensAt" type="time" className={fieldClass(false)} />
+                </label>
+                <label className="space-y-1.5">
+                  <span className="block text-xs font-medium text-[#aaa1b5]">Cierra</span>
+                  <input id={`${formId}-closes-at`} name="closesAt" type="time" className={fieldClass(false)} />
+                </label>
               </div>
-            </Field>
+              <p className="mt-2 text-xs leading-5 text-[#958ea0]">Déjalo vacío si no quieres mostrar un horario.</p>
+            </fieldset>
           </div>
         </fieldset>
 

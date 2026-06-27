@@ -13,7 +13,7 @@ import { extractJsonFromModelResponse } from "@/lib/json/extract-json";
 import { buildFallbackSiteBlueprint } from "@/lib/site/fallback-site-blueprint";
 import { normalizeSiteBlueprint } from "@/lib/site/normalize-site-blueprint";
 import { applyPageStructure } from "@/lib/site/structure";
-import { getPalette } from "@/lib/site/design";
+import { resolvePalette } from "@/lib/site/design";
 import {
   buildLandingDesignBrief,
   getLandingSectionPlan,
@@ -53,9 +53,6 @@ export async function POST(req: NextRequest) {
   // Parse + validate onboarding input.
   let input: OnboardingInput;
   let originalRequest: string | undefined;
-  let selectedDesignStyle: LandingDesignStyle | undefined;
-  let designBrief: string | undefined;
-  let sectionPlan: string[] | undefined;
   try {
     const body = await req.json();
     if (typeof body === "object" && body !== null && "prompt" in body) {
@@ -78,31 +75,35 @@ export async function POST(req: NextRequest) {
     return jsonError("No se pudo leer la solicitud.", 400);
   }
 
-  if (originalRequest) {
-    let recentStyles: string[] = [];
-    try {
-      const recentSites = await prisma.site.findMany({
-        where: { visualStyle: { in: [...LANDING_DESIGN_STYLES] } },
-        orderBy: { createdAt: "desc" },
-        take: LANDING_DESIGN_STYLES.length - 1,
-        select: { visualStyle: true },
-      });
-      recentStyles = recentSites.flatMap((site) =>
-        site.visualStyle ? [site.visualStyle] : []
-      );
-    } catch {
-      // Persistence errors are reported later; style selection can still proceed.
-    }
-
-    selectedDesignStyle = selectRandomLandingStyle(recentStyles);
-    designBrief = buildLandingDesignBrief(selectedDesignStyle, originalRequest);
-    sectionPlan = getLandingSectionPlan(selectedDesignStyle);
-    input = {
-      ...input,
-      structureType: "one_page",
-      visualStyle: mapLandingStyleToVisualStyle(selectedDesignStyle),
-    };
+  // Both entry points must use the same 25-recipe design engine. Previously,
+  // only free-prompt requests reached this branch; guided requests kept one of
+  // seven legacy presets and therefore looked nearly identical.
+  let recentStyles: string[] = [];
+  try {
+    const recentSites = await prisma.site.findMany({
+      where: { visualStyle: { in: [...LANDING_DESIGN_STYLES] } },
+      orderBy: { createdAt: "desc" },
+      take: LANDING_DESIGN_STYLES.length - 1,
+      select: { visualStyle: true },
+    });
+    recentStyles = recentSites.flatMap((site) =>
+      site.visualStyle ? [site.visualStyle] : []
+    );
+  } catch {
+    // Persistence errors are reported later; style selection can still proceed.
   }
+
+  const selectedDesignStyle: LandingDesignStyle = selectRandomLandingStyle(recentStyles);
+  const designBrief = buildLandingDesignBrief(
+    selectedDesignStyle,
+    originalRequest ?? buildGuidedDesignRequest(input)
+  );
+  const sectionPlan = getLandingSectionPlan(selectedDesignStyle);
+  input = {
+    ...input,
+    structureType: "one_page",
+    visualStyle: mapLandingStyleToVisualStyle(selectedDesignStyle),
+  };
 
   const { system, user } = buildSiteGenerationPrompt(
     input,
@@ -120,9 +121,7 @@ export async function POST(req: NextRequest) {
       const statusStages = [
         "Analizando negocio...",
         "Definiendo estructura del sitio...",
-        selectedDesignStyle
-          ? `Explorando estilo ${selectedDesignStyle}...`
-          : "Creando propuesta visual...",
+        `Explorando estilo ${selectedDesignStyle}...`,
         "Generando copy comercial...",
         "Preparando SEO local...",
         "Construyendo secciones...",
@@ -209,18 +208,14 @@ export async function POST(req: NextRequest) {
 
         // Colors come from curated palettes (not the LLM, which often returns
         // the same colors). Varies by style and business name.
-        const theme = input.palette ?? getPalette(
-          selectedDesignStyle
-            ? mapLandingStyleToPaletteId(selectedDesignStyle)
-            : input.visualStyle,
+        const theme = resolvePalette(
+          input.palette,
+          mapLandingStyleToPaletteId(selectedDesignStyle),
           input.businessName
         );
         blueprint.site.visualStyle = {
           ...(blueprint.site.visualStyle ?? {}),
-          name:
-            selectedDesignStyle ??
-            blueprint.site.visualStyle?.name ??
-            input.visualStyle,
+          name: selectedDesignStyle,
           designNotes:
             designBrief ?? blueprint.site.visualStyle?.designNotes ?? "",
           colors: { ...theme },
@@ -232,7 +227,7 @@ export async function POST(req: NextRequest) {
             businessName: input.businessName,
             businessType: resolveBusinessTypeLabel(input),
             goal: input.goal,
-            visualStyle: selectedDesignStyle ?? input.visualStyle,
+            visualStyle: selectedDesignStyle,
             structureType: input.structureType,
             location: input.location === "Zona por definir" ? null : input.location || null,
             phone: input.phone || null,
@@ -286,6 +281,16 @@ function jsonError(message: string, status: number) {
     status,
     headers: { "Content-Type": "application/json" },
   });
+}
+
+function buildGuidedDesignRequest(input: OnboardingInput): string {
+  return [
+    `Sitio web para ${input.businessName}`,
+    `negocio de ${resolveBusinessTypeLabel(input)}`,
+    `ubicado en ${input.location}`,
+    `dirigido a ${input.targetCustomer}`,
+    `con estos servicios: ${input.services}`,
+  ].join(", ");
 }
 
 function canUseLocalGenerator(err: unknown): boolean {

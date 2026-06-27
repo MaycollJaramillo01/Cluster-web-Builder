@@ -472,7 +472,7 @@ export function SiteEditorPanel({
   const isMultipage = navPages.length > 1;
   const [previewPage, setPreviewPage] = useState(navPages[0]?.slug ?? "home");
   const [panel, setPanel] = useState<"content" | "design">("content");
-  const [mobileView, setMobileView] = useState<"edit" | "preview">("preview");
+  const [mobileView, setMobileView] = useState<"edit" | "preview">("edit");
   const [businessName, setBusinessName] = useState(initialSite.businessName);
   const [phone, setPhone] = useState(initialSite.phone ?? "");
   const [email, setEmail] = useState(initialSite.email ?? "");
@@ -633,7 +633,7 @@ export function SiteEditorPanel({
       <header className="sticky top-0 z-30 border-b border-border bg-[#0f0d15]/95 backdrop-blur-xl">
         <div className="flex min-h-16 items-center justify-between gap-3 px-3 py-2 sm:px-5">
           <div className="flex min-w-0 items-center gap-2 sm:gap-4">
-            <Button asChild variant="ghost" size="icon">
+            <Button asChild variant="ghost" size="icon" className="h-11 w-11">
               <Link href="/dashboard" aria-label="Volver al dashboard">
                 <ArrowLeft />
               </Link>
@@ -656,7 +656,7 @@ export function SiteEditorPanel({
               asChild
               variant="outline"
               size="sm"
-              className="hidden sm:inline-flex"
+              className="hidden min-h-11 sm:inline-flex"
             >
               <Link href={`/preview/${initialSite.id}`} target="_blank">
                 Vista previa <ExternalLink className="ml-1.5 h-3.5 w-3.5" />
@@ -667,7 +667,7 @@ export function SiteEditorPanel({
               variant="outline"
               onClick={save}
               disabled={saving || !dirty}
-              className="gap-2"
+              className="min-h-11 gap-2"
             >
               {saving ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -682,7 +682,7 @@ export function SiteEditorPanel({
               onClick={() => void publish()}
               disabled={publishing || published || dirty}
               title={dirty ? "Guarda tus cambios antes de publicar" : undefined}
-              className="gap-2"
+              className="min-h-11 gap-2"
             >
               {publishing ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -691,7 +691,8 @@ export function SiteEditorPanel({
               ) : (
                 <Rocket className="h-4 w-4" />
               )}
-              <span>{publishing ? "Publicando…" : published ? "Publicado" : "Publicar sitio"}</span>
+              <span className="sm:hidden">{publishing ? "Publicando…" : published ? "Publicado" : "Publicar"}</span>
+              <span className="hidden sm:inline">{publishing ? "Publicando…" : published ? "Publicado" : "Publicar sitio"}</span>
             </Button>
           </div>
         </div>
@@ -709,9 +710,12 @@ export function SiteEditorPanel({
       <div
         className="grid grid-cols-2 border-b border-border bg-[#15121b] p-2 lg:hidden"
         aria-label="Modo del editor"
+        role="tablist"
       >
         <button
           type="button"
+          role="tab"
+          aria-selected={mobileView === "edit"}
           onClick={() => setMobileView("edit")}
           className={cn(
             "min-h-11 rounded text-sm font-semibold transition-colors",
@@ -724,6 +728,8 @@ export function SiteEditorPanel({
         </button>
         <button
           type="button"
+          role="tab"
+          aria-selected={mobileView === "preview"}
           onClick={() => setMobileView("preview")}
           className={cn(
             "min-h-11 rounded text-sm font-semibold transition-colors",
@@ -745,7 +751,7 @@ export function SiteEditorPanel({
           )}
         >
           {/* Panel tabs */}
-          <div className="sticky top-0 z-10 grid grid-cols-2 gap-1.5 border-b border-border bg-[#15121b] p-3">
+          <div className="sticky top-0 z-10 grid grid-cols-2 gap-1.5 border-b border-border bg-[#15121b] p-3" role="tablist" aria-label="Panel del editor">
             <PanelTab
               active={panel === "content"}
               onClick={() => setPanel("content")}
@@ -909,6 +915,7 @@ export function SiteEditorPanel({
                             {meta.fields.map((field) => (
                               <SectionField
                                 key={field.key}
+                                id={`section-${section.id}-${field.key}`}
                                 field={field}
                                 value={
                                   (section[field.key] as string | undefined) ??
@@ -1004,12 +1011,7 @@ export function SiteEditorPanel({
           {/* Preview top bar */}
           <div className="flex min-h-12 items-center justify-between border-b border-border px-4">
             <div className="flex items-center gap-2">
-              <div className="flex gap-1.5">
-                <span className="h-3 w-3 rounded-full bg-[#ff5f56]" />
-                <span className="h-3 w-3 rounded-full bg-[#ffbd2e]" />
-                <span className="h-3 w-3 rounded-full bg-[#27c93f]" />
-              </div>
-              <span className="ml-2 text-xs text-muted-foreground">
+              <span className="text-xs font-medium text-muted-foreground">
                 Vista previa del sitio
               </span>
             </div>
@@ -1053,11 +1055,13 @@ export function SiteEditorPanel({
 /* ------------------------------------------------------------------ */
 
 function SectionField({
+  id,
   field,
   value,
   onChange,
   fieldClass,
 }: {
+  id: string;
   field: FieldDef;
   value: string;
   onChange: (value: string) => void;
@@ -1066,7 +1070,7 @@ function SectionField({
   return (
     <div className="space-y-1.5">
       <div>
-        <label className="block text-xs font-medium text-[#cbc3d7]">
+        <label htmlFor={id} className="block text-xs font-medium text-[#cbc3d7]">
           {field.label}
         </label>
         {field.hint && (
@@ -1080,6 +1084,7 @@ function SectionField({
       </div>
       {field.type === "textarea" ? (
         <Textarea
+          id={id}
           value={value}
           rows={field.rows ?? 3}
           placeholder={field.placeholder}
@@ -1088,6 +1093,7 @@ function SectionField({
         />
       ) : (
         <Input
+          id={id}
           value={value}
           placeholder={field.placeholder}
           className={fieldClass}
@@ -1110,9 +1116,11 @@ function PanelTab({
   return (
     <button
       type="button"
+      role="tab"
+      aria-selected={active}
       onClick={onClick}
       className={cn(
-        "flex min-h-10 items-center justify-center gap-2 rounded text-sm font-semibold transition-colors",
+        "flex min-h-11 items-center justify-center gap-2 rounded text-sm font-semibold transition-colors",
         active
           ? "bg-[#2c2141] text-[#e9ddff]"
           : "text-muted-foreground hover:text-foreground"
@@ -1209,7 +1217,7 @@ function IconBtn({
       aria-label={title}
       onClick={onClick}
       disabled={disabled}
-      className="flex h-9 w-9 shrink-0 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-[#2c2832] hover:text-foreground disabled:pointer-events-none disabled:opacity-25"
+      className="flex h-11 w-11 shrink-0 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-[#2c2832] hover:text-foreground disabled:pointer-events-none disabled:opacity-25"
     >
       {children}
     </button>

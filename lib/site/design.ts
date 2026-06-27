@@ -406,3 +406,12 @@ export function getPalette(
   }
   return list[hash % list.length];
 }
+
+/** Keeps a user-selected palette authoritative through generation. */
+export function resolvePalette(
+  selected: Palette | null | undefined,
+  visualStyle: string | null | undefined,
+  seed: string
+): Palette {
+  return selected ? { ...selected } : getPalette(visualStyle, seed);
+}

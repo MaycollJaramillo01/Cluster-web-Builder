@@ -3,6 +3,7 @@ import {
   getAllDesignPresets,
   getDesignRecipeFingerprint,
   getPalette,
+  resolvePalette,
 } from "../lib/site/design.ts";
 import { promptToOnboardingInput } from "../lib/validators/site-onboarding.ts";
 
@@ -14,6 +15,13 @@ const aboutUsStyles = presets.map((preset) => preset.aboutUsStyle);
 const expectedIds = [...DESIGN_STYLE_IDS].sort();
 const actualIds = presets.map((preset) => preset.id).sort();
 const expectedFooterStyles = ["brutal", "centered", "columns", "darkBand", "editorial", "minimal"];
+const selectedPalette = {
+  primary: "#38bdf8",
+  secondary: "#0f172a",
+  accent: "#a3e635",
+  background: "#020617",
+  text: "#f8fafc",
+};
 
 function assert(condition, message) {
   if (!condition) {
@@ -34,6 +42,10 @@ assert(
 assert(new Set(aboutUsStyles).size >= 12, "las recetas no ofrecen suficiente variedad para About Us.");
 assert(presets.some((preset) => preset.sectionPlan.includes("about_us")), "ninguna receta genera About Us.");
 assert(presets.every((preset) => !preset.sectionPlan.includes("about")), "una receta nueva sigue usando el bloque About anterior.");
+assert(
+  JSON.stringify(resolvePalette(selectedPalette, "luxury_light", "otro negocio")) === JSON.stringify(selectedPalette),
+  "una paleta elegida por el usuario fue reemplazada por la paleta del diseno."
+);
 
 for (const preset of presets) {
   assert(preset.sectionPlan[0] === "hero", `${preset.id} no empieza con hero.`);
