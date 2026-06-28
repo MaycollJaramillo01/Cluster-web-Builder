@@ -14,6 +14,8 @@
     "test:home-modes": "node scripts/test-home-modes.mjs",
     "test:multi-user": "node scripts/test-multi-user.mjs",
     "test:m3": "node scripts/test-m3.mjs",
+    "test:m4": "node scripts/test-m4.mjs",
+    "test:fast-prompt": "node scripts/test-fast-prompt.mjs",
     "postinstall": "prisma generate",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",

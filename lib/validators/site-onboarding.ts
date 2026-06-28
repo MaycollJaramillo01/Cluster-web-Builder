@@ -190,11 +190,19 @@ function extractServices(value: string, fallback: string): string {
 }
 
 function detectCustomBusinessType(value: string): string {
+  if (/\bpesca(?:dor|dores)?\b|\bfishing\b/.test(value)) return "Pesca";
   if (/arquitect/.test(value)) return "Estudio de arquitectura";
   if (/agencia/.test(value)) return "Agencia";
   if (/consultor/.test(value)) return "Consultoría";
   if (/portafolio|diseñador|diseñadora|fotograf/.test(value)) return "Portafolio profesional";
   if (/tienda/.test(value)) return "Tienda";
+  const requestedSubject = value
+    .match(/(?:sitio(?:\s+web)?|p[aá]gina(?:\s+web)?|web)\s+(?:de|para|sobre)\s+([^,.;\n]{2,60})/)?.[1]
+    ?.split(/\s+(?:con|que|ubicad[oa]|en)\s+/)[0]
+    ?.trim();
+  if (requestedSubject && !/^(?:un\s+)?(?:sitio|p[aá]gina|web|negocio)$/.test(requestedSubject)) {
+    return requestedSubject.charAt(0).toLocaleUpperCase("es") + requestedSubject.slice(1);
+  }
   return "Negocio";
 }
 

@@ -146,13 +146,19 @@ export async function POST(req: NextRequest) {
 
         let normalizedSite: ReturnType<typeof normalizeSiteBlueprint>;
 
-        try {
+        if (originalRequest && shouldUseFastLocalGenerator(originalRequest)) {
+          send("status", { message: "Usando secciones precargadas para crear el borrador..." });
+          normalizedSite = normalizeSiteBlueprint(buildFallbackSiteBlueprint(input, sectionPlan));
+        } else try {
+          const abort = new AbortController();
+          const timeout = setTimeout(() => abort.abort(), 12_000);
+          try {
           const aiResponse = await nvidiaChatStream(
             [
               { role: "system", content: system },
               { role: "user", content: user },
             ],
-            { temperature: 0.4 }
+            { temperature: 0.4, signal: abort.signal }
           );
 
           advanceStage();
@@ -177,6 +183,9 @@ export async function POST(req: NextRequest) {
 
           const rawJson = extractJsonFromModelResponse(full);
           normalizedSite = normalizeSiteBlueprint(rawJson);
+          } finally {
+            clearTimeout(timeout);
+          }
         } catch (err) {
           if (!canUseLocalGenerator(err)) throw err;
           send("status", { message: localGeneratorMessage(err) });
@@ -295,9 +304,14 @@ function canUseLocalGenerator(err: unknown): boolean {
       message.includes("pagina") ||
       message.includes("seccion") ||
       message.includes("blueprint")
+      || message.includes("abort")
     );
   }
   return false;
+}
+
+function shouldUseFastLocalGenerator(prompt: string) {
+  return prompt.trim().split(/\s+/).length <= 8;
 }
 
 function localGeneratorMessage(err: unknown): string {

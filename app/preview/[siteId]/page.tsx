@@ -7,6 +7,7 @@ import { prisma } from "@/lib/db";
 import { toRenderSection } from "@/lib/site/section";
 import { themeFromSite } from "@/lib/site/theme";
 import { SitePreview } from "@/components/builder/SitePreview";
+import { isDesignStyle } from "@/lib/site/template-selection";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -43,8 +44,10 @@ export async function generateMetadata({
 
 export default async function PreviewPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ siteId: string }>;
+  searchParams: Promise<{ style?: string; compact?: string }>;
 }) {
   const { siteId } = await params;
   const user = await getCurrentUser();
@@ -65,6 +68,10 @@ export default async function PreviewPage({
   if (!site) notFound();
 
   const theme = themeFromSite(site);
+  const query = await searchParams;
+  const requestedStyle = query.style;
+  const visualStyle = requestedStyle && isDesignStyle(requestedStyle) ? requestedStyle : site.visualStyle;
+  const sections = query.compact === "1" ? compactSections(site.sections) : site.sections;
   return (
     <main>
       <SitePreview
@@ -74,9 +81,15 @@ export default async function PreviewPage({
         email={site.email}
         location={site.location}
         theme={theme}
-        visualStyle={site.visualStyle}
-        sections={site.sections.map(toRenderSection)}
+        visualStyle={visualStyle}
+        sections={sections.map(toRenderSection)}
       />
     </main>
   );
+}
+
+function compactSections<T extends { type: string }>(sections: T[]) {
+  const content = sections.filter((section) => section.type !== "footer").slice(0, 2);
+  const footer = sections.find((section) => section.type === "footer");
+  return footer ? [...content, footer] : content;
 }

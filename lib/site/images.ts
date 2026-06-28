@@ -51,6 +51,9 @@ const KEYWORDS: Record<string, string> = {
   food: "food,cuisine,gourmet",
   nonprofit: "community,volunteer,charity",
   security: "security,professional,technology",
+  pesca: "fishing,angler,lake",
+  fishing: "fishing,angler,lake",
+  pescador: "fishing,angler,lake",
 };
 
 const DEFAULT_TAGS = "business,professional,modern";
@@ -195,6 +198,13 @@ function imagePromptTags(prompt?: string): string {
     modern: "modern",
     professional: "professional",
     office: "office",
+    pesca: "fishing",
+    pescador: "fishing",
+    fishing: "fishing",
+    angler: "angler",
+    fish: "fishing",
+    boat: "fishingboat",
+    lake: "lake",
   };
   const tags = prompt
     .toLowerCase()
@@ -202,5 +212,8 @@ function imagePromptTags(prompt?: string): string {
     .replace(/[\u0300-\u036f]/g, "")
     .match(/[a-z]+/g)
     ?.flatMap((word) => translations[word] ? [translations[word]] : []) ?? [];
-  return [...new Set(tags)].slice(0, 4).join(",");
+  const unique = [...new Set(tags)];
+  const generic = new Set(["professional", "modern", "office", "photography"]);
+  const topical = unique.filter((tag) => !generic.has(tag));
+  return (topical.length ? topical : unique).slice(0, 4).join(",");
 }

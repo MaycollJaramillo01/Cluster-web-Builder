@@ -1084,6 +1084,15 @@ export function SiteEditorPanel({
                     onChange={change(setAccent)}
                   />
                 </SettingsGroup>
+
+                <SettingsGroup title="Plantilla">
+                  <p className="mb-4 text-xs leading-5 text-muted-foreground">
+                    Cambia la composición sin perder tus textos ni colores.
+                  </p>
+                  <Button asChild variant="outline" className="w-full">
+                    <Link href={`/builder/${initialSite.id}/templates`}><Layout /> Cambiar plantilla</Link>
+                  </Button>
+                </SettingsGroup>
               </div>
             )}
           </div>

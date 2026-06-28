@@ -102,7 +102,7 @@ export function GenerationStream() {
       case "saved":
         if (typeof payload.siteId === "string") {
           sessionStorage.removeItem(ONBOARDING_STORAGE_KEY);
-          router.push(`/builder/${payload.siteId}`);
+          router.push(`/builder/${payload.siteId}/templates`);
         }
         break;
       case "error":
