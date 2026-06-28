@@ -1,9 +1,11 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
+import { cookies } from "next/headers";
 
+import { getCurrentUser, GUEST_COOKIE, hashGuestToken } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { toRenderSection } from "@/lib/site/section";
 import { themeFromSite } from "@/lib/site/theme";
-import { parseNavPages } from "@/lib/site/structure";
+import { publicSiteUrl } from "@/lib/site/public-url";
 import { SiteEditorPanel } from "@/components/builder/SiteEditorPanel";
 
 export const runtime = "nodejs";
@@ -15,20 +17,27 @@ export default async function SiteEditorPage({
   params: Promise<{ siteId: string }>;
 }) {
   const { siteId } = await params;
+  const user = await getCurrentUser();
+  const guestTokenHash = hashGuestToken((await cookies()).get(GUEST_COOKIE)?.value);
+  if (!user && !guestTokenHash) redirect(`/login?from=/builder/${siteId}`);
 
-  const site = await prisma.site.findUnique({
-    where: { id: siteId },
+  const site = await prisma.site.findFirst({
+    where: {
+      id: siteId,
+      OR: [
+        ...(user ? [{ userId: user.id }] : []),
+        ...(guestTokenHash ? [{ userId: null, guestTokenHash, guestExpiresAt: { gt: new Date() } }] : []),
+      ],
+    },
     include: { sections: { orderBy: { order: "asc" } } },
   });
 
   if (!site) notFound();
 
   const theme = themeFromSite(site);
-  const navPages = parseNavPages(site.navPages);
-
   return (
     <SiteEditorPanel
-      navPages={navPages}
+      isAuthenticated={Boolean(user)}
       initialSite={{
         id: site.id,
         businessName: site.businessName,
@@ -40,6 +49,8 @@ export default async function SiteEditorPage({
         language: site.language,
         visualStyle: site.visualStyle,
         status: site.status,
+        publicSlug: site.publicSlug,
+        publicUrl: site.domainVerifiedAt && site.customDomain ? `https://${site.customDomain}` : publicSiteUrl(site.publicSlug),
         theme,
       }}
       initialSections={site.sections.map(toRenderSection)}

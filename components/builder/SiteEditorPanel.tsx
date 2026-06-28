@@ -11,9 +11,12 @@ import {
   ChevronDown,
   ChevronUp,
   ExternalLink,
+  Download,
+  Inbox,
   Eye,
   EyeOff,
   GitBranch,
+  Globe,
   HelpCircle,
   Image,
   Layout,
@@ -40,7 +43,6 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import type { SiteTheme } from "@/lib/site/blueprint";
 import type { RenderSection } from "@/lib/site/section";
-import type { NavPage } from "@/lib/site/structure";
 import { cn } from "@/lib/utils";
 
 export type EditorSite = {
@@ -54,7 +56,22 @@ export type EditorSite = {
   language: string | null;
   visualStyle: string | null;
   status: string;
+  publicSlug: string;
+  publicUrl: string;
   theme: SiteTheme;
+};
+
+type SavePayload = {
+  site: {
+    businessName: string;
+    phone: string | null;
+    email: string | null;
+    location: string | null;
+    primaryColor: string;
+    secondaryColor: string;
+    accentColor: string;
+  };
+  sections: RenderSection[];
 };
 
 /* ------------------------------------------------------------------ */
@@ -460,17 +477,18 @@ const DEFAULT_SECTION_META: SectionMeta = {
 export function SiteEditorPanel({
   initialSite,
   initialSections,
-  navPages = [],
+  isAuthenticated,
 }: {
   initialSite: EditorSite;
   initialSections: RenderSection[];
-  navPages?: NavPage[];
+  isAuthenticated: boolean;
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const publishStartedRef = useRef(false);
-  const isMultipage = navPages.length > 1;
-  const [previewPage, setPreviewPage] = useState(navPages[0]?.slug ?? "home");
+  const downloadStartedRef = useRef(false);
+  const pendingSaveStartedRef = useRef(false);
+  const pendingSaveKey = `cluster:pending-save:${initialSite.id}`;
   const [panel, setPanel] = useState<"content" | "design">("content");
   const [mobileView, setMobileView] = useState<"edit" | "preview">("edit");
   const [businessName, setBusinessName] = useState(initialSite.businessName);
@@ -487,7 +505,9 @@ export function SiteEditorPanel({
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
+  const [downloading, setDownloading] = useState(false);
   const [published, setPublished] = useState(initialSite.status === "PUBLISHED");
+  const [publicUrl, setPublicUrl] = useState(initialSite.publicUrl);
   const [error, setError] = useState<string | null>(null);
 
   const previewTheme: SiteTheme = useMemo(
@@ -495,9 +515,7 @@ export function SiteEditorPanel({
     [initialSite.theme, primary, secondary, accent]
   );
 
-  const visibleSections = sections
-    .filter((s) => (isMultipage ? s.pageSlug === previewPage : true))
-    .sort((a, b) => a.order - b.order);
+  const visibleSections = [...sections].sort((a, b) => a.order - b.order);
 
   const movableSections = visibleSections.filter((s) => s.type !== "footer");
 
@@ -516,7 +534,7 @@ export function SiteEditorPanel({
       const section = current.find((s) => s.id === id);
       if (!section || section.type === "footer") return current;
       const siblings = current
-        .filter((s) => s.pageSlug === section.pageSlug && s.type !== "footer")
+        .filter((s) => s.type !== "footer")
         .sort((a, b) => a.order - b.order);
       const index = siblings.findIndex((s) => s.id === id);
       const target = index + direction;
@@ -533,29 +551,18 @@ export function SiteEditorPanel({
     });
   };
 
-  const save = async () => {
-    setSaving(true);
-    setError(null);
-    try {
+  const persistSave = useCallback(async (payload: SavePayload) => {
       const siteResponse = await fetch(`/api/sites/${initialSite.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          businessName,
-          phone: phone || null,
-          email: email || null,
-          location: location || null,
-          primaryColor: primary,
-          secondaryColor: secondary,
-          accentColor: accent,
-        }),
+        body: JSON.stringify(payload.site),
       });
       if (!siteResponse.ok) {
         const data = await siteResponse.json().catch(() => null);
         throw new Error(data?.error ?? "No se pudieron guardar los datos del sitio.");
       }
 
-      for (const section of sections) {
+      for (const section of payload.sections) {
         const response = await fetch(
           `/api/sites/${initialSite.id}/sections/${section.id}`,
           {
@@ -577,6 +584,33 @@ export function SiteEditorPanel({
           throw new Error(data?.error ?? "No se pudo guardar una sección.");
         }
       }
+  }, [initialSite.id]);
+
+  const save = async () => {
+    const payload: SavePayload = {
+      site: {
+        businessName,
+        phone: phone || null,
+        email: email || null,
+        location: location || null,
+        primaryColor: primary,
+        secondaryColor: secondary,
+        accentColor: accent,
+      },
+      sections,
+    };
+
+    if (!isAuthenticated) {
+      sessionStorage.setItem(pendingSaveKey, JSON.stringify(payload));
+      router.push(`/login?from=${encodeURIComponent(`/builder/${initialSite.id}`)}`);
+      return;
+    }
+
+    setSaving(true);
+    setError(null);
+    try {
+      await persistSave(payload);
+      sessionStorage.removeItem(pendingSaveKey);
       setDirty(false);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Error al guardar.");
@@ -584,6 +618,25 @@ export function SiteEditorPanel({
       setSaving(false);
     }
   };
+
+  useEffect(() => {
+    if (!isAuthenticated || pendingSaveStartedRef.current) return;
+    const stored = sessionStorage.getItem(pendingSaveKey);
+    if (!stored) return;
+    pendingSaveStartedRef.current = true;
+
+    try {
+      const payload = JSON.parse(stored) as SavePayload;
+      void persistSave(payload)
+        .then(() => {
+          sessionStorage.removeItem(pendingSaveKey);
+          window.location.replace(`/builder/${initialSite.id}`);
+        })
+        .catch((reason) => setError(reason instanceof Error ? reason.message : "Error al guardar."));
+    } catch {
+      sessionStorage.removeItem(pendingSaveKey);
+    }
+  }, [initialSite.id, isAuthenticated, pendingSaveKey, persistSave]);
 
   const publish = useCallback(async () => {
     setPublishing(true);
@@ -606,6 +659,7 @@ export function SiteEditorPanel({
       }
 
       setPublished(true);
+      setPublicUrl(data.site.publicUrl);
       router.replace(`/builder/${initialSite.id}`, { scroll: false });
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Error al publicar.");
@@ -619,6 +673,35 @@ export function SiteEditorPanel({
     publishStartedRef.current = true;
     void publish();
   }, [publish, searchParams]);
+
+  const download = useCallback(async () => {
+    setDownloading(true);
+    setError(null);
+    try {
+      const response = await fetch(`/api/sites/${initialSite.id}/download`);
+      if (response.status === 401) {
+        router.push(`/login?from=${encodeURIComponent(`/builder/${initialSite.id}?download=1`)}`);
+        return;
+      }
+      if (!response.ok) throw new Error((await response.json().catch(() => null))?.error ?? "No se pudo descargar el sitio.");
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(await response.blob());
+      link.download = `${initialSite.publicSlug}.zip`;
+      link.click();
+      URL.revokeObjectURL(link.href);
+      router.replace(`/builder/${initialSite.id}`, { scroll: false });
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "Error al descargar.");
+    } finally {
+      setDownloading(false);
+    }
+  }, [initialSite.id, initialSite.publicSlug, router]);
+
+  useEffect(() => {
+    if (searchParams.get("download") !== "1" || downloadStartedRef.current) return;
+    downloadStartedRef.current = true;
+    void download();
+  }, [download, searchParams]);
 
   const change =
     (setter: (value: string) => void) =>
@@ -634,7 +717,7 @@ export function SiteEditorPanel({
         <div className="flex min-h-16 items-center justify-between gap-3 px-3 py-2 sm:px-5">
           <div className="flex min-w-0 items-center gap-2 sm:gap-4">
             <Button asChild variant="ghost" size="icon" className="h-11 w-11">
-              <Link href="/dashboard" aria-label="Volver al dashboard">
+              <Link href={isAuthenticated ? "/dashboard" : "/"} aria-label={isAuthenticated ? "Volver al dashboard" : "Volver al inicio"}>
                 <ArrowLeft />
               </Link>
             </Button>
@@ -647,18 +730,39 @@ export function SiteEditorPanel({
                     dirty ? "bg-[#ffb869]" : "bg-emerald-400"
                   )}
                 />
-                {saving ? "Guardando…" : dirty ? "Cambios sin guardar" : "Guardado"}
+                {saving ? "Guardando…" : dirty ? "Cambios sin guardar" : isAuthenticated ? "Guardado" : "Borrador temporal"}
               </p>
             </div>
           </div>
           <div className="flex items-center gap-2">
+            {isAuthenticated && (
+              <Button asChild variant="outline" size="sm" className="hidden min-h-11 md:inline-flex">
+                <Link href={`/builder/${initialSite.id}/leads`}><Inbox className="h-4 w-4" /> Contactos</Link>
+              </Button>
+            )}
+            {isAuthenticated && (
+              <Button asChild variant="outline" size="sm" className="hidden min-h-11 lg:inline-flex">
+                <Link href={`/builder/${initialSite.id}/domain`}><Globe className="h-4 w-4" /> Dominio</Link>
+              </Button>
+            )}
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => void download()}
+              disabled={downloading || dirty}
+              title={dirty ? "Guarda tus cambios antes de descargar" : undefined}
+              className="hidden min-h-11 gap-2 md:inline-flex"
+            >
+              {downloading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+              Descargar ZIP
+            </Button>
             <Button
               asChild
               variant="outline"
               size="sm"
               className="hidden min-h-11 sm:inline-flex"
             >
-              <Link href={`/preview/${initialSite.id}`} target="_blank">
+              <Link href={published ? publicUrl : `/preview/${initialSite.id}`} target="_blank">
                 Vista previa <ExternalLink className="ml-1.5 h-3.5 w-3.5" />
               </Link>
             </Button>
@@ -702,6 +806,11 @@ export function SiteEditorPanel({
             className="border-t border-red-900 bg-red-950 px-4 py-2 text-center text-sm text-[#ffb4ab]"
           >
             {error}
+          </div>
+        )}
+        {!isAuthenticated && !error && (
+          <div className="border-t border-[#3d3549] bg-[#1d1730] px-4 py-2 text-center text-xs text-[#d8c8f8]">
+            Puedes editar libremente. Inicia sesión al guardar o publicar; este borrador expira en 72 horas.
           </div>
         )}
       </header>
@@ -770,27 +879,6 @@ export function SiteEditorPanel({
           <div className="p-4 lg:max-h-[calc(100dvh-121px)] lg:overflow-y-auto">
             {panel === "content" ? (
               <>
-                {/* Multipage tabs */}
-                {isMultipage && (
-                  <div className="mb-5 flex flex-wrap gap-2">
-                    {navPages.map((page) => (
-                      <button
-                        key={page.slug}
-                        type="button"
-                        onClick={() => setPreviewPage(page.slug)}
-                        className={cn(
-                          "min-h-10 rounded border px-3 text-xs font-semibold transition-colors",
-                          previewPage === page.slug
-                            ? "border-[#8b5cf6] bg-[#2c2141] text-[#e9ddff]"
-                            : "border-border text-muted-foreground hover:border-[#8b5cf6]/50"
-                        )}
-                      >
-                        {page.name}
-                      </button>
-                    ))}
-                  </div>
-                )}
-
                 {/* Section count header */}
                 <div className="mb-3 flex items-center justify-between">
                   <h2 className="text-xs font-bold uppercase tracking-[0.14em] text-[#a078ff]">
@@ -1016,7 +1104,7 @@ export function SiteEditorPanel({
               </span>
             </div>
             <Link
-              href={`/preview/${initialSite.id}`}
+              href={published ? publicUrl : `/preview/${initialSite.id}`}
               target="_blank"
               className="flex min-h-10 items-center gap-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
             >
@@ -1037,9 +1125,6 @@ export function SiteEditorPanel({
                 theme={previewTheme}
                 visualStyle={initialSite.visualStyle}
                 sections={sections}
-                navPages={navPages}
-                currentPageSlug={previewPage}
-                onSelectPage={setPreviewPage}
                 editable
               />
             </div>

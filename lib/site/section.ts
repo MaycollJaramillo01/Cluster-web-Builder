@@ -7,7 +7,6 @@ import type { SiteTheme } from "@/lib/site/blueprint";
 export type RenderSection = {
   id: string;
   type: string;
-  pageSlug: string;
   title: string;
   subtitle: string;
   body: string;
@@ -22,7 +21,6 @@ export type RenderSection = {
 type DbSectionRow = {
   id: string;
   type: string;
-  pageSlug: string;
   title: string | null;
   content: unknown;
   order: number;
@@ -37,7 +35,6 @@ export function toRenderSection(row: DbSectionRow): RenderSection {
   return {
     id: row.id,
     type: row.type,
-    pageSlug: row.pageSlug ?? "home",
     title: row.title ?? "",
     subtitle: asString(content.subtitle),
     body: asString(content.body),

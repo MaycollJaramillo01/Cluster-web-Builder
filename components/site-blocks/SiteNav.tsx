@@ -1,65 +1,35 @@
 "use client";
 
 import type { SiteTheme } from "@/lib/site/blueprint";
-import type { NavPage } from "@/lib/site/structure";
 import type { DesignPreset } from "@/lib/site/design";
 import { getContrastText } from "@/lib/site/theme-surface";
 
 export function SiteNav({
   businessName,
-  navPages,
-  currentSlug,
+  navItems,
   theme,
   preset,
-  baseHref,
-  onSelect,
-  onePage = false,
   ctaText,
   ctaHref,
 }: {
   businessName: string;
-  navPages: NavPage[];
-  currentSlug: string;
+  navItems: Array<{ slug: string; name: string }>;
   theme: SiteTheme;
   preset: DesignPreset;
-  /** Public mode: links route to `${baseHref}` (home) / `${baseHref}/${slug}`. */
-  baseHref?: string;
-  /** Editor mode: clicking a page calls this instead of navigating. */
-  onSelect?: (slug: string) => void;
-  onePage?: boolean;
   ctaText?: string;
   ctaHref?: string;
 }) {
-  const hrefFor = (slug: string) =>
-    onePage
-      ? `#section-${slug}`
-      : slug === "home" ? baseHref || "#" : `${baseHref || ""}/${slug}`;
-
   const darkNav = preset.navStyle === "dark";
   const navBackground = darkNav ? theme.secondary : theme.background;
   const navText = darkNav ? getContrastText(theme.secondary) : theme.text;
   const links = (
     <>
-      {navPages.map((p) => {
-        const active = !onePage && p.slug === currentSlug;
+      {navItems.map((p) => {
         const className =
           "flex min-h-11 items-center rounded-md px-3 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2";
-        const style = active
-          ? { color: darkNav ? theme.accent : theme.primary, backgroundColor: `${theme.primary}22` }
-          : { color: navText, opacity: 0.82 };
-
-        if (onSelect && !onePage) {
-          return (
-            <li key={p.slug}>
-              <button type="button" onClick={() => onSelect(p.slug)} className={className} style={style}>
-                {p.name}
-              </button>
-            </li>
-          );
-        }
         return (
           <li key={p.slug}>
-            <a href={hrefFor(p.slug)} className={className} style={style}>{p.name}</a>
+            <a href={`#section-${p.slug}`} className={className} style={{ color: navText, opacity: 0.82 }}>{p.name}</a>
           </li>
         );
       })}
@@ -68,12 +38,8 @@ export function SiteNav({
 
   const ctaClassName = "inline-flex min-h-11 items-center justify-center px-4 text-sm font-semibold text-white transition-[filter] hover:brightness-95 focus-visible:outline-none focus-visible:ring-2";
   const ctaStyle = { backgroundColor: theme.primary, color: getContrastText(theme.primary), borderRadius: "var(--site-btn-radius)" };
-  const cta = !ctaText ? null : onSelect && !onePage ? (
-    <button type="button" onClick={() => onSelect("contacto")} className={ctaClassName} style={ctaStyle}>
-      {ctaText}
-    </button>
-  ) : (
-    <a href={ctaHref || (onePage ? "#contact" : `${baseHref || ""}/contacto`)} className={ctaClassName} style={ctaStyle}>
+  const cta = !ctaText ? null : (
+    <a href={ctaHref || "#contact"} className={ctaClassName} style={ctaStyle}>
       {ctaText}
     </a>
   );
@@ -97,7 +63,7 @@ export function SiteNav({
         }}
       >
         <a
-          href={baseHref || "#top"}
+          href="#top"
           className="min-w-0 max-w-[calc(100vw-8rem)] truncate text-lg font-bold"
           style={{ color: navText, fontFamily: "var(--site-heading)", textTransform: preset.uppercaseHeadings ? "uppercase" : "none" }}
         >

@@ -15,10 +15,6 @@ export const VISUAL_STYLES = [
   "creative", "minimalist", "bold",
 ] as const;
 
-export const STRUCTURE_TYPES = [
-  "one_page", "pages_3", "pages_4", "pages_full", "ai_decide",
-] as const;
-
 export const LANGUAGES = ["es", "en", "bilingual"] as const;
 
 const paletteColor = z.string().regex(/^#[0-9a-fA-F]{6}$/, "Color de paleta inválido.");
@@ -47,7 +43,6 @@ export const onboardingSchema = z
         text: paletteColor,
       })
       .optional(),
-    structureType: z.enum(STRUCTURE_TYPES),
   })
   .superRefine((input, ctx) => {
     if (input.businessType === "other" && !input.customBusinessType) {
@@ -106,24 +101,6 @@ export const GOAL_LABELS: Record<string, string> = {
   sell_products: "Mostrar productos para vender",
   book_appointments: "Recibir solicitudes de cita",
   professional_presence: "Presentar el negocio profesionalmente",
-};
-
-export const VISUAL_STYLE_LABELS: Record<string, string> = {
-  modern_clean: "Moderno y limpio",
-  premium_elegant: "Premium y elegante",
-  local_trustworthy: "Local y confiable",
-  corporate: "Corporativo",
-  creative: "Creativo",
-  minimalist: "Minimalista",
-  bold: "Fuerte y llamativo",
-};
-
-export const STRUCTURE_TYPE_LABELS: Record<string, string> = {
-  one_page: "Una pagina",
-  pages_3: "Tres paginas",
-  pages_4: "Cuatro paginas",
-  pages_full: "Sitio completo",
-  ai_decide: "Estructura automatica",
 };
 
 export const LANGUAGE_LABELS: Record<string, string> = {
@@ -197,7 +174,6 @@ export function promptToOnboardingInput(prompt: string): OnboardingInput {
     domain: "",
     language: detectLanguage(lower),
     visualStyle: detectVisualStyle(lower),
-    structureType: detectStructure(lower),
   };
 }
 
@@ -255,14 +231,6 @@ function detectVisualStyle(value: string): OnboardingInput["visualStyle"] {
   if (/(corporativ|empresa|empresarial)/.test(value)) return "corporate";
   if (/(local|cercan|confiable)/.test(value)) return "local_trustworthy";
   return "modern_clean";
-}
-
-function detectStructure(value: string): OnboardingInput["structureType"] {
-  if (/(sitio completo|multipagina|multipágina|varias paginas|varias páginas)/.test(value)) {
-    return "pages_full";
-  }
-  if (/(landing|una pagina|una página|one page)/.test(value)) return "one_page";
-  return "ai_decide";
 }
 
 function detectLanguage(value: string): OnboardingInput["language"] {

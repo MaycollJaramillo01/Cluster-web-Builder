@@ -2,24 +2,18 @@
 import { sectionImageUrl } from "@/lib/site/images";
 import { getThemeSurface } from "@/lib/site/theme-surface";
 import { getItems } from "@/lib/site/section";
-import { ABOUT_US_STYLES, type AboutUsStyle } from "@/lib/site/design";
+import type { AboutUsStyle } from "@/lib/site/design";
 import type { BlockProps } from "./types";
 
 /**
  * "About Us" section with 26 design variants.
  *
  * The variant is chosen by the AI: each design style maps to a preset with an
- * `aboutUsStyle`. The model can also force any layout via `settings.variant`.
+ * `aboutUsStyle`.
  * Variants tagged (img) use a real image; most include entrance/idle motion.
  */
 export function AboutBlock(props: BlockProps) {
-  const forced = props.section.settings?.variant;
-  const variant: AboutUsStyle =
-    typeof forced === "string" && ABOUT_US_STYLES.includes(forced as AboutUsStyle)
-      ? (forced as AboutUsStyle)
-      : props.preset.aboutUsStyle;
-
-  const Cmp = VARIANTS[variant] ?? SplitAbout;
+  const Cmp = VARIANTS[props.preset.aboutUsStyle] ?? SplitAbout;
   return <Cmp {...props} />;
 }
 

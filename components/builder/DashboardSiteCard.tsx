@@ -1,14 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowUpRight, Eye, Pencil } from "lucide-react";
+import { ArrowUpRight, Globe, Inbox, Pencil } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 export type DashboardSite = {
   id: string; businessName: string; businessType: string; status: string;
+  publicSlug: string;
+  customDomain: string | null; domainVerifiedAt: string | null;
   createdAt: string; updatedAt: string; primaryColor: string; secondaryColor: string; accentColor: string;
+  downloadedAt: string | null;
 };
 
 const STATUS_LABEL: Record<string, { label: string; dot: string; text: string; border: string }> = {
@@ -19,6 +22,9 @@ const STATUS_LABEL: Record<string, { label: string; dot: string; text: string; b
 
 export function DashboardSiteCard({ site }: { site: DashboardSite }) {
   const status = STATUS_LABEL[site.status] ?? STATUS_LABEL.DRAFT;
+  const viewUrl = site.status === "PUBLISHED"
+    ? site.customDomain && site.domainVerifiedAt ? `https://${site.customDomain}` : `/s/${site.publicSlug}`
+    : `/preview/${site.id}`;
   const date = new Date(site.updatedAt).toLocaleDateString("es", { year: "numeric", month: "short", day: "numeric" });
   return (
     <article className="group overflow-hidden rounded-lg border border-border bg-card shadow-[var(--shadow-sm)] transition-[border-color,box-shadow] duration-200 hover:border-[#8b5cf6] hover:shadow-[var(--shadow-glow)]">
@@ -29,18 +35,18 @@ export function DashboardSiteCard({ site }: { site: DashboardSite }) {
               <span key={`${color}-${index}`} className="h-2 w-2 rounded-full ring-1 ring-white/10" style={{ backgroundColor: color }} />
             ))}
           </div>
-          <span className="max-w-40 truncate text-[10px] text-muted-foreground">/preview/{site.id.slice(0, 8)}</span>
+          <span className="max-w-40 truncate text-[10px] text-muted-foreground">{viewUrl}</span>
         </div>
         <div className="relative aspect-[16/10] overflow-hidden rounded border border-[#2d243d] bg-white">
           <iframe
-            src={`/preview/${site.id}`}
+            src={viewUrl}
             title={`Vista del sitio ${site.businessName}`}
             loading="lazy"
             tabIndex={-1}
             className="pointer-events-none h-[400%] w-[400%] origin-top-left scale-[.25] border-0"
           />
           <Link
-            href={`/preview/${site.id}`}
+            href={viewUrl}
             target="_blank"
             aria-label={`Abrir vista previa de ${site.businessName}`}
             className="absolute inset-0 flex items-center justify-center bg-[#0f0d15]/0 transition-colors duration-200 hover:bg-[#0f0d15]/55 focus-visible:bg-[#0f0d15]/55"
@@ -64,7 +70,8 @@ export function DashboardSiteCard({ site }: { site: DashboardSite }) {
         <div className="mt-5 flex items-center justify-between border-t border-border pt-4">
           <p className="text-xs text-muted-foreground">Actualizado el {date}</p>
           <div className="flex gap-2">
-            <Button asChild size="icon" variant="outline"><Link href={`/preview/${site.id}`} target="_blank" aria-label={`Vista previa de ${site.businessName}`}><Eye /></Link></Button>
+            <Button asChild size="icon" variant="outline"><Link href={`/builder/${site.id}/leads`} aria-label={`Contactos de ${site.businessName}`}><Inbox /></Link></Button>
+            <Button asChild size="icon" variant="outline"><Link href={`/builder/${site.id}/domain`} aria-label={`Dominio de ${site.businessName}`}><Globe /></Link></Button>
             <Button asChild size="sm"><Link href={`/builder/${site.id}`}><Pencil /> Editar</Link></Button>
           </div>
         </div>

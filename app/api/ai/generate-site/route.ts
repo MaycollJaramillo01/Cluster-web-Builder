@@ -1,25 +1,21 @@
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { ZodError } from "zod";
 
+import { createGuestAccess, GUEST_COOKIE, GUEST_MS, guestCookie, hashGuestToken, getUserBySessionToken, SESSION_COOKIE } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import {
-  openRouterChatStream,
-  parseOpenRouterStream,
-  OpenRouterError,
-} from "@/lib/openrouter";
-import { nvidiaChatStream, NvidiaError } from "@/lib/nvidia";
+import { consumeRateLimit } from "@/lib/rate-limit";
+import { nvidiaChatStream, parseChatStream, NvidiaError } from "@/lib/nvidia";
 import { buildSiteGenerationPrompt } from "@/lib/prompts/site-generator";
 import { extractJsonFromModelResponse } from "@/lib/json/extract-json";
 import { buildFallbackSiteBlueprint } from "@/lib/site/fallback-site-blueprint";
 import { normalizeSiteBlueprint } from "@/lib/site/normalize-site-blueprint";
 import { applyPageStructure } from "@/lib/site/structure";
-import { resolvePalette } from "@/lib/site/design";
+import { getDesignPreset, resolvePalette } from "@/lib/site/design";
+import { createPublicSlug } from "@/lib/site/public-url";
+import type { SectionType } from "@/lib/site/blueprint";
 import {
   buildLandingDesignBrief,
-  getLandingSectionPlan,
   LANDING_DESIGN_STYLES,
-  mapLandingStyleToPaletteId,
-  mapLandingStyleToVisualStyle,
   selectRandomLandingStyle,
   type LandingDesignStyle,
 } from "@/lib/site/landing-design-brief";
@@ -44,10 +40,24 @@ function sse(event: string, data: unknown): Uint8Array {
 }
 
 export async function POST(req: NextRequest) {
-  // The database is the only hard requirement. OpenRouter can fail or be
+  // The database is the only hard requirement. NVIDIA can fail or be
   // missing and the local generator will still create a complete site.
   if (!process.env.DATABASE_URL) {
     return jsonError("Falta DATABASE_URL en el servidor.", 500);
+  }
+  const authUser = await getUserBySessionToken(req.cookies.get(SESSION_COOKIE)?.value);
+  const existingGuestToken = req.cookies.get(GUEST_COOKIE)?.value;
+  const existingGuestHash = hashGuestToken(existingGuestToken);
+  const guestAccess = authUser ? null : existingGuestToken && existingGuestHash
+    ? { token: existingGuestToken, tokenHash: existingGuestHash, expiresAt: new Date(Date.now() + GUEST_MS) }
+    : createGuestAccess();
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
+    || req.headers.get("x-real-ip")
+    || "local";
+  const rateId = authUser?.id ?? ip;
+  const generationLimit = authUser?.planStatus === "ACTIVE" ? 100 : authUser ? 10 : 3;
+  if (!(await consumeRateLimit("generation", rateId, generationLimit, 60 * 60 * 1000))) {
+    return jsonError(`Alcanzaste el límite de ${generationLimit} generaciones por hora.`, 429);
   }
 
   // Parse + validate onboarding input.
@@ -81,7 +91,10 @@ export async function POST(req: NextRequest) {
   let recentStyles: string[] = [];
   try {
     const recentSites = await prisma.site.findMany({
-      where: { visualStyle: { in: [...LANDING_DESIGN_STYLES] } },
+      where: {
+        ...(authUser ? { userId: authUser.id } : { userId: null, guestTokenHash: guestAccess!.tokenHash }),
+        visualStyle: { in: [...LANDING_DESIGN_STYLES] },
+      },
       orderBy: { createdAt: "desc" },
       take: LANDING_DESIGN_STYLES.length - 1,
       select: { visualStyle: true },
@@ -98,13 +111,8 @@ export async function POST(req: NextRequest) {
     selectedDesignStyle,
     originalRequest ?? buildGuidedDesignRequest(input)
   );
-  const sectionPlan = getLandingSectionPlan(selectedDesignStyle);
-  input = {
-    ...input,
-    structureType: "one_page",
-    visualStyle: mapLandingStyleToVisualStyle(selectedDesignStyle),
-  };
-
+  const designPreset = getDesignPreset(selectedDesignStyle);
+  const sectionPlan = [...designPreset.sectionPlan] as SectionType[];
   const { system, user } = buildSiteGenerationPrompt(
     input,
     originalRequest,
@@ -139,34 +147,19 @@ export async function POST(req: NextRequest) {
         let normalizedSite: ReturnType<typeof normalizeSiteBlueprint>;
 
         try {
-          // NVIDIA NIM is the primary provider when configured.
-          // Falls back to OpenRouter, then to the local generator.
-          let aiResponse: Response;
-          try {
-            aiResponse = await nvidiaChatStream(
-              [
-                { role: "system", content: system },
-                { role: "user", content: user },
-              ],
-              { temperature: 0.4 }
-            );
-          } catch (nvidiaErr) {
-            if (!(nvidiaErr instanceof NvidiaError)) throw nvidiaErr;
-            // NVIDIA unavailable or not configured — try OpenRouter.
-            aiResponse = await openRouterChatStream(
-              [
-                { role: "system", content: system },
-                { role: "user", content: user },
-              ],
-              { temperature: 0.4 }
-            );
-          }
+          const aiResponse = await nvidiaChatStream(
+            [
+              { role: "system", content: system },
+              { role: "user", content: user },
+            ],
+            { temperature: 0.4 }
+          );
 
           advanceStage();
 
           let full = "";
           let charsSinceStage = 0;
-          for await (const delta of parseOpenRouterStream(aiResponse.body!)) {
+          for await (const delta of parseChatStream(aiResponse.body!)) {
             full += delta;
             send("token", { content: delta });
 
@@ -198,19 +191,13 @@ export async function POST(req: NextRequest) {
 
         const { blueprint, sections: aiSections } = normalizedSite;
 
-        // Keep the generated order on one-page sites; only legacy multipage
-        // requests use predefined page distribution.
-        const { sections, navPages } = applyPageStructure(
-          aiSections,
-          input.structureType,
-          { businessName: input.businessName }
-        );
+        const sections = applyPageStructure(aiSections, { businessName: input.businessName });
 
         // Colors come from curated palettes (not the LLM, which often returns
         // the same colors). Varies by style and business name.
         const theme = resolvePalette(
           input.palette,
-          mapLandingStyleToPaletteId(selectedDesignStyle),
+          designPreset.paletteId,
           input.businessName
         );
         blueprint.site.visualStyle = {
@@ -222,28 +209,30 @@ export async function POST(req: NextRequest) {
         };
 
         // Persist Site + SiteSections.
+        await prisma.site.deleteMany({ where: { userId: null, guestExpiresAt: { lt: new Date() } } });
         const site = await prisma.site.create({
           data: {
+            userId: authUser?.id ?? null,
+            guestTokenHash: guestAccess?.tokenHash ?? null,
+            guestExpiresAt: guestAccess?.expiresAt ?? null,
             businessName: input.businessName,
             businessType: resolveBusinessTypeLabel(input),
             goal: input.goal,
             visualStyle: selectedDesignStyle,
-            structureType: input.structureType,
             location: input.location === "Zona por definir" ? null : input.location || null,
             phone: input.phone || null,
             email: input.email || null,
             domain: input.domain || null,
+            publicSlug: createPublicSlug(input.domain || input.businessName),
             language: input.language,
             status: "GENERATED",
             primaryColor: theme.primary,
             secondaryColor: theme.secondary,
             accentColor: theme.accent,
             blueprintJson: blueprint as object,
-            navPages: navPages as object,
             sections: {
               create: sections.map((section) => ({
                 type: section.type,
-                pageSlug: section.pageSlug,
                 title: section.title,
                 order: section.order,
                 isVisible: section.isVisible,
@@ -266,7 +255,7 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  return new Response(stream, {
+  const response = new NextResponse(stream, {
     headers: {
       "Content-Type": "text/event-stream; charset=utf-8",
       "Cache-Control": "no-cache, no-transform",
@@ -274,6 +263,8 @@ export async function POST(req: NextRequest) {
       "X-Accel-Buffering": "no",
     },
   });
+  if (guestAccess) response.cookies.set(GUEST_COOKIE, guestAccess.token, guestCookie(guestAccess.expiresAt));
+  return response;
 }
 
 function jsonError(message: string, status: number) {
@@ -294,7 +285,6 @@ function buildGuidedDesignRequest(input: OnboardingInput): string {
 }
 
 function canUseLocalGenerator(err: unknown): boolean {
-  if (err instanceof OpenRouterError) return true;
   if (err instanceof NvidiaError) return true;
   if (err instanceof ZodError) return true;
   if (err instanceof Error) {
@@ -317,19 +307,12 @@ function localGeneratorMessage(err: unknown): string {
   if (err instanceof NvidiaError) {
     return "NVIDIA NIM no respondió; generando el sitio con el motor local...";
   }
-  if (err instanceof OpenRouterError && err.status === 429) {
-    return "OpenRouter esta ocupado; generando el sitio con el motor local...";
-  }
-  if (err instanceof OpenRouterError) {
-    return "OpenRouter no respondio; generando el sitio con el motor local...";
-  }
   return "La respuesta de IA no fue usable; generando el sitio con el motor local...";
 }
 
 /** Converts internal errors into user-friendly Spanish messages (no stack traces). */
 function humanizeError(err: unknown): string {
   if (err instanceof NvidiaError) return err.message;
-  if (err instanceof OpenRouterError) return err.message;
   if (err instanceof ZodError) {
     return "La estructura generada por la IA no es valida. Intenta nuevamente.";
   }

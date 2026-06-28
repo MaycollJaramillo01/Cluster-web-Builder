@@ -5,7 +5,7 @@ import { GenerationStream, StoredPromptPreview } from "@/components/builder/Gene
 
 export const metadata = { title: "Generando sitio | Cluster Web Builder" };
 
-export default function GeneratingPage() {
+export default async function GeneratingPage() {
   return (
     <main className="flex min-h-dvh flex-col bg-background text-foreground">
       <header className="border-b border-[#2d243d] bg-[#0f0d15]">

@@ -36,7 +36,7 @@ function LoginForm() {
         return;
       }
 
-      router.push(from.startsWith("/") ? from : "/dashboard");
+      router.push(from.startsWith("/") && !from.startsWith("//") ? from : "/dashboard");
       router.refresh();
     } catch {
       setError("Error de red. Verifica tu conexión.");
@@ -46,7 +46,7 @@ function LoginForm() {
   };
 
   return (
-    <div className="flex min-h-dvh flex-col items-center justify-center bg-[#0a0812] px-4">
+    <main className="flex min-h-dvh flex-col items-center justify-center bg-[#0a0812] px-4">
       {/* Grid pattern background */}
       <div
         aria-hidden
@@ -86,7 +86,7 @@ function LoginForm() {
             Iniciar sesión
           </h1>
           <p className="mb-6 text-sm text-[#7a6d8e]">
-            Inicia sesión para publicar. Puedes crear, editar y previsualizar sin una cuenta.
+            Inicia sesión para crear, editar y publicar tus proyectos.
           </p>
 
           <form onSubmit={submit} className="space-y-4">
@@ -152,7 +152,7 @@ function LoginForm() {
           © {new Date().getFullYear()} Cluster Marketing · Acceso privado
         </p>
       </div>
-    </div>
+    </main>
   );
 }
 

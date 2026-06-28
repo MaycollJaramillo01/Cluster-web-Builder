@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
+import { getUserBySessionToken, GUEST_COOKIE, hashGuestToken, SESSION_COOKIE } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { toRenderSection } from "@/lib/site/section";
 
@@ -23,13 +24,22 @@ const updateSiteSchema = z.object({
 });
 
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ siteId: string }> }
 ) {
   const { siteId } = await params;
+  const user = await getUserBySessionToken(req.cookies.get(SESSION_COOKIE)?.value);
+  const guestTokenHash = hashGuestToken(req.cookies.get(GUEST_COOKIE)?.value);
+  if (!user && !guestTokenHash) return NextResponse.json({ error: "Proyecto no encontrado." }, { status: 404 });
 
-  const site = await prisma.site.findUnique({
-    where: { id: siteId },
+  const site = await prisma.site.findFirst({
+    where: {
+      id: siteId,
+      OR: [
+        ...(user ? [{ userId: user.id }] : []),
+        ...(guestTokenHash ? [{ userId: null, guestTokenHash, guestExpiresAt: { gt: new Date() } }] : []),
+      ],
+    },
     include: { sections: { orderBy: { order: "asc" } } },
   });
 
@@ -61,6 +71,8 @@ export async function PATCH(
   { params }: { params: Promise<{ siteId: string }> }
 ) {
   const { siteId } = await params;
+  const user = await getUserBySessionToken(req.cookies.get(SESSION_COOKIE)?.value);
+  if (!user) return NextResponse.json({ error: "Inicia sesión." }, { status: 401 });
 
   let data;
   try {
@@ -76,11 +88,12 @@ export async function PATCH(
   }
 
   try {
-    const updated = await prisma.site.update({
-      where: { id: siteId },
+    const updated = await prisma.site.updateMany({
+      where: { id: siteId, userId: user.id },
       data,
     });
-    return NextResponse.json({ ok: true, site: { id: updated.id } });
+    if (updated.count === 0) throw new Error("not-found");
+    return NextResponse.json({ ok: true, site: { id: siteId } });
   } catch {
     return NextResponse.json(
       { error: "No se pudo actualizar el sitio (¿existe?)." },

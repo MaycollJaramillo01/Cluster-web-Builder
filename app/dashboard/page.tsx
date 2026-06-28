@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { cookies } from "next/headers";
-import { ArrowLeft, LayoutGrid, PanelsTopLeft, Plus, Search } from "lucide-react";
+import { redirect } from "next/navigation";
+import { ArrowLeft, CreditCard, LayoutGrid, PanelsTopLeft, Plus, Search, Users } from "lucide-react";
 
+import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,23 +14,21 @@ export const dynamic = "force-dynamic";
 export const metadata = { title: "Proyectos | Cluster Web Builder" };
 
 export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
-  const cookieStore = await cookies();
-  const sessionSecret = process.env.SESSION_SECRET;
-  const isAuthenticated = Boolean(
-    sessionSecret && cookieStore.get("__cluster_session")?.value === sessionSecret
-  );
+  const user = await getCurrentUser();
+  if (!user) redirect("/login?from=/dashboard");
   const query = (await searchParams).q?.trim() ?? "";
   const sites = await prisma.site.findMany({
-    where: query ? {
-      OR: [
+    where: {
+      userId: user.id,
+      ...(query ? { OR: [
         { businessName: { contains: query, mode: "insensitive" } },
         { businessType: { contains: query, mode: "insensitive" } },
-      ],
-    } : undefined,
+      ] } : {}),
+    },
     orderBy: { updatedAt: "desc" },
     select: {
-      id: true, businessName: true, businessType: true, status: true,
-      createdAt: true, updatedAt: true, primaryColor: true, secondaryColor: true, accentColor: true,
+      id: true, businessName: true, businessType: true, status: true, publicSlug: true, customDomain: true, domainVerifiedAt: true,
+      createdAt: true, updatedAt: true, downloadedAt: true, primaryColor: true, secondaryColor: true, accentColor: true,
     },
   });
 
@@ -37,6 +36,8 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
     ...site,
     createdAt: site.createdAt.toISOString(),
     updatedAt: site.updatedAt.toISOString(),
+    downloadedAt: site.downloadedAt?.toISOString() ?? null,
+    domainVerifiedAt: site.domainVerifiedAt?.toISOString() ?? null,
     primaryColor: site.primaryColor ?? "#15121b",
     secondaryColor: site.secondaryColor ?? "#d0bcff",
     accentColor: site.accentColor ?? "#8b5cf6",
@@ -48,7 +49,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
         <div className="mx-auto flex min-h-16 max-w-7xl items-center justify-between gap-4 px-5 py-2 sm:px-8">
           <Link href="/" className="flex shrink-0 items-center gap-2.5 font-semibold tracking-tight">
             <span className="flex h-8 w-8 items-center justify-center rounded bg-[#8b5cf6] text-white"><PanelsTopLeft className="h-4 w-4" /></span>
-            <span>Cluster</span>
+            <span className="hidden sm:inline">Cluster</span>
           </Link>
           <form action="/dashboard" className="hidden w-full max-w-md sm:block" role="search">
             <label htmlFor="project-search" className="sr-only">Buscar proyectos</label>
@@ -58,8 +59,10 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
             </div>
           </form>
           <div className="flex shrink-0 items-center gap-2">
-            <Button asChild size="sm"><Link href="/builder"><Plus /> Nuevo sitio</Link></Button>
-            {isAuthenticated && <LogoutButton />}
+            <Button asChild size="sm" className="w-11 px-0 sm:w-auto sm:px-3"><Link href="/builder"><Plus /><span className="hidden sm:inline">Nuevo sitio</span></Link></Button>
+            <Button asChild variant="outline" size="sm" className="w-11 px-0 sm:w-auto sm:px-3"><Link href="/billing"><CreditCard /><span className="hidden sm:inline">Plan</span></Link></Button>
+            {user.role === "ADMIN" && <Button asChild variant="outline" size="sm" className="w-11 px-0 sm:w-auto sm:px-3"><Link href="/admin/users"><Users /><span className="hidden sm:inline">Usuarios</span></Link></Button>}
+            <LogoutButton />
           </div>
         </div>
       </header>
@@ -75,6 +78,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
             <p className="mt-2 text-sm text-muted-foreground">
               {query ? `${data.length} resultados para “${query}”` : `${data.length} ${data.length === 1 ? "sitio guardado" : "sitios guardados"}`}
             </p>
+            {!query && <p className="mt-1 text-xs text-muted-foreground">{data.filter((site) => site.status === "PUBLISHED").length} publicados · {data.filter((site) => site.downloadedAt).length} descargados</p>}
           </div>
         </div>
 

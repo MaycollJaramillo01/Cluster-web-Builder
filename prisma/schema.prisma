@@ -16,6 +16,13 @@ enum UserRole {
   EDITOR
 }
 
+enum PlanStatus {
+  FREE
+  ACTIVE
+  PAST_DUE
+  CANCELED
+}
+
 model User {
   id           String    @id @default(cuid())
   username     String    @unique
@@ -23,29 +30,59 @@ model User {
   role         UserRole  @default(EDITOR)
   name         String?
   email        String?   @unique
+  planStatus   PlanStatus @default(FREE)
+  stripeCustomerId String? @unique
+  stripeSubscriptionId String? @unique
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
   sites Site[]
+  sessions Session[]
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model RateLimit {
+  key       String   @id
+  count     Int      @default(1)
+  expiresAt DateTime
+
+  @@index([expiresAt])
 }
 
 model Site {
   id           String   @id @default(cuid())
   // Optional for now — auth comes in a later phase.
   userId       String?
-  user         User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  user         User?    @relation(fields: [userId], references: [id], onDelete: Restrict)
+  guestTokenHash String?
+  guestExpiresAt DateTime?
 
   businessName String
   businessType String
   goal         String?
   visualStyle  String?
-  structureType String?
   location     String?
   phone        String?
   email        String?
   domain       String?
+  customDomain String? @unique
+  domainVerifiedAt DateTime?
+  publicSlug   String   @unique
   language     String?  @default("es")
   status       SiteStatus @default(DRAFT)
+  publishedAt  DateTime?
+  downloadedAt DateTime?
 
   primaryColor   String?
   secondaryColor String?
@@ -54,15 +91,28 @@ model Site {
   // Full AI blueprint (site + seo + visualStyle + pages) as returned by the model.
   blueprintJson Json?
 
-  // Ordered nav pages for multipage sites: [{ slug, name }]. Null/empty = single page.
-  navPages Json?
-
   sections  SiteSection[]
+  leads     Lead[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([userId])
+  @@index([guestTokenHash])
+  @@index([guestExpiresAt])
+}
+
+model Lead {
+  id        String   @id @default(cuid())
+  siteId    String
+  site      Site     @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  name      String
+  email     String?
+  phone     String?
+  message   String
+  createdAt DateTime @default(now())
+
+  @@index([siteId, createdAt])
 }
 
 model SiteSection {
@@ -71,8 +121,6 @@ model SiteSection {
   site         Site     @relation(fields: [siteId], references: [id], onDelete: Cascade)
 
   type         String
-  // Which page this section belongs to (multipage). "home" for single-page sites.
-  pageSlug     String   @default("home")
   title        String?
   // Flexible content payload for the block (subtitle, body, items, ctas, etc.).
   content      Json?

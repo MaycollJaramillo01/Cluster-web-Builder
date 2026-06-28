@@ -6,17 +6,17 @@
 
 ## 2. Descripción
 
-El cliente entra al builder, responde **máximo 5 preguntas** y la IA genera la estructura completa del sitio (copy, secciones, SEO y paleta de colores) mostrando el progreso con **streaming en tiempo real**. El sitio se guarda en **Neon PostgreSQL**, se renderiza con un **renderer de bloques React** controlado (sin HTML inseguro) y queda **editable** (textos, colores, visibilidad y orden de secciones). Incluye un **dashboard** de sitios y una **vista previa pública**.
+El visitante responde **máximo 5 preguntas** y genera su primer borrador sin crear una cuenta. Puede previsualizarlo y editarlo durante 72 horas; al guardar o publicar, inicia sesión y el proyecto se transfiere automáticamente a su cuenta. Cada usuario solo puede consultar y modificar sus propios proyectos.
 
-> Fase actual: MVP. **No** incluye autenticación, pagos, WHMCS, cPanel, dominios personalizados, publicación real ni generación de imágenes. Esos puntos quedan como _placeholders_ para fases futuras.
+> Fase actual: MVP multiusuario. No incluye registro público, pagos, equipos compartidos, WHMCS, cPanel ni dominios personalizados.
 
 ## 3. Stack
 
-- **Next.js 15** (App Router) + **TypeScript**
+- **Next.js 16** (App Router) + **TypeScript**
 - **Tailwind CSS** + componentes estilo **shadcn/ui**
 - **Zod** para validación
 - **Prisma 6** (ORM) sobre **Neon PostgreSQL**
-- **OpenRouter** para IA — modelo principal `qwen/qwen3-coder:free`
+- **NVIDIA NIM** para IA — modelo configurable con `NVIDIA_MODEL`
 - **Streaming real** vía Server-Sent Events
 - Deploy en **Vercel**
 
@@ -25,8 +25,8 @@ El cliente entra al builder, responde **máximo 5 preguntas** y la IA genera la 
 Crea un archivo `.env` (para local) basado en `.env.example`:
 
 ```env
-OPENROUTER_API_KEY=
-OPENROUTER_MODEL=qwen/qwen3-coder:free
+NVIDIA_API_KEY=
+NVIDIA_MODEL=z-ai/glm-5.1
 DATABASE_URL=
 DIRECT_URL=
 NEXT_PUBLIC_APP_URL=http://localhost:3000
@@ -34,7 +34,7 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 
 - `DATABASE_URL`: conexión **pooled** de Neon (runtime de la app). Recomendado añadir `?sslmode=require&pgbouncer=true`.
 - `DIRECT_URL`: conexión **directa** de Neon (migraciones / comandos Prisma). Usa `?sslmode=require`.
-- La `OPENROUTER_API_KEY` **nunca** se expone al frontend: todas las llamadas pasan por API Routes.
+- La `NVIDIA_API_KEY` **nunca** se expone al frontend: todas las llamadas pasan por API Routes.
 
 ## 5. Instalación local
 
@@ -62,24 +62,10 @@ datasource db {
 }
 ```
 
-## 7b. Configuración de ImageKit (imágenes con IA)
+## 7. Configuración de proveedores
 
-Las imágenes de las secciones (hero, nosotros, CTA) se generan con **ImageKit GenAI** a partir del `imagePrompt` de cada sección.
-
-1. Crea una cuenta en [ImageKit](https://imagekit.io).
-2. En **Settings → URL-endpoint**, copia tu endpoint (forma `https://ik.imagekit.io/tu_id`).
-3. Pégalo en `.env` como `NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT`.
-
-- El **URL endpoint es público** y es lo único necesario para generar/servir imágenes (vía URL `…/ik-genimg-prompt-<texto>/…`).
-- `IMAGEKIT_PUBLIC_KEY` / `IMAGEKIT_PRIVATE_KEY` solo se usan para **subir** archivos (fase futura). La private key es secreta — mantenla solo en el servidor.
-- Si no configuras el endpoint, las imágenes caen automáticamente a fotos stock gratuitas (LoremFlickr), así la app funciona igual.
-- ImageKit genera cada imagen una sola vez por prompt y la cachea en CDN; el plan free tiene un límite de generaciones.
-
-## 7. Configuración de OpenRouter
-
-1. Crea una cuenta en [OpenRouter](https://openrouter.ai) y genera una API key.
-2. Ponla en `OPENROUTER_API_KEY`.
-3. (Opcional) Cambia `OPENROUTER_MODEL`; por defecto `qwen/qwen3-coder:free`.
+- Añade `NVIDIA_API_KEY` para la generación de contenido. Sin ella se usa el generador local.
+- Añade `PEXELS_API_KEY` para fotografías stock. Sin ella se usa LoremFlickr como respaldo.
 
 ## 8. Correr migraciones
 
@@ -101,6 +87,16 @@ Explorar la base de datos:
 npm run db:studio
 ```
 
+## 8b. Crear el primer administrador
+
+Configura temporalmente `ADMIN_USERNAME`, `ADMIN_PASSWORD`, `ADMIN_NAME` y `ADMIN_EMAIL`, y ejecuta:
+
+```bash
+npm run db:create-admin
+```
+
+Los administradores crean cuentas adicionales desde `/admin/users`. Las sesiones y los borradores invitados usan tokens aleatorios almacenados como hash; no existe una contraseña global compartida.
+
 ## 9. Desarrollo local
 
 ```bash
@@ -118,8 +114,9 @@ App disponible en `http://localhost:3000`.
 2. **Copiar `DATABASE_URL`** (pooled) y **`DIRECT_URL`** (direct).
 3. **Crear proyecto en Vercel** importando este repositorio.
 4. **Agregar variables de entorno en Vercel** (Project → Settings → Environment Variables):
-   - `OPENROUTER_API_KEY`
-   - `OPENROUTER_MODEL`
+   - `NVIDIA_API_KEY`
+   - `NVIDIA_MODEL`
+   - `PEXELS_API_KEY`
    - `DATABASE_URL`
    - `DIRECT_URL`
    - `NEXT_PUBLIC_APP_URL` (la URL de producción de Vercel)
@@ -132,6 +129,10 @@ App disponible en `http://localhost:3000`.
 7. **Probar generación**: entra a `/builder` en la URL de Vercel.
 8. **Ver dashboard**: `/dashboard`.
 9. **Ver preview**: `/preview/[siteId]`.
+
+### Publicación en subdominios
+
+Configura `PUBLIC_ROOT_DOMAIN=sites.tudominio.com`, añade `*.sites.tudominio.com` al proyecto de Vercel y crea un registro DNS wildcard apuntando a Vercel. Vercel emite el SSL; localmente y sin esa variable se usa `/s/[slug]`.
 
 > El runtime de la ruta de IA es **Node.js** (`export const runtime = "nodejs"`) con `maxDuration = 60`, requerido por Prisma + streaming en Vercel.
 
@@ -146,17 +147,16 @@ App disponible en `http://localhost:3000`.
 
 ## 12. Cómo generar el primer sitio
 
-1. `/builder` → completa el wizard.
+1. Entra a `/` o `/builder` y genera el borrador sin iniciar sesión.
 2. Espera el streaming hasta el evento `saved`.
 3. Serás redirigido a `/builder/[siteId]` (editor + preview).
-4. Edita textos y colores → **Guardar cambios**.
+4. Edita textos y colores. Al pulsar **Guardar cambios**, inicia sesión para reclamar el proyecto.
 5. **Ver preview** abre `/preview/[siteId]` como un sitio real.
 6. Encuentra todos tus sitios en `/dashboard`.
 
 ## 13. Próximos pasos (fases futuras)
 
-- 🔐 Autenticación de usuarios (el modelo `User` ya está listo).
-- 🚀 **Publicación real**: dominios personalizados + hosting.
+- Dominios personalizados por cliente (la publicación gratuita por subdominio ya está disponible).
 - 🔌 Integraciones de hosting: **WHMCS**, **cPanel**.
 - 💳 Pagos y planes.
 - 🖼️ Generación de imágenes para las secciones (`imagePrompt` ya se guarda).
@@ -173,17 +173,20 @@ app/
   builder/generating/page.tsx      Streaming
   builder/[siteId]/page.tsx        Editor + preview
   dashboard/page.tsx               Lista de sitios
+  admin/users/page.tsx             Administración de cuentas
   preview/[siteId]/page.tsx        Preview público
   api/ai/generate-site/route.ts    Generación con streaming (Node runtime)
   api/sites/[siteId]/route.ts      GET/PATCH sitio
   api/sites/[siteId]/sections/[sectionId]/route.ts   PATCH sección
 lib/
-  openrouter.ts                    Cliente + parser de stream
+  nvidia.ts                        Cliente + parser de stream
   prompts/site-generator.ts        System + user prompt
   validators/site-onboarding.ts    Zod del onboarding
   json/extract-json.ts             Extracción robusta de JSON
   site/normalize-site-blueprint.ts Normalización del blueprint
   db.ts                            Prisma singleton
+  auth.ts                          Sesiones individuales
+  rate-limit.ts                    Límites de login y generación
 components/
   builder/*                        Wizard, streaming, editor, dashboard card
   site-blocks/*                    Renderer de bloques controlado

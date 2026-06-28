@@ -1,49 +1,10 @@
-import { spawn } from "node:child_process";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { evaluate, launchChrome, waitFor } from "./cdp.mjs";
 
 const baseUrl = process.env.BASE_URL || "http://localhost:3010";
-const chromePath = process.env.CHROME_PATH || "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe";
-const port = 9600 + Math.floor(Math.random() * 200);
-const chrome = spawn(chromePath, [
-  "--headless=new",
-  "--disable-gpu",
-  "--no-first-run",
-  `--remote-debugging-port=${port}`,
-  `--user-data-dir=${join(tmpdir(), `cluster-home-modes-${Date.now()}`)}`,
-  "about:blank",
-], { stdio: "ignore" });
-
-const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-let client;
+const browser = await launchChrome("cluster-home-modes");
+const { client } = browser;
 
 try {
-  let targets;
-  for (let attempt = 0; attempt < 40; attempt++) {
-    try {
-      targets = await fetch(`http://127.0.0.1:${port}/json/list`).then((response) => response.json());
-      if (targets.some((target) => target.type === "page")) break;
-    } catch {}
-    await sleep(250);
-  }
-
-  const page = targets?.find((target) => target.type === "page");
-  if (!page) throw new Error("Chrome no inició una página para la prueba.");
-  client = await createClient(page.webSocketDebuggerUrl);
-  await client.send("Page.enable");
-  await client.send("Runtime.enable");
-  await client.send("Network.enable");
-
-  if (process.env.QA_SESSION_SECRET) {
-    await client.send("Network.setCookie", {
-      name: "__cluster_session",
-      value: process.env.QA_SESSION_SECRET,
-      url: baseUrl,
-      httpOnly: true,
-      sameSite: "Lax",
-    });
-  }
-
   await client.send("Emulation.setDeviceMetricsOverride", { width: 390, height: 844, deviceScaleFactor: 1, mobile: true });
   await client.send("Page.navigate", { url: baseUrl });
   await waitFor(() => evaluate(client, "document.readyState === 'complete' && Boolean(document.querySelector('[data-home-mode]'))"));
@@ -113,7 +74,6 @@ try {
     return JSON.parse(sessionStorage.getItem('ai-builder:onboarding') || '{}');
   })()`);
   assert(payload.businessName === "Café Luna", "El payload no conservó el nombre del negocio.");
-  assert(payload.structureType === "one_page", "El modo guiado no genera una estructura home.");
   assert(payload.services?.includes("Café latte"), "El payload no incluyó el servicio capturado.");
   assert(payload.proofPoints?.includes("Horario: Lun–Vie 09:00–18:00"), "El payload no incluyó el horario estructurado.");
   assert(payload.palette?.primary === "#38bdf8", "El payload no conservó el color primario seleccionado.");
@@ -124,50 +84,9 @@ try {
 
   console.log("Home modes: OK — guiado, avanzado, validación, móvil y payload one_page.");
 } finally {
-  client?.close();
-  chrome.kill();
+  browser.close();
 }
 
 function assert(condition, message) {
   if (!condition) throw new Error(message);
-}
-
-async function waitFor(check) {
-  for (let attempt = 0; attempt < 50; attempt++) {
-    if (await check()) return;
-    await sleep(150);
-  }
-  throw new Error("La página no quedó lista para la prueba.");
-}
-
-async function evaluate(cdp, expression) {
-  const result = await cdp.send("Runtime.evaluate", { expression, returnByValue: true, awaitPromise: true });
-  if (result.exceptionDetails) throw new Error(result.exceptionDetails.exception?.description || "Falló una evaluación en navegador.");
-  return result.result.value;
-}
-
-async function createClient(url) {
-  const socket = new WebSocket(url);
-  const pending = new Map();
-  let id = 0;
-  socket.onmessage = ({ data }) => {
-    const message = JSON.parse(data);
-    if (!message.id) return;
-    const request = pending.get(message.id);
-    if (!request) return;
-    pending.delete(message.id);
-    if (message.error) request.reject(new Error(message.error.message));
-    else request.resolve(message.result);
-  };
-  await new Promise((resolve, reject) => { socket.onopen = resolve; socket.onerror = reject; });
-  return {
-    send(method, params = {}) {
-      return new Promise((resolve, reject) => {
-        const requestId = ++id;
-        pending.set(requestId, { resolve, reject });
-        socket.send(JSON.stringify({ id: requestId, method, params }));
-      });
-    },
-    close() { socket.close(); },
-  };
 }

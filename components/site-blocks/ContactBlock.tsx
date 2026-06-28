@@ -1,8 +1,12 @@
+"use client";
+
+import { useState } from "react";
 import type { BlockProps } from "./types";
 import { getThemeSurface } from "@/lib/site/theme-surface";
 import { getContrastText } from "@/lib/site/theme-surface";
 
 export function ContactBlock({ section, theme, preset, site }: BlockProps) {
+  const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
   const surface = getThemeSurface(theme);
   const fieldPrefix = `contact-${section.id}`;
   const inputRadius = preset.buttonRadius === "9999px" ? "0.5rem" : "var(--site-btn-radius)";
@@ -18,6 +22,28 @@ export function ContactBlock({ section, theme, preset, site }: BlockProps) {
   const labelStyle = {
     color: surface.muted,
   };
+
+  async function submit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!site.publicSlug) {
+      setStatus("error");
+      return;
+    }
+    setStatus("sending");
+    const form = event.currentTarget;
+    try {
+      const response = await fetch(`/api/public/sites/${site.publicSlug}/leads`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(Object.fromEntries(new FormData(form))),
+      });
+      if (!response.ok) throw new Error();
+      form.reset();
+      setStatus("sent");
+    } catch {
+      setStatus("error");
+    }
+  }
 
   return (
     <section id="contact" className="px-6 py-20 sm:py-24" style={{ backgroundColor: surface.section }}>
@@ -127,6 +153,7 @@ export function ContactBlock({ section, theme, preset, site }: BlockProps) {
 
         {/* Right: form */}
         <form
+          onSubmit={submit}
           className={`space-y-5 p-7 sm:p-8 ${preset.cardShadow}`}
           style={{
             borderRadius: "var(--site-radius)",
@@ -146,6 +173,8 @@ export function ContactBlock({ section, theme, preset, site }: BlockProps) {
               <input
                 id={`${fieldPrefix}-name`}
                 name="name"
+                required
+                maxLength={120}
                 autoComplete="name"
                 placeholder="Tu nombre"
                 className="w-full px-3.5 py-2.5 text-sm transition-[border-color] focus:outline-none"
@@ -164,6 +193,8 @@ export function ContactBlock({ section, theme, preset, site }: BlockProps) {
                 id={`${fieldPrefix}-email`}
                 name="email"
                 type="email"
+                required
+                maxLength={160}
                 autoComplete="email"
                 placeholder="tu@email.com"
                 className="w-full px-3.5 py-2.5 text-sm transition-[border-color] focus:outline-none"
@@ -184,6 +215,7 @@ export function ContactBlock({ section, theme, preset, site }: BlockProps) {
               id={`${fieldPrefix}-phone`}
               name="phone"
               type="tel"
+              maxLength={40}
               autoComplete="tel"
               placeholder="+52 55 1234 5678"
               className="w-full px-3.5 py-2.5 text-sm transition-[border-color] focus:outline-none"
@@ -202,6 +234,8 @@ export function ContactBlock({ section, theme, preset, site }: BlockProps) {
             <textarea
               id={`${fieldPrefix}-message`}
               name="message"
+              required
+              maxLength={2000}
               rows={4}
               placeholder="¿En qué podemos ayudarte?"
               className="w-full resize-none px-3.5 py-2.5 text-sm transition-[border-color] focus:outline-none"
@@ -209,8 +243,17 @@ export function ContactBlock({ section, theme, preset, site }: BlockProps) {
             />
           </div>
 
+          <input
+            name="website"
+            tabIndex={-1}
+            autoComplete="off"
+            className="hidden"
+            aria-hidden="true"
+          />
+
           <button
-            type="button"
+            type="submit"
+            disabled={status === "sending"}
             className="w-full py-3 text-sm font-semibold transition-[filter,opacity] duration-200 hover:brightness-95 active:opacity-90"
             style={{
               backgroundColor: theme.primary,
@@ -218,11 +261,17 @@ export function ContactBlock({ section, theme, preset, site }: BlockProps) {
               borderRadius: inputRadius,
             }}
           >
-            {section.ctaText || "Enviar mensaje"}
+            {status === "sending" ? "Enviando..." : section.ctaText || "Enviar mensaje"}
           </button>
 
           <p className="text-center text-xs" style={{ color: surface.muted, opacity: 0.6 }}>
-            Responderemos a la brevedad posible.
+            {status === "sent"
+              ? "Mensaje enviado correctamente."
+              : status === "error"
+                ? site.publicSlug
+                  ? "No se pudo enviar. Intenta de nuevo."
+                  : "El formulario estará disponible al publicar."
+                : "Responderemos a la brevedad posible."}
           </p>
         </form>
       </div>

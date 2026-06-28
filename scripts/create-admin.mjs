@@ -2,12 +2,17 @@
  * One-time script to create the initial admin user.
  * Run with: node scripts/create-admin.mjs
  */
-import { createHash, randomBytes, scryptSync } from "node:crypto";
+import { randomBytes, scryptSync } from "node:crypto";
 import { PrismaClient } from "@prisma/client";
 
-const USERNAME = "Maycolljaramillo";
-const PASSWORD = "Zap52426;";
-const NAME = "Maycoll Jaramillo";
+const USERNAME = process.env.ADMIN_USERNAME?.trim();
+const PASSWORD = process.env.ADMIN_PASSWORD;
+const NAME = process.env.ADMIN_NAME?.trim() || null;
+const EMAIL = process.env.ADMIN_EMAIL?.trim() || null;
+
+if (!USERNAME || !PASSWORD || PASSWORD.length < 10) {
+  throw new Error("Define ADMIN_USERNAME y ADMIN_PASSWORD (mínimo 10 caracteres).");
+}
 
 function hashPassword(password) {
   const salt = randomBytes(16).toString("hex");
@@ -31,6 +36,7 @@ async function main() {
       passwordHash,
       role: "ADMIN",
       name: NAME,
+      email: EMAIL,
     },
   });
 

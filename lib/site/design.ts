@@ -29,21 +29,15 @@ export type SurfaceStyle = "plain" | "soft" | "outlined" | "glass" | "brutal" | 
 export type MotionStyle = "none" | "subtle" | "stagger" | "kinetic";
 export type CtaStyle = "solid" | "outline" | "pill" | "offset" | "link";
 export type FooterStyle = "minimal" | "columns" | "editorial" | "brutal" | "darkBand" | "centered";
-export type AboutUsStyle =
-  | "split" | "editorial" | "manifesto" | "statement" | "grid" | "immersive"
-  | "overlap" | "polaroid" | "banner" | "collage" | "portrait" | "reverse"
-  | "masthead" | "framed" | "stats" | "checklist" | "quote" | "timeline"
-  | "columns" | "accent" | "numbered" | "bigtype" | "splitstats" | "minimalline"
-  | "badges" | "mosaic";
-
-/** All About-Us variant ids (for validation + the AI override). */
-export const ABOUT_US_STYLES: AboutUsStyle[] = [
+/** All About-Us variant ids. */
+export const ABOUT_US_STYLES = [
   "split", "editorial", "manifesto", "statement", "grid", "immersive",
   "overlap", "polaroid", "banner", "collage", "portrait", "reverse",
   "masthead", "framed", "stats", "checklist", "quote", "timeline",
   "columns", "accent", "numbered", "bigtype", "splitstats", "minimalline",
   "badges", "mosaic",
-];
+] as const;
+export type AboutUsStyle = (typeof ABOUT_US_STYLES)[number];
 
 /** Each design style gets a deliberate About design (the AI picks the style). */
 const ABOUT_BY_STYLE: Record<string, AboutUsStyle> = {

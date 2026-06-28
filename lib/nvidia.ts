@@ -27,7 +27,7 @@ export type ChatMessage = {
 /**
  * Opens a streaming chat completion against NVIDIA NIM.
  * Returns the raw Response; caller consumes `response.body` as a stream.
- * The SSE format is OpenAI-compatible — use parseOpenRouterStream() to read it.
+ * The SSE format is OpenAI-compatible.
  */
 export async function nvidiaChatStream(
   messages: ChatMessage[],
@@ -110,5 +110,39 @@ async function safeReadText(response: Response): Promise<string> {
     return (await response.text()).slice(0, 300);
   } catch {
     return "(sin detalle)";
+  }
+}
+
+export async function* parseChatStream(
+  body: ReadableStream<Uint8Array>
+): AsyncGenerator<string, void, unknown> {
+  const reader = body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) return;
+      buffer += decoder.decode(value, { stream: true });
+
+      let newlineIndex: number;
+      while ((newlineIndex = buffer.indexOf("\n")) !== -1) {
+        const line = buffer.slice(0, newlineIndex).trim();
+        buffer = buffer.slice(newlineIndex + 1);
+        if (!line.startsWith("data:")) continue;
+        const data = line.slice(5).trim();
+        if (data === "[DONE]") return;
+        try {
+          const json = JSON.parse(data);
+          const delta = json?.choices?.[0]?.delta?.content;
+          if (typeof delta === "string") yield delta;
+        } catch {
+          // Ignore keep-alive or malformed provider events.
+        }
+      }
+    }
+  } finally {
+    reader.releaseLock();
   }
 }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
+import { getUserBySessionToken, SESSION_COOKIE } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { toRenderSection } from "@/lib/site/section";
 
@@ -22,6 +23,8 @@ export async function PATCH(
   { params }: { params: Promise<{ siteId: string; sectionId: string }> }
 ) {
   const { siteId, sectionId } = await params;
+  const user = await getUserBySessionToken(req.cookies.get(SESSION_COOKIE)?.value);
+  if (!user) return NextResponse.json({ error: "Inicia sesión." }, { status: 401 });
 
   let data;
   try {
@@ -38,7 +41,7 @@ export async function PATCH(
 
   // Ensure the section exists and belongs to the site.
   const existing = await prisma.siteSection.findFirst({
-    where: { id: sectionId, siteId },
+    where: { id: sectionId, siteId, site: { is: { userId: user.id } } },
   });
   if (!existing) {
     return NextResponse.json(

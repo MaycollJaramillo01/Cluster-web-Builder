@@ -1,0 +1,2 @@
+ALTER TABLE "Site" DROP COLUMN IF EXISTS "structureType", DROP COLUMN IF EXISTS "navPages";
+ALTER TABLE "SiteSection" DROP COLUMN IF EXISTS "pageSlug";

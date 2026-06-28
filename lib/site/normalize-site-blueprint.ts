@@ -11,7 +11,6 @@ import {
  */
 export type NormalizedSection = {
   type: string;
-  pageSlug: string;
   title: string;
   order: number;
   isVisible: boolean;
@@ -69,7 +68,6 @@ export function normalizeSiteBlueprint(raw: unknown): NormalizedSite {
     for (const section of page.sections) {
       sections.push({
         type: section.type,
-        pageSlug: "home",
         title: section.title ?? "",
         order: order++,
         isVisible: true,

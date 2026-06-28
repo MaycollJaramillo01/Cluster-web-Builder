@@ -312,7 +312,6 @@ function GuidedHomeForm() {
         background: palette.colors[3],
         text: palette.colors[4],
       },
-      structureType: "one_page",
     }));
     router.push("/builder/generating");
   };

@@ -1,0 +1,28 @@
+import { NextRequest, NextResponse } from "next/server";
+import { strToU8, zipSync } from "fflate";
+
+import { getUserBySessionToken, SESSION_COOKIE } from "@/lib/auth";
+import { prisma } from "@/lib/db";
+import { exportSiteHtml } from "@/lib/site/export-html";
+import { toRenderSection } from "@/lib/site/section";
+import { themeFromSite } from "@/lib/site/theme";
+
+export const runtime = "nodejs";
+
+export async function GET(request: NextRequest, { params }: { params: Promise<{ siteId: string }> }) {
+  const user = await getUserBySessionToken(request.cookies.get(SESSION_COOKIE)?.value);
+  if (!user) return NextResponse.json({ error: "Inicia sesión para descargar el sitio.", authRequired: true }, { status: 401 });
+  const { siteId } = await params;
+  const site = await prisma.site.findFirst({ where: { id: siteId, userId: user.id }, include: { sections: { orderBy: { order: "asc" } } } });
+  if (!site) return NextResponse.json({ error: "Sitio no encontrado." }, { status: 404 });
+
+  const endpoint = `${request.nextUrl.origin}/api/public/sites/${site.publicSlug}/leads`;
+  const showBranding = user.planStatus !== "ACTIVE";
+  const html = exportSiteHtml({ ...site, showBranding, theme: themeFromSite(site), sections: site.sections.map(toRenderSection) }, endpoint);
+  const readme = showBranding
+    ? "Abre index.html o súbelo a cualquier hosting estático. El formulario envía los contactos a Cluster mientras el proyecto permanezca publicado."
+    : "Abre index.html o súbelo a cualquier hosting estático. El formulario requiere que el proyecto permanezca publicado.";
+  const zip = zipSync({ "index.html": strToU8(html), "README.txt": strToU8(readme) });
+  await prisma.site.update({ where: { id: site.id }, data: { downloadedAt: new Date() } });
+  return new Response(zip, { headers: { "Content-Type": "application/zip", "Content-Disposition": `attachment; filename="${site.publicSlug}.zip"` } });
+}

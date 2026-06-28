@@ -1,10 +1,11 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
 
+import { getCurrentUser, GUEST_COOKIE, hashGuestToken } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { toRenderSection } from "@/lib/site/section";
 import { themeFromSite } from "@/lib/site/theme";
-import { parseNavPages } from "@/lib/site/structure";
 import { SitePreview } from "@/components/builder/SitePreview";
 
 export const runtime = "nodejs";
@@ -16,7 +17,18 @@ export async function generateMetadata({
   params: Promise<{ siteId: string }>;
 }): Promise<Metadata> {
   const { siteId } = await params;
-  const site = await prisma.site.findUnique({ where: { id: siteId } });
+  const user = await getCurrentUser();
+  const guestTokenHash = hashGuestToken((await cookies()).get(GUEST_COOKIE)?.value);
+  const site = await prisma.site.findFirst({
+    where: {
+      id: siteId,
+      OR: [
+        { status: "PUBLISHED" },
+        ...(user ? [{ userId: user.id }] : []),
+        ...(guestTokenHash ? [{ userId: null, guestTokenHash, guestExpiresAt: { gt: new Date() } }] : []),
+      ],
+    },
+  });
   if (!site) return { title: "Sitio no encontrado" };
 
   const blueprint = site.blueprintJson as
@@ -35,17 +47,24 @@ export default async function PreviewPage({
   params: Promise<{ siteId: string }>;
 }) {
   const { siteId } = await params;
+  const user = await getCurrentUser();
+  const guestTokenHash = hashGuestToken((await cookies()).get(GUEST_COOKIE)?.value);
 
-  const site = await prisma.site.findUnique({
-    where: { id: siteId },
+  const site = await prisma.site.findFirst({
+    where: {
+      id: siteId,
+      OR: [
+        { status: "PUBLISHED" },
+        ...(user ? [{ userId: user.id }] : []),
+        ...(guestTokenHash ? [{ userId: null, guestTokenHash, guestExpiresAt: { gt: new Date() } }] : []),
+      ],
+    },
     include: { sections: { orderBy: { order: "asc" } } },
   });
 
   if (!site) notFound();
 
   const theme = themeFromSite(site);
-  const navPages = parseNavPages(site.navPages);
-
   return (
     <main>
       <SitePreview
@@ -57,9 +76,6 @@ export default async function PreviewPage({
         theme={theme}
         visualStyle={site.visualStyle}
         sections={site.sections.map(toRenderSection)}
-        navPages={navPages}
-        currentPageSlug="home"
-        baseHref={`/preview/${site.id}`}
       />
     </main>
   );

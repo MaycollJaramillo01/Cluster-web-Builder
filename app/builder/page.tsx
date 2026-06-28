@@ -5,7 +5,7 @@ import { OnboardingWizard } from "@/components/builder/OnboardingWizard";
 
 export const metadata = { title: "Crear sitio | Cluster Web Builder" };
 
-export default function BuilderPage() {
+export default async function BuilderPage() {
   return (
     <main className="min-h-dvh bg-background text-foreground">
       <header className="border-b border-[#2d243d] bg-[#0f0d15]">

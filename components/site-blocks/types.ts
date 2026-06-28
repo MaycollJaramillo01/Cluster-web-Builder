@@ -8,6 +8,8 @@ export type BlockSiteInfo = {
   phone?: string | null;
   email?: string | null;
   location?: string | null;
+  publicSlug?: string | null;
+  showBranding?: boolean;
 };
 
 export type BlockProps = {

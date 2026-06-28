@@ -4,7 +4,7 @@ import { SectionHeading } from "./shared";
 import type { BlockProps } from "./types";
 
 export function GalleryBlock({ section, theme, preset, site }: BlockProps) {
-  // 6-tile gallery using free stock photos (keeps ImageKit quota for the hero).
+  // Six deterministic stock photos keep generated sites visually stable.
   const tiles = Array.from({ length: 6 });
   return (
     <section className="px-6 py-20 sm:py-24" style={{ backgroundColor: theme.background }}>

@@ -2,7 +2,6 @@ import type { CSSProperties } from "react";
 
 import type { SiteTheme } from "@/lib/site/blueprint";
 import type { RenderSection } from "@/lib/site/section";
-import type { NavPage } from "@/lib/site/structure";
 import { getDesignPreset } from "@/lib/site/design";
 import { getContrastText } from "@/lib/site/theme-surface";
 
@@ -49,14 +48,6 @@ export type SiteBlockRendererProps = {
   theme: SiteTheme;
   site: BlockSiteInfo;
   visualStyle?: string | null;
-  /** Nav pages for the menu. Empty/single = no multipage chrome. */
-  navPages?: NavPage[];
-  /** The page currently being shown. */
-  currentPageSlug?: string;
-  /** Public link base, e.g. /preview/<id>. */
-  baseHref?: string;
-  /** Editor: switch previewed page without navigating. */
-  onSelectPage?: (slug: string) => void;
   editable?: boolean;
 };
 
@@ -65,14 +56,10 @@ export function SiteBlockRenderer({
   theme,
   site,
   visualStyle,
-  navPages = [],
-  currentPageSlug = "home",
-  baseHref,
-  onSelectPage,
   editable = false,
 }: SiteBlockRendererProps) {
   const preset = getDesignPreset(visualStyle);
-  const isMultipage = navPages.length > 1;
+  const whatsapp = site.phone?.replace(/\D/g, "");
 
   const rootStyle = {
     backgroundColor: theme.background,
@@ -91,7 +78,6 @@ export function SiteBlockRenderer({
   // Sections for the active page, excluding the footer.
   const pageSections = sections
     .filter((s) => s.type !== "footer")
-    .filter((s) => (isMultipage ? s.pageSlug === currentPageSlug : true))
     .sort((a, b) => a.order - b.order);
 
   const sectionNames: Record<string, string> = {
@@ -111,9 +97,6 @@ export function SiteBlockRenderer({
     .slice(0, 5)
     .map((section) => ({ slug: section.type, name: sectionNames[section.type] }));
   const hero = pageSections.find((section) => section.type === "hero");
-
-  const currentPage = navPages.find((p) => p.slug === currentPageSlug);
-  const showPageHeader = isMultipage && currentPageSlug !== "home";
 
   const renderSection = (section: RenderSection) => {
     if (!section.isVisible && !editable) return null;
@@ -144,30 +127,12 @@ export function SiteBlockRenderer({
     <div id="top" data-design-style={preset.id} data-design-motion={preset.motionStyle} style={rootStyle}>
       <SiteNav
         businessName={site.businessName}
-        navPages={isMultipage ? navPages : landingNav}
-        currentSlug={currentPageSlug}
+        navItems={landingNav}
         theme={theme}
         preset={preset}
-        baseHref={baseHref}
-        onSelect={onSelectPage}
-        onePage={!isMultipage}
         ctaText={hero?.ctaText || "Contacto"}
-        ctaHref={isMultipage ? `${baseHref || ""}/contacto` : hero?.ctaLink || "#contact"}
+        ctaHref={hero?.ctaLink || "#contact"}
       />
-
-      {showPageHeader && (
-        <section
-          className="px-6 py-16 text-center"
-          style={{ backgroundColor: theme.secondary, color: "#fff" }}
-        >
-          <h1
-            className="text-3xl font-bold sm:text-5xl"
-            style={{ fontFamily: "var(--site-heading)", fontWeight: preset.headingWeight, textTransform: preset.uppercaseHeadings ? "uppercase" : "none" }}
-          >
-            {currentPage?.name ?? ""}
-          </h1>
-        </section>
-      )}
 
       {pageSections.map(renderSection)}
 
@@ -176,8 +141,20 @@ export function SiteBlockRenderer({
           <FooterBlock section={footer} theme={theme} preset={preset} site={site} index={footer.order} />
           <div className="py-2 text-center text-[10px]" style={{ backgroundColor: theme.secondary, color: getContrastText(theme.secondary) }}>
             Fotos provistas por <a href="https://www.pexels.com" target="_blank" rel="noreferrer" className="underline underline-offset-2">Pexels</a>
+            {site.showBranding !== false && <> · Creado con Cluster</>}
           </div>
         </>
+      )}
+      {whatsapp && whatsapp.length >= 8 && (
+        <a
+          href={`https://wa.me/${whatsapp}`}
+          target="_blank"
+          rel="noreferrer"
+          aria-label={`Contactar a ${site.businessName} por WhatsApp`}
+          className="fixed bottom-5 right-5 z-40 inline-flex min-h-12 items-center rounded-full bg-[#25d366] px-5 text-sm font-bold text-[#062b13] shadow-xl transition-transform hover:scale-105"
+        >
+          WhatsApp
+        </a>
       )}
     </div>
   );

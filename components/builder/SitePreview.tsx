@@ -1,6 +1,5 @@
 import type { SiteTheme } from "@/lib/site/blueprint";
 import type { RenderSection } from "@/lib/site/section";
-import type { NavPage } from "@/lib/site/structure";
 import { SiteBlockRenderer } from "@/components/site-blocks/SiteBlockRenderer";
 
 export type SitePreviewProps = {
@@ -9,13 +8,11 @@ export type SitePreviewProps = {
   phone?: string | null;
   email?: string | null;
   location?: string | null;
+  publicSlug?: string | null;
+  showBranding?: boolean;
   theme: SiteTheme;
   visualStyle?: string | null;
   sections: RenderSection[];
-  navPages?: NavPage[];
-  currentPageSlug?: string;
-  baseHref?: string;
-  onSelectPage?: (slug: string) => void;
   editable?: boolean;
 };
 
@@ -29,13 +26,11 @@ export function SitePreview({
   phone,
   email,
   location,
+  publicSlug,
+  showBranding,
   theme,
   visualStyle,
   sections,
-  navPages = [],
-  currentPageSlug = "home",
-  baseHref,
-  onSelectPage,
   editable = false,
 }: SitePreviewProps) {
   return (
@@ -43,12 +38,8 @@ export function SitePreview({
       sections={sections}
       theme={theme}
       visualStyle={visualStyle}
-      navPages={navPages}
-      currentPageSlug={currentPageSlug}
-      baseHref={baseHref}
-      onSelectPage={onSelectPage}
       editable={editable}
-      site={{ businessName, businessType, phone, email, location }}
+      site={{ businessName, businessType, phone, email, location, publicSlug, showBranding }}
     />
   );
 }
