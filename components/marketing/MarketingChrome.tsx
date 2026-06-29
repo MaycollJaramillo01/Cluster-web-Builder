@@ -53,10 +53,10 @@ export function Brand() {
     <Image
       src="/cluster-logo.webp"
       alt="Cluster logo"
-      width={52}
-      height={52}
+      width={96}
+      height={54}
       className="object-contain"
-      style={{ filter: "invert(1)", mixBlendMode: "screen" }}
+      style={{ filter: "brightness(0) invert(1)" }}
     />
     <span>Cluster</span>
   </Link>;

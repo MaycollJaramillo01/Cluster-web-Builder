@@ -121,6 +121,10 @@ export function HomeHero() {
                 // Recency fade: most recent = full opacity, older = dimmer
                 const recencyOpacity = Math.max(0.25, 1 - (i / markers.length) * 0.65);
 
+                // City only (before first comma) to avoid pill overflow
+                const cityLabel = (m.location ?? m.label).split(",")[0].trim();
+                const pillW = Math.max(56, cityLabel.length * 6.2 + 22);
+
                 return (
                   <Marker key={m.id} coordinates={[m.lon, m.lat]}>
                     {isActive ? (
@@ -137,11 +141,11 @@ export function HomeHero() {
                         {/* Core */}
                         <circle r={5} fill="#a78bfa" />
                         <circle r={2.2} fill="#ede9fe" />
-                        {/* Label pill */}
+                        {/* Label pill — dynamic width */}
                         <rect
-                          x={-42}
-                          y={-40}
-                          width={84}
+                          x={-pillW / 2}
+                          y={-42}
+                          width={pillW}
                           height={20}
                           rx={10}
                           fill="#1d1a23"
@@ -150,13 +154,13 @@ export function HomeHero() {
                         />
                         <text
                           textAnchor="middle"
-                          y={-24}
+                          y={-26}
                           fill="#c4b5fd"
-                          fontSize={9.5}
+                          fontSize={9}
                           fontFamily="Inter, ui-sans-serif, system-ui, sans-serif"
                           fontWeight={500}
                         >
-                          {m.label}
+                          {cityLabel}
                         </text>
                       </>
                     ) : (

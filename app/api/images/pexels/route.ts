@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
   const seed = request.nextUrl.searchParams.get("seed") || query;
   const width = dimension(request.nextUrl.searchParams.get("w"), 1200);
   const height = dimension(request.nextUrl.searchParams.get("h"), 800);
-  const fallback = `https://loremflickr.com/${width}/${height}/${encodeURIComponent(query)}?lock=${stableLock(seed)}`;
+  const fallback = `https://picsum.photos/seed/${encodeURIComponent(seed)}/${width}/${height}`;
   const apiKey = process.env.PEXELS_API_KEY;
 
   if (!apiKey) return NextResponse.redirect(fallback, 307);
