@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ArrowLeft, CreditCard, LayoutGrid, PanelsTopLeft, Plus, Search, Users } from "lucide-react";
+import { ArrowLeft, CreditCard, LayoutGrid, Plus, Search, Users } from "lucide-react";
 
+import { BrandMark } from "@/components/brand/BrandMark";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { Button } from "@/components/ui/button";
@@ -48,7 +49,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
       <header className="border-b border-[#2d243d] bg-[#0f0d15]">
         <div className="mx-auto flex min-h-16 max-w-7xl items-center justify-between gap-4 px-5 py-2 sm:px-8">
           <Link href="/" className="flex shrink-0 items-center gap-2.5 font-semibold tracking-tight">
-            <span className="flex h-8 w-8 items-center justify-center rounded bg-[#8b5cf6] text-white"><PanelsTopLeft className="h-4 w-4" /></span>
+            <BrandMark />
             <span className="hidden sm:inline">Cluster</span>
           </Link>
           <form action="/dashboard" className="hidden w-full max-w-md sm:block" role="search">

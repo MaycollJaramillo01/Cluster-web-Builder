@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { ArrowLeft, PanelsTopLeft } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 
+import { BrandMark } from "@/components/brand/BrandMark";
 import { HomeCreationModes } from "@/components/builder/HomeCreationModes";
 
 export const metadata = { title: "Crear sitio | Cluster Web Builder" };
@@ -11,7 +12,7 @@ export default async function BuilderPage() {
       <header className="border-b border-[#2d243d] bg-[#0f0d15]">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5 sm:px-8">
           <Link href="/" className="flex items-center gap-2.5 font-semibold tracking-tight">
-            <span className="flex h-8 w-8 items-center justify-center rounded bg-[#8b5cf6] text-white"><PanelsTopLeft className="h-4 w-4" /></span>
+            <BrandMark />
             <span>Cluster</span>
             <span className="rounded border border-border px-1.5 py-0.5 text-[10px] font-bold uppercase text-muted-foreground">Beta</span>
           </Link>

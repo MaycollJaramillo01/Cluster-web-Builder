@@ -1,7 +1,7 @@
 import Link from "next/link";
-import Image from "next/image";
 import { Menu } from "lucide-react";
 
+import { BrandMark } from "@/components/brand/BrandMark";
 import { Button } from "@/components/ui/button";
 
 const links = [
@@ -50,14 +50,7 @@ export function MarketingChrome({ children }: { children: React.ReactNode }) {
 
 export function Brand() {
   return <Link href="/" className="flex shrink-0 items-center gap-3 font-semibold tracking-tight text-[#f7f2fb]">
-    <Image
-      src="/cluster-logo.webp"
-      alt="Cluster logo"
-      width={96}
-      height={54}
-      className="object-contain"
-      style={{ filter: "brightness(0) invert(1)" }}
-    />
+    <BrandMark />
     <span>Cluster</span>
   </Link>;
 }

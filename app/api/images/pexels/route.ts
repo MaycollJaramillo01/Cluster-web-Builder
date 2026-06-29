@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
   const fallback = `https://loremflickr.com/${width}/${height}/${encodeURIComponent(query)}?lock=${stableLock(seed)}`;
   const apiKey = process.env.PEXELS_API_KEY;
 
-  if (!apiKey) return NextResponse.redirect(fallback, 307);
+  if (!apiKey) return proxyImage(fallback, query, width, height);
 
   try {
     const endpoint = new URL("https://api.pexels.com/v1/search");
@@ -29,11 +29,11 @@ export async function GET(request: NextRequest) {
       headers: { Authorization: apiKey },
       next: { revalidate: 86_400 },
     });
-    if (!response.ok) return NextResponse.redirect(fallback, 307);
+    if (!response.ok) return proxyImage(fallback, query, width, height);
 
     const data = (await response.json()) as { photos?: PexelsPhoto[] };
     const photos = data.photos ?? [];
-    if (!photos.length) return NextResponse.redirect(fallback, 307);
+    if (!photos.length) return proxyImage(fallback, query, width, height);
 
     const photo = photos[stableLock(seed) % photos.length];
     const image = new URL(photo.src.original);
@@ -43,15 +43,44 @@ export async function GET(request: NextRequest) {
     image.searchParams.set("w", String(width));
     image.searchParams.set("h", String(height));
 
-    const redirect = NextResponse.redirect(image, 307);
-    redirect.headers.set("Cache-Control", "public, max-age=86400, stale-while-revalidate=604800");
-    redirect.headers.set("X-Image-Provider", "Pexels");
-    redirect.headers.set("X-Pexels-Photo-Id", String(photo.id));
-    redirect.headers.set("X-Pexels-Photographer", encodeURIComponent(photo.photographer));
-    return redirect;
+    return proxyImage(image.toString(), query, width, height, {
+      "X-Image-Provider": "Pexels",
+      "X-Pexels-Photo-Id": String(photo.id),
+      "X-Pexels-Photographer": encodeURIComponent(photo.photographer),
+    });
   } catch {
-    return NextResponse.redirect(fallback, 307);
+    return proxyImage(fallback, query, width, height);
   }
+}
+
+async function proxyImage(url: string, query: string, width: number, height: number, extraHeaders: Record<string, string> = {}) {
+  try {
+    const response = await fetch(url, {
+      redirect: "follow",
+      headers: { Accept: "image/avif,image/webp,image/*", "User-Agent": "Cluster-Web-Builder/1.0" },
+      next: { revalidate: 86_400 },
+    });
+    const contentType = response.headers.get("content-type") || "";
+    if (!response.ok || !contentType.startsWith("image/") || !response.body) throw new Error("Invalid image response");
+    return new NextResponse(response.body, {
+      headers: {
+        "Content-Type": contentType,
+        "Cache-Control": "public, max-age=86400, stale-while-revalidate=604800",
+        "X-Image-Provider": extraHeaders["X-Image-Provider"] || "Fallback",
+        ...extraHeaders,
+      },
+    });
+  } catch {
+    const safeQuery = escapeXml(query);
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#21182e"/><stop offset="1" stop-color="#8b5cf6"/></linearGradient></defs><rect width="100%" height="100%" fill="url(#g)"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#f7f2fb" font-family="system-ui,sans-serif" font-size="${Math.max(18, Math.round(width / 32))}">${safeQuery}</text></svg>`;
+    return new NextResponse(svg, {
+      headers: { "Content-Type": "image/svg+xml; charset=utf-8", "Cache-Control": "public, max-age=3600", "X-Image-Provider": "Generated-Fallback" },
+    });
+  }
+}
+
+function escapeXml(value: string) {
+  return value.replace(/[&<>"']/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&apos;" })[character] || character);
 }
 
 function dimension(value: string | null, fallback: number) {

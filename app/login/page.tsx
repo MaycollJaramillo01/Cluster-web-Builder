@@ -1,8 +1,9 @@
 "use client";
 
-import { PanelsTopLeft } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useRef, useState } from "react";
+
+import { BrandMark } from "@/components/brand/BrandMark";
 
 function LoginForm() {
   const router = useRouter();
@@ -68,9 +69,7 @@ function LoginForm() {
       <div className="relative w-full max-w-sm">
         {/* Logo */}
         <div className="mb-8 flex flex-col items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#8b5cf6]">
-            <PanelsTopLeft className="h-6 w-6 text-white" />
-          </div>
+          <BrandMark large />
           <div className="text-center">
             <p className="text-lg font-semibold text-white">Cluster</p>
             <p className="text-sm text-[#7a6d8e]">Publica tu sitio</p>

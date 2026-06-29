@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { notFound, redirect } from "next/navigation";
-import { ArrowLeft, PanelsTopLeft } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
+
+import { BrandMark } from "@/components/brand/BrandMark";
 
 import { TemplatePicker } from "@/components/builder/TemplatePicker";
 import { getCurrentUser, GUEST_COOKIE, hashGuestToken } from "@/lib/auth";
@@ -34,7 +36,7 @@ export default async function TemplatesPage({ params }: { params: Promise<{ site
     <main className="min-h-dvh bg-background text-foreground">
       <header className="border-b border-border bg-[#0f0d15]">
         <div className="mx-auto flex min-h-16 max-w-7xl items-center justify-between gap-4 px-5 py-2 sm:px-8">
-          <Link href="/" className="flex items-center gap-2.5 font-semibold"><span className="flex h-8 w-8 items-center justify-center rounded bg-[#8b5cf6] text-white"><PanelsTopLeft className="h-4 w-4" /></span><span className="hidden sm:inline">Cluster</span></Link>
+          <Link href="/" className="flex items-center gap-2.5 font-semibold"><BrandMark /><span className="hidden sm:inline">Cluster</span></Link>
           <Link href={`/builder/${site.id}`} className="flex min-h-11 items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"><ArrowLeft className="h-4 w-4" /> Ir al editor</Link>
         </div>
       </header>
