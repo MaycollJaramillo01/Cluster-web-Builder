@@ -1,8 +1,8 @@
 "use client";
 
-import { useId, useRef, useState } from "react";
+import { useId, useRef, useState, type ChangeEvent } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowUp, Loader2 } from "lucide-react";
+import { ArrowLeft, ArrowUp, ImageIcon, Loader2, Sparkles, Upload } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -21,10 +21,16 @@ type PromptComposerProps = { variant?: "hero" | "chat" };
 export function PromptComposer({ variant = "chat" }: PromptComposerProps) {
   const router = useRouter();
   const inputId = useId();
+  const logoInputId = useId();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const logoInputRef = useRef<HTMLInputElement>(null);
+
+  const [step, setStep] = useState<"prompt" | "logo">("prompt");
   const [prompt, setPrompt] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [logoDataUrl, setLogoDataUrl] = useState<string | null>(null);
+  const [logoError, setLogoError] = useState<string | null>(null);
 
   const choosePreset = (value: string) => {
     setPrompt(value);
@@ -32,22 +38,129 @@ export function PromptComposer({ variant = "chat" }: PromptComposerProps) {
     requestAnimationFrame(() => textareaRef.current?.focus());
   };
 
-  const submit = () => {
+  const submitPrompt = () => {
     const value = prompt.trim();
     if (value.length < 10) {
       setError("Describe un poco más el sitio que quieres crear.");
       textareaRef.current?.focus();
       return;
     }
+    setStep("logo");
+    setError(null);
+  };
+
+  const handleLogoFile = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      setLogoError("El logo no puede superar 2 MB.");
+      event.target.value = "";
+      return;
+    }
+    setLogoError(null);
+    const reader = new FileReader();
+    reader.onload = (e) => setLogoDataUrl(e.target?.result as string);
+    reader.readAsDataURL(file);
+  };
+
+  const finish = (withLogo: boolean) => {
     setSubmitting(true);
-    sessionStorage.setItem(ONBOARDING_STORAGE_KEY, JSON.stringify({ prompt: value }));
+    if (withLogo && logoDataUrl) {
+      sessionStorage.setItem("cluster_logo", logoDataUrl);
+    } else {
+      sessionStorage.removeItem("cluster_logo");
+    }
+    sessionStorage.setItem(ONBOARDING_STORAGE_KEY, JSON.stringify({ prompt: prompt.trim() }));
     router.push("/builder/generating");
   };
+
+  if (step === "logo") {
+    return (
+      <div className="mx-auto w-full max-w-4xl">
+        <div className="rounded-lg border border-[#494454] bg-[#15121b] p-6 shadow-[0_0_0_3px_rgb(139_92_246/0.08),var(--shadow-md)]">
+          <button
+            type="button"
+            onClick={() => { setStep("prompt"); setLogoDataUrl(null); setLogoError(null); }}
+            className="mb-5 flex items-center gap-1.5 text-sm text-[#9b8ab4] hover:text-[#cbc3d7] transition-colors"
+          >
+            <ArrowLeft className="h-3.5 w-3.5" />
+            Volver al prompt
+          </button>
+
+          <p className="mb-1 text-lg font-semibold text-[#f7f2fb]">¿Tienes un logo?</p>
+          <p className="mb-6 text-sm text-[#9b8ab4]">
+            Súbelo para incluirlo en tu sitio, o deja que la IA lo cree automáticamente.
+          </p>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            {/* Upload option */}
+            <button
+              type="button"
+              onClick={() => logoInputRef.current?.click()}
+              disabled={submitting}
+              className="flex flex-col items-center gap-3 rounded-lg border border-[#494454] bg-[#1d1a23] px-5 py-6 text-center transition-colors hover:border-[#8b5cf6] hover:bg-[#2c2141] disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {logoDataUrl ? (
+                <img
+                  src={logoDataUrl}
+                  alt="Logo subido"
+                  className="h-14 w-auto max-w-[120px] rounded object-contain"
+                />
+              ) : (
+                <Upload className="h-7 w-7 text-[#8b5cf6]" />
+              )}
+              <span className="text-sm font-medium text-[#f7f2fb]">
+                {logoDataUrl ? "Cambiar logo" : "Subir mi logo"}
+              </span>
+              <span className="text-xs text-[#9b8ab4]">PNG, SVG o JPG · máx. 2 MB</span>
+            </button>
+            <input
+              ref={logoInputRef}
+              id={logoInputId}
+              type="file"
+              accept="image/png,image/jpeg,image/svg+xml,image/webp"
+              className="sr-only"
+              onChange={handleLogoFile}
+            />
+
+            {/* AI option */}
+            <button
+              type="button"
+              onClick={() => finish(false)}
+              disabled={submitting}
+              className="flex flex-col items-center gap-3 rounded-lg border border-[#494454] bg-[#1d1a23] px-5 py-6 text-center transition-colors hover:border-[#8b5cf6] hover:bg-[#2c2141] disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <Sparkles className="h-7 w-7 text-[#8b5cf6]" />
+              <span className="text-sm font-medium text-[#f7f2fb]">Que la IA lo cree</span>
+              <span className="text-xs text-[#9b8ab4]">Generamos un logotipo para ti</span>
+            </button>
+          </div>
+
+          {logoError && (
+            <p role="alert" className="mt-3 text-sm text-[#ffb4ab]">{logoError}</p>
+          )}
+
+          {logoDataUrl && (
+            <div className="mt-5 flex justify-end">
+              <Button
+                onClick={() => finish(true)}
+                disabled={submitting}
+                className="min-w-36"
+              >
+                {submitting ? <Loader2 className="animate-spin" /> : <ImageIcon className="h-4 w-4" />}
+                {submitting ? "Generando…" : "Usar este logo"}
+              </Button>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto w-full max-w-4xl">
       <form
-        onSubmit={(event) => { event.preventDefault(); submit(); }}
+        onSubmit={(event) => { event.preventDefault(); submitPrompt(); }}
         className="rounded-lg border border-[#494454] bg-[#15121b] p-3 shadow-[0_0_0_3px_rgb(139_92_246/0.08),var(--shadow-md)] focus-within:border-[#8b5cf6] focus-within:shadow-[var(--shadow-glow)]"
       >
         <label htmlFor={inputId} className="sr-only">
@@ -60,7 +173,7 @@ export function PromptComposer({ variant = "chat" }: PromptComposerProps) {
           maxLength={2000}
           onChange={(event) => { setPrompt(event.target.value); setError(null); }}
           onKeyDown={(event) => {
-            if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); submit(); }
+            if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); submitPrompt(); }
           }}
           placeholder="Describe el sitio que quieres crear…"
           disabled={submitting}
@@ -74,7 +187,7 @@ export function PromptComposer({ variant = "chat" }: PromptComposerProps) {
           </p>
           <Button type="submit" disabled={submitting} className="min-w-28">
             {submitting ? <Loader2 className="animate-spin" /> : <ArrowUp />}
-            {submitting ? "Enviando" : "Generar"}
+            {submitting ? "Enviando" : "Siguiente"}
           </Button>
         </div>
       </form>
