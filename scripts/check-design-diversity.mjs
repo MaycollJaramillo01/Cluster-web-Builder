@@ -13,6 +13,7 @@ const plans = presets.map((preset) => preset.sectionPlan.join(">"));
 const footerStyles = presets.map((preset) => preset.footerStyle);
 const aboutUsStyles = presets.map((preset) => preset.aboutUsStyle);
 const expectedIds = [...DESIGN_STYLE_IDS].sort();
+const expectedCount = expectedIds.length;
 const actualIds = presets.map((preset) => preset.id).sort();
 const expectedFooterStyles = ["brutal", "centered", "columns", "darkBand", "editorial", "minimal"];
 const selectedPalette = {
@@ -30,11 +31,11 @@ function assert(condition, message) {
   }
 }
 
-assert(presets.length === 25, `se esperaban 25 recetas, existen ${presets.length}.`);
-assert(new Set(actualIds).size === 25, "hay identificadores de estilo duplicados.");
+assert(presets.length === expectedCount, `se esperaban ${expectedCount} recetas, existen ${presets.length}.`);
+assert(new Set(actualIds).size === expectedCount, "hay identificadores de estilo duplicados.");
 assert(JSON.stringify(actualIds) === JSON.stringify(expectedIds), "la lista de estilos y las recetas no coinciden.");
-assert(new Set(fingerprints).size === 25, "dos estilos comparten la misma receta visual.");
-assert(new Set(plans).size === 25, "dos estilos comparten exactamente el mismo plan de secciones.");
+assert(new Set(fingerprints).size === expectedCount, "dos estilos comparten la misma receta visual.");
+assert(new Set(plans).size === expectedCount, "dos estilos comparten exactamente el mismo plan de secciones.");
 assert(
   JSON.stringify([...new Set(footerStyles)].sort()) === JSON.stringify(expectedFooterStyles),
   "faltan variantes de footer o alguna receta usa una variante desconocida."
@@ -66,7 +67,7 @@ for (const preset of presets) {
 const genericInput = promptToOnboardingInput("Crea un sitio profesional para mi negocio local");
 assert(genericInput.targetCustomer === "Clientes potenciales", "el parser produce una audiencia genérica o robótica.");
 
-console.log(`Design diversity: 25 estilos, 25 recetas, 25 planes, 6 footers y ${new Set(aboutUsStyles).size} variantes About Us.`);
+console.log(`Design diversity: ${expectedCount} estilos, ${expectedCount} recetas, ${expectedCount} planes, 6 footers y ${new Set(aboutUsStyles).size} variantes About Us.`);
 
 function contrastRatio(first, second) {
   const firstLuminance = luminance(first);

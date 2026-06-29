@@ -16,6 +16,7 @@
     "test:m3": "node scripts/test-m3.mjs",
     "test:m4": "node scripts/test-m4.mjs",
     "test:fast-prompt": "node scripts/test-fast-prompt.mjs",
+    "test:marketing": "node scripts/test-marketing.mjs",
     "postinstall": "prisma generate",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
@@ -52,6 +53,7 @@
     "typescript": "^5.7.3"
   },
   "overrides": {
+    "d3-color": "^3.1.0",
     "postcss": "$postcss"
   }
 }

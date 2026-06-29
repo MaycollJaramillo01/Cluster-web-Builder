@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Globe, Zap } from "lucide-react";
+import Link from "next/link";
+import { ArrowRight, Globe, Zap } from "lucide-react";
 import { ComposableMap, Geographies, Geography, Marker } from "react-simple-maps";
-import { HomeCreationModes } from "@/components/builder/HomeCreationModes";
+import { Button } from "@/components/ui/button";
 
 interface SiteMarker {
   id: string;
@@ -218,23 +219,15 @@ export function HomeHero() {
             </h1>
 
             <p className="mx-auto mt-6 max-w-lg text-[15px] leading-relaxed text-[#9589a3]">
-              Sin plantillas genéricas. Sin código. Completa el formulario y en
-              minutos tienes un sitio profesional listo para editar y publicar.
+              Sin plantillas genéricas. Sin código. Describe tu negocio y en
+              minutos tendrás un sitio profesional listo para editar y publicar.
             </p>
+            <Button asChild size="lg" className="mt-8">
+              <Link href="/builder">Crear sitio gratis <ArrowRight /></Link>
+            </Button>
           </div>
         </div>
       </section>
-
-      {/* ── FORM: plain dark background, no map ── */}
-      <div className="px-4 pb-24 sm:px-8">
-        <div
-          className={`mx-auto max-w-5xl transition-all duration-700 delay-200 ${
-            mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
-          }`}
-        >
-          <HomeCreationModes />
-        </div>
-      </div>
     </>
   );
 }

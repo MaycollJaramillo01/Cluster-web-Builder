@@ -770,6 +770,7 @@ function MediaUploadCard({
       <input
         ref={inputRef}
         type="file"
+        aria-label={`Subir ${label}`}
         accept={accept}
         className="sr-only"
         onChange={onFileChange}

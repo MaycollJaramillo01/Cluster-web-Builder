@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ArrowLeft, PanelsTopLeft } from "lucide-react";
 
-import { OnboardingWizard } from "@/components/builder/OnboardingWizard";
+import { HomeCreationModes } from "@/components/builder/HomeCreationModes";
 
 export const metadata = { title: "Crear sitio | Cluster Web Builder" };
 
@@ -23,7 +23,7 @@ export default async function BuilderPage() {
 
       <section className="px-5 py-12 sm:px-8 sm:py-16">
         <div className="mx-auto mb-9 max-w-4xl">
-          <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#a078ff]">Nuevo proyecto</p>
+          <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#a078ff]">Constructor de sitios</p>
           <h1 className="mt-3 max-w-3xl font-[var(--font-outfit)] text-3xl font-semibold tracking-[-0.03em] sm:text-5xl">
             ¿Qué quieres crear?
           </h1>
@@ -31,7 +31,7 @@ export default async function BuilderPage() {
             Explícalo como se lo contarías a un diseñador. Cluster interpretará el negocio, el objetivo y la dirección visual.
           </p>
         </div>
-        <OnboardingWizard />
+        <HomeCreationModes />
       </section>
     </main>
   );

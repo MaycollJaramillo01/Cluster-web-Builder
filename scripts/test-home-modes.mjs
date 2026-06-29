@@ -6,7 +6,7 @@ const { client } = browser;
 
 try {
   await client.send("Emulation.setDeviceMetricsOverride", { width: 390, height: 844, deviceScaleFactor: 1, mobile: true });
-  await client.send("Page.navigate", { url: baseUrl });
+  await client.send("Page.navigate", { url: `${baseUrl}/builder` });
   await waitFor(() => evaluate(client, "document.readyState === 'complete' && Boolean(document.querySelector('[data-home-mode]'))"));
 
   const initial = await evaluate(client, `(() => ({
@@ -82,7 +82,7 @@ try {
   assert(payload.palette?.background === "#020617", "El payload no conservó el fondo seleccionado.");
   assert(payload.palette?.text === "#f8fafc", "El payload no conservó el texto seleccionado.");
 
-  console.log("Home modes: OK — guiado, avanzado, validación, móvil y payload one_page.");
+  console.log("Builder modes: OK — guiado, avanzado, validación, móvil y payload one_page.");
 } finally {
   browser.close();
 }
