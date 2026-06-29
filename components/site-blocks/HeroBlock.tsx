@@ -170,6 +170,119 @@ export function HeroBlock({ section, theme, preset, site }: BlockProps) {
     );
   }
 
+  // --- Cinematic: full-bleed image, left-biased overlay, serif headline + italic accent line, stats bar ---
+  if (preset.heroStyle === "cinematic") {
+    const accentLine = section.settings?.accentLine as string | undefined;
+    const stats = section.settings?.stats as Array<{ value: string; label: string }> | undefined;
+    const cta2Text = section.settings?.cta2Text as string | undefined;
+    const cta2Link = section.settings?.cta2Link as string | undefined;
+
+    return (
+      <section className="relative flex min-h-[88vh] flex-col overflow-hidden">
+        {/* Full-bleed background image */}
+        <div className="absolute inset-0">
+          <div
+            className="h-full w-full bg-cover bg-center"
+            style={{
+              backgroundImage: `url("${heroImg(1900, 1200, "hero-cinematic")}")`,
+              filter: preset.imageStyle === "monochrome" ? "grayscale(1)" : undefined,
+            }}
+          />
+          {/* Left-biased gradient overlay — dark on left, reveals photo on right */}
+          <div
+            className="absolute inset-0"
+            style={{
+              background: `linear-gradient(100deg, ${theme.secondary}F2 0%, ${theme.secondary}CC 38%, ${theme.secondary}66 65%, ${theme.secondary}1A 100%)`,
+            }}
+          />
+        </div>
+
+        {/* Content */}
+        <div className="relative flex flex-1 flex-col justify-between px-8 py-16 sm:px-16 sm:py-20 lg:px-24">
+          {/* Upper block: headline + body + CTAs */}
+          <div className="max-w-2xl">
+            {section.subtitle && (
+              <p
+                className="mb-6 text-[11px] font-bold uppercase tracking-[0.22em]"
+                style={{ color: theme.accent }}
+              >
+                {section.subtitle}
+              </p>
+            )}
+
+            <h1
+              className="text-5xl font-bold leading-[1.06] text-white sm:text-6xl lg:text-[4.5rem]"
+              style={{
+                fontFamily: "var(--site-heading)",
+                fontWeight: preset.headingWeight,
+                letterSpacing: preset.headingTracking,
+              }}
+            >
+              {section.title}
+            </h1>
+
+            {accentLine && (
+              <p
+                className="mt-0.5 text-5xl font-bold italic leading-[1.06] sm:text-6xl lg:text-[4.5rem]"
+                style={{
+                  fontFamily: "var(--site-heading)",
+                  color: theme.accent,
+                  fontWeight: preset.headingWeight,
+                  letterSpacing: preset.headingTracking,
+                }}
+              >
+                {accentLine}
+              </p>
+            )}
+
+            {section.body && (
+              <p className="mt-7 max-w-md text-sm leading-relaxed text-white/75 sm:text-[15px]">
+                {section.body}
+              </p>
+            )}
+
+            <div className="mt-10 flex flex-wrap gap-3">
+              {ctaButton}
+              {cta2Text && (
+                <a
+                  href={cta2Link || "#"}
+                  className="inline-flex min-h-12 items-center justify-center px-8 py-3.5 text-sm font-semibold text-white transition-all hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2"
+                  style={{
+                    border: "2px solid rgba(255,255,255,0.40)",
+                    borderRadius: preset.buttonRadius,
+                  }}
+                >
+                  {cta2Text}
+                </a>
+              )}
+            </div>
+          </div>
+
+          {/* Stats row anchored at the bottom */}
+          {stats && stats.length > 0 && (
+            <div className="mt-16 flex flex-wrap gap-10 border-t border-white/15 pt-7">
+              {stats.map((stat) => (
+                <div key={stat.label}>
+                  <p
+                    className="text-3xl font-bold sm:text-4xl"
+                    style={{
+                      color: theme.accent,
+                      fontFamily: "var(--site-heading)",
+                      fontWeight: preset.headingWeight,
+                    }}
+                  >
+                    {stat.value}
+                  </p>
+                  <p className="mt-0.5 text-xs text-white/55">{stat.label}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+    );
+  }
+
   // --- Solid: bold color without decorative gradients ---
   if (preset.heroStyle === "gradient" || !preset.useImages) {
     return (

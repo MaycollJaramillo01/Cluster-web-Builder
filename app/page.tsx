@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ArrowUpRight, LayoutDashboard, PanelsTopLeft, Sparkles, WandSparkles } from "lucide-react";
 
-import { HomeCreationModes } from "@/components/builder/HomeCreationModes";
+import { HomeHero } from "@/components/marketing/HomeHero";
 import { Button } from "@/components/ui/button";
 
 export default function HomePage() {
@@ -18,28 +18,7 @@ export default function HomePage() {
         </div>
       </header>
 
-      <section className="relative px-4 pb-20 pt-16 sm:px-8 sm:pb-28 sm:pt-24">
-        <div className="mx-auto max-w-5xl text-center">
-          <div className="mb-7 inline-flex items-center gap-2 rounded-full border border-[#494454] bg-[#1d1a23] px-3 py-1.5 text-xs font-medium text-[#cbc3d7]">
-            <Sparkles className="h-3.5 w-3.5 text-[#d0bcff]" /> Tu próximo sitio empieza aquí
-          </div>
-          <h1 className="font-[var(--font-outfit)] text-5xl font-bold leading-[0.98] tracking-[-0.045em] text-[#f7f2fb] sm:text-7xl lg:text-[5.25rem]">
-            Crea a tu manera.<br />
-            <span className="text-[#a078ff]">Cluster diseña el sitio.</span>
-          </h1>
-          <p className="mx-auto mt-6 max-w-2xl text-base leading-7 text-[#cbc3d7] sm:text-lg">
-            Usa una guía paso a paso si estás comenzando o describe todo con libertad si ya sabes lo que necesitas.
-          </p>
-          <div className="mt-10 text-left">
-            <HomeCreationModes />
-          </div>
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-3 text-xs font-medium text-[#958ea0]">
-            <span>Sin plantillas rígidas</span><span aria-hidden="true">•</span>
-            <span>Contenido editable</span><span aria-hidden="true">•</span>
-            <span>Preview inmediato</span>
-          </div>
-        </div>
-      </section>
+      <HomeHero />
 
       <section className="border-y border-[#2d243d] bg-[#120c1d] px-4 py-20 sm:px-8" aria-labelledby="workspace-title">
         <div className="mx-auto grid max-w-7xl gap-12 lg:grid-cols-[0.75fr_1.25fr] lg:items-center">

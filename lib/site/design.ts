@@ -3,7 +3,7 @@ export const DESIGN_STYLE_IDS = [
   "Bauhaus", "Art Deco", "Minimal", "Flat", "Material", "Neumorphic", "Monochromatic",
   "Scandinavian", "Japandi", "Dark Mode First", "Modernist", "Organic/Fluid",
   "Corporate Professional", "Tech Forward", "Luxury Minimal", "Neo-Geo", "Kinetic",
-  "Gradient Modern", "Typography First", "Metropolitan",
+  "Gradient Modern", "Typography First", "Metropolitan", "Artisan",
 ] as const;
 
 /**
@@ -20,7 +20,8 @@ export type HeroStyle =
   | "editorial"
   | "poster"
   | "framed"
-  | "immersive";
+  | "immersive"
+  | "cinematic";
 export type NavStyle = "bar" | "floating" | "minimal" | "bordered" | "dark";
 export type ServicesStyle = "cards" | "list" | "bento" | "editorial" | "bordered" | "split";
 export type SectionStyle = "centered" | "asymmetric" | "contained" | "fullBleed" | "grid";
@@ -159,6 +160,7 @@ const PRESETS: Record<string, DesignPreset> = {
   "Gradient Modern": recipe({ id: "Gradient Modern", headingFont: '"Space Grotesk", system-ui, sans-serif', radius: "1.25rem", buttonRadius: "9999px", cardShadow: "shadow-xl", uppercaseHeadings: false, heroStyle: "gradient", headingTracking: "-0.04em", headingWeight: 800, navStyle: "floating", servicesStyle: "cards", sectionStyle: "fullBleed", imageStyle: "rounded", surfaceStyle: "glass", motionStyle: "stagger", ctaStyle: "pill", paletteId: "startup_modern", sectionPlan: ["hero", "services", "benefits", "process", "gallery", "faq", "cta", "contact", "footer"] }),
   "Typography First": recipe({ id: "Typography First", headingFont: '"Montserrat", system-ui, sans-serif', radius: "0rem", buttonRadius: "0rem", cardShadow: "shadow-none", uppercaseHeadings: true, heroStyle: "poster", useImages: false, headingTracking: "-0.06em", headingWeight: 900, navStyle: "minimal", servicesStyle: "editorial", sectionStyle: "asymmetric", imageStyle: "square", surfaceStyle: "plain", motionStyle: "kinetic", ctaStyle: "link", paletteId: "bold", sectionPlan: ["hero", "about", "benefits", "services", "faq", "cta", "contact", "footer"] }),
   Metropolitan: recipe({ id: "Metropolitan", headingFont: '"Playfair Display", Georgia, serif', radius: "0.25rem", buttonRadius: "0.25rem", cardShadow: "shadow-lg", uppercaseHeadings: false, heroStyle: "editorial", headingTracking: "-0.02em", headingWeight: 700, navStyle: "dark", servicesStyle: "split", sectionStyle: "grid", imageStyle: "monochrome", surfaceStyle: "outlined", motionStyle: "subtle", ctaStyle: "outline", paletteId: "corporate", sectionPlan: ["hero", "about", "services", "process", "gallery", "faq", "cta", "contact", "footer"] }),
+  Artisan: recipe({ id: "Artisan", headingFont: '"Playfair Display", Georgia, serif', radius: "0.2rem", buttonRadius: "9999px", cardShadow: "shadow-md", uppercaseHeadings: false, heroStyle: "cinematic", headingTracking: "-0.02em", headingWeight: 700, navStyle: "dark", servicesStyle: "editorial", sectionStyle: "asymmetric", imageStyle: "fullBleed", surfaceStyle: "tonal", motionStyle: "subtle", ctaStyle: "pill", paletteId: "artisan_nature", sectionPlan: ["hero", "about", "services", "gallery", "benefits", "testimonials", "cta", "contact", "footer"] }),
 };
 
 const LEGACY_STYLE_MAP: Record<string, string> = {
@@ -380,6 +382,12 @@ const EXTRA_PALETTES: Record<string, Palette[]> = {
     { primary: "#22c55e", secondary: "#020617", accent: "#38bdf8", background: "#020617", text: "#e5e7eb" },
     { primary: "#0ea5e9", secondary: "#0f172a", accent: "#a3e635", background: "#030712", text: "#f8fafc" },
     { primary: "#7c3aed", secondary: "#111827", accent: "#22d3ee", background: "#0b1120", text: "#f9fafb" },
+  ],
+
+  artisan_nature: [
+    { primary: "#2c4a2c", secondary: "#0d1a0d", accent: "#8fa870", background: "#f8f5ee", text: "#1c2018" },
+    { primary: "#4a3c28", secondary: "#1a130a", accent: "#c8a878", background: "#f5f0e8", text: "#1a1510" },
+    { primary: "#2c3c4a", secondary: "#0d1520", accent: "#7ab0c8", background: "#f0f4f8", text: "#151e28" },
   ],
 };
 

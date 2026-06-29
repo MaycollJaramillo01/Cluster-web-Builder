@@ -40,6 +40,7 @@ const PROFILES: Record<LandingDesignStyle, StyleProfile> = {
   "Gradient Modern": profile("luminosa, optimista y envolvente", "transiciones de color que separan momentos del relato", "amable, moderna y de alto contraste", "suave, continua y atmosférica", "luz al amanecer, vidrio coloreado y espacios inmersivos"),
   "Typography First": profile("expresiva, inteligente y memorable", "la letra como imagen, ritmo y navegación", "protagonista, distintiva y cuidadosamente compuesta", "precisa, editorial y guiada por el texto", "carteles culturales, composición tipográfica y poesía visual"),
   Metropolitan: profile("cosmopolita, culta y segura", "capas editoriales con ritmo urbano", "sofisticada, compacta y contemporánea", "fluida, veloz y elegante", "vestíbulos urbanos, mapas, piedra, metal y cultura de gran ciudad"),
+  Artisan: profile("auténtica, arraigada y evocadora", "fotografía cinematográfica con texto poderoso a la izquierda y estadísticas ancla al fondo", "serif elegante con línea de acento en itálica y color", "pausada, táctil y atmosférica", "talleres de oficio, naturaleza densa, materiales en estado puro y fotografía de reportaje"),
 };
 
 function profile(

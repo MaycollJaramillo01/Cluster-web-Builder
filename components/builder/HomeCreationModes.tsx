@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { useId, useRef, useState, type ChangeEvent, type FormEvent, type ReactNode, type RefObject } from "react";
 import { useRouter } from "next/navigation";
 import {
   ArrowRight,
@@ -8,6 +8,7 @@ import {
   Clock3,
   Code2,
   Globe2,
+  ImageIcon,
   Loader2,
   MapPin,
   PackagePlus,
@@ -17,6 +18,8 @@ import {
   Sparkles,
   Store,
   Trash2,
+  Upload,
+  X,
 } from "lucide-react";
 
 import {
@@ -28,6 +31,7 @@ import { Button } from "@/components/ui/button";
 type CreationMode = "guided" | "advanced";
 type FieldErrors = Record<string, string>;
 type ServiceRow = { id: number; name: string; price: string; description: string };
+type MediaMode = "ai" | "upload";
 
 const BUSINESS_TYPES = [
   ["restaurant", "Restaurante o cafetería"],
@@ -198,6 +202,12 @@ function GuidedHomeForm() {
     { id: 1, name: "", price: "", description: "" },
   ]);
   const [paletteId, setPaletteId] = useState("cluster");
+  const [logoMode, setLogoMode] = useState<MediaMode>("ai");
+  const [coverMode, setCoverMode] = useState<MediaMode>("ai");
+  const [logoDataUrl, setLogoDataUrl] = useState<string | null>(null);
+  const [coverDataUrl, setCoverDataUrl] = useState<string | null>(null);
+  const logoInputRef = useRef<HTMLInputElement>(null);
+  const coverInputRef = useRef<HTMLInputElement>(null);
   const [errors, setErrors] = useState<FieldErrors>({});
   const [submitting, setSubmitting] = useState(false);
 
@@ -231,6 +241,34 @@ function GuidedHomeForm() {
       delete next[field];
       return next;
     });
+  };
+
+  const handleLogoFile = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      setErrors((current) => ({ ...current, logo: "El logo no puede superar 2 MB." }));
+      event.target.value = "";
+      return;
+    }
+    clearError("logo");
+    const reader = new FileReader();
+    reader.onload = (e) => setLogoDataUrl(e.target?.result as string);
+    reader.readAsDataURL(file);
+  };
+
+  const handleCoverFile = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      setErrors((current) => ({ ...current, cover: "La imagen no puede superar 5 MB." }));
+      event.target.value = "";
+      return;
+    }
+    clearError("cover");
+    const reader = new FileReader();
+    reader.onload = (e) => setCoverDataUrl(e.target?.result as string);
+    reader.readAsDataURL(file);
   };
 
   const submit = (event: FormEvent<HTMLFormElement>) => {
@@ -291,6 +329,16 @@ function GuidedHomeForm() {
     ].filter(Boolean).join("\n").slice(0, 800);
 
     setSubmitting(true);
+    if (logoMode === "upload" && logoDataUrl) {
+      sessionStorage.setItem("cluster_logo", logoDataUrl);
+    } else {
+      sessionStorage.removeItem("cluster_logo");
+    }
+    if (coverMode === "upload" && coverDataUrl) {
+      sessionStorage.setItem("cluster_cover", coverDataUrl);
+    } else {
+      sessionStorage.removeItem("cluster_cover");
+    }
     sessionStorage.setItem(ONBOARDING_STORAGE_KEY, JSON.stringify({
       businessName: businessName.trim(),
       businessType,
@@ -522,10 +570,45 @@ function GuidedHomeForm() {
           </div>
         </fieldset>
 
+        <fieldset className="space-y-4">
+          <legend className="flex items-center gap-2 text-base font-bold"><ImageIcon className="h-5 w-5 text-[#a078ff]" /> Logo e imagen de portada</legend>
+          <p className="text-sm text-[#aaa1b5]">Sube tus propias imágenes o deja que la IA las prepare por ti.</p>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <MediaUploadCard
+              label="Logo"
+              aiHint="La IA usará el nombre de tu negocio"
+              mode={logoMode}
+              preview={logoDataUrl}
+              error={errors.logo}
+              onModeChange={(m) => { setLogoMode(m); clearError("logo"); }}
+              onFileChange={handleLogoFile}
+              onRemove={() => { setLogoDataUrl(null); clearError("logo"); if (logoInputRef.current) logoInputRef.current.value = ""; }}
+              inputRef={logoInputRef}
+              accept="image/png,image/jpeg,image/webp,image/svg+xml"
+              maxSize="2 MB"
+            />
+            <MediaUploadCard
+              label="Imagen de portada"
+              aiHint="La IA elegirá una imagen profesional"
+              mode={coverMode}
+              preview={coverDataUrl}
+              error={errors.cover}
+              onModeChange={(m) => { setCoverMode(m); clearError("cover"); }}
+              onFileChange={handleCoverFile}
+              onRemove={() => { setCoverDataUrl(null); clearError("cover"); if (coverInputRef.current) coverInputRef.current.value = ""; }}
+              inputRef={coverInputRef}
+              accept="image/png,image/jpeg,image/webp"
+              maxSize="5 MB"
+            />
+          </div>
+        </fieldset>
+
         <div className="grid gap-5 rounded-lg border border-[#4c3968] bg-[#241a35] p-5 sm:grid-cols-2 sm:p-6">
           <div>
             <p className="flex items-center gap-2 text-sm font-bold text-[#e9ddff]"><Sparkles className="h-4 w-4" /> Imágenes incluidas</p>
-            <p className="mt-1 text-sm leading-6 text-[#bcaed0]">La IA preparará el estilo visual y una imagen de portada acorde a tu negocio.</p>
+            <p className="mt-1 text-sm leading-6 text-[#bcaed0]">
+              {coverMode === "upload" && coverDataUrl ? "Usaremos tu imagen de portada en el diseño." : "La IA preparará una imagen de portada acorde a tu negocio."}
+            </p>
           </div>
           <div>
             <p className="flex items-center gap-2 text-sm font-bold text-[#e9ddff]"><Globe2 className="h-4 w-4" /> Página principal</p>
@@ -594,6 +677,107 @@ function Field({
       {children}
       {error && <span role="alert" className="mt-1.5 block text-sm font-medium text-[#ffb4ab]">{error}</span>}
     </label>
+  );
+}
+
+function MediaUploadCard({
+  label,
+  aiHint,
+  mode,
+  preview,
+  error,
+  onModeChange,
+  onFileChange,
+  onRemove,
+  inputRef,
+  accept,
+  maxSize,
+}: {
+  label: string;
+  aiHint: string;
+  mode: MediaMode;
+  preview: string | null;
+  error?: string;
+  onModeChange: (mode: MediaMode) => void;
+  onFileChange: (event: ChangeEvent<HTMLInputElement>) => void;
+  onRemove: () => void;
+  inputRef: RefObject<HTMLInputElement | null>;
+  accept: string;
+  maxSize: string;
+}) {
+  return (
+    <div className="rounded-lg border border-[#3d3549] bg-[#1d1a23] p-4">
+      <p className="mb-3 text-sm font-semibold text-[#e7e0ed]">{label}</p>
+      <div className="mb-3 grid grid-cols-2 gap-2">
+        <button
+          type="button"
+          onClick={() => onModeChange("ai")}
+          className={`flex items-center justify-center gap-1.5 rounded-md border px-3 py-2 text-xs font-semibold transition-[background-color,border-color] ${
+            mode === "ai"
+              ? "border-[#8b5cf6] bg-[#2c2141] text-[#c4b5fd]"
+              : "border-[#494454] bg-[#15121b] text-[#958ea0] hover:border-[#6f647d] hover:text-[#cbc3d7]"
+          }`}
+        >
+          <Sparkles className="h-3.5 w-3.5" />
+          IA lo hace
+        </button>
+        <button
+          type="button"
+          onClick={() => onModeChange("upload")}
+          className={`flex items-center justify-center gap-1.5 rounded-md border px-3 py-2 text-xs font-semibold transition-[background-color,border-color] ${
+            mode === "upload"
+              ? "border-[#8b5cf6] bg-[#2c2141] text-[#c4b5fd]"
+              : "border-[#494454] bg-[#15121b] text-[#958ea0] hover:border-[#6f647d] hover:text-[#cbc3d7]"
+          }`}
+        >
+          <Upload className="h-3.5 w-3.5" />
+          Subir
+        </button>
+      </div>
+
+      {mode === "ai" ? (
+        <div className="flex h-28 items-center justify-center rounded-lg border border-dashed border-[#3d3549] bg-[#15121b]">
+          <div className="text-center">
+            <Sparkles className="mx-auto h-6 w-6 text-[#a078ff] opacity-50" />
+            <p className="mt-2 text-xs leading-5 text-[#70677a]">{aiHint}</p>
+          </div>
+        </div>
+      ) : preview ? (
+        <div className="relative h-28 overflow-hidden rounded-lg border border-[#3d3549]">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={preview} alt={label} className="h-full w-full object-contain bg-[#0f0d15]" />
+          <button
+            type="button"
+            onClick={onRemove}
+            aria-label={`Eliminar ${label}`}
+            className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-[#0f0d15]/80 text-[#f7f2fb] hover:bg-red-950 hover:text-[#ffb4ab]"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => inputRef.current?.click()}
+          className="flex h-28 w-full flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-[#5b5068] bg-[#15121b] text-[#958ea0] transition-[border-color,background-color] hover:border-[#8b5cf6] hover:bg-[#1e1a2b] hover:text-[#cbc3d7]"
+        >
+          <Upload className="h-6 w-6" />
+          <span className="text-xs">Haz clic para subir</span>
+          <span className="text-[10px] opacity-70">Máx. {maxSize}</span>
+        </button>
+      )}
+
+      <input
+        ref={inputRef}
+        type="file"
+        accept={accept}
+        className="sr-only"
+        onChange={onFileChange}
+        tabIndex={-1}
+        aria-hidden="true"
+      />
+      {error && <span role="alert" className="mt-2 block text-xs font-medium text-[#ffb4ab]">{error}</span>}
+    </div>
   );
 }
 

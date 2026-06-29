@@ -94,6 +94,15 @@
     opacity var(--modal-close-dur) var(--modal-ease);
 }
 
+/* ---- Home Hero ---- */
+.hero-gradient-text {
+  background: linear-gradient(135deg, #c4b5fd 0%, #8b5cf6 45%, #a78bfa 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+
 @media (prefers-reduced-motion: reduce) {
   .t-modal {
     transform: none !important;
