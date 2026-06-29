@@ -5,6 +5,7 @@ import { SitePreview } from "@/components/builder/SitePreview";
 import { prisma } from "@/lib/db";
 import { toRenderSection } from "@/lib/site/section";
 import { themeFromSite } from "@/lib/site/theme";
+import { socialLinksFromBlueprint } from "@/lib/site/social-links";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -29,6 +30,6 @@ export default async function CustomDomainPage({ params }: { params: Promise<{ d
   const structuredData = { "@context": "https://schema.org", "@type": "LocalBusiness", name: site.businessName, url: `https://${site.customDomain}`, telephone: site.phone || undefined, email: site.email || undefined, address: site.location || undefined };
   return <main>
     <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData).replace(/</g, "\\u003c") }} />
-    <SitePreview businessName={site.businessName} businessType={site.businessType} phone={site.phone} email={site.email} location={site.location} publicSlug={site.publicSlug} showBranding={false} theme={themeFromSite(site)} visualStyle={site.visualStyle} sections={site.sections.map(toRenderSection)} />
+    <SitePreview businessName={site.businessName} businessType={site.businessType} phone={site.phone} email={site.email} location={site.location} publicSlug={site.publicSlug} showBranding={false} socialLinks={socialLinksFromBlueprint(site.blueprintJson)} theme={themeFromSite(site)} visualStyle={site.visualStyle} sections={site.sections.map(toRenderSection)} />
   </main>;
 }

@@ -13,7 +13,7 @@ const { client } = browser;
 try {
   const dashboardHtml = await fetch(`${baseUrl}/dashboard`).then((response) => response.text());
   const previewId = dashboardHtml.match(/\/preview\/([a-z0-9]+)/i)?.[1];
-  const routes = ["/", "/builder", "/dashboard", ...(previewId ? [`/builder/${previewId}`, `/preview/${previewId}`] : [])];
+  const routes = ["/", "/builder", "/dashboard", "/help", "/para-negocios", "/pricing", "/test-results", ...(previewId ? [`/builder/${previewId}`, `/preview/${previewId}`] : [])];
   const viewports = [
     ["desktop", 1440, 900], ["laptop", 1280, 800], ["tablet", 768, 900], ["mobile", 390, 844],
   ];

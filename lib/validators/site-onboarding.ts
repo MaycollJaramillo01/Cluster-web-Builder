@@ -18,6 +18,7 @@ export const VISUAL_STYLES = [
 export const LANGUAGES = ["es", "en", "bilingual"] as const;
 
 const paletteColor = z.string().regex(/^#[0-9a-fA-F]{6}$/, "Color de paleta inválido.");
+const socialHandle = z.string().trim().max(200).optional().or(z.literal(""));
 
 export const onboardingSchema = z
   .object({
@@ -43,6 +44,13 @@ export const onboardingSchema = z
         text: paletteColor,
       })
       .optional(),
+    socialLinks: z.object({
+      instagram: socialHandle,
+      facebook: socialHandle,
+      tiktok: socialHandle,
+      linkedin: socialHandle,
+      youtube: socialHandle,
+    }).optional(),
   })
   .superRefine((input, ctx) => {
     if (input.businessType === "other" && !input.customBusinessType) {
@@ -175,6 +183,18 @@ export function promptToOnboardingInput(prompt: string): OnboardingInput {
     domain: "",
     language: detectLanguage(lower),
     visualStyle: detectVisualStyle(lower),
+    socialLinks: extractSocialLinks(value),
+  };
+}
+
+function extractSocialLinks(value: string) {
+  const find = (domain: string) => value.match(new RegExp(`(?:https?:\\/\\/)?(?:www\\.)?${domain}\\.com\\/[^\\s,;]+`, "i"))?.[0] ?? "";
+  return {
+    instagram: find("instagram"),
+    facebook: find("facebook"),
+    tiktok: find("tiktok"),
+    linkedin: find("linkedin"),
+    youtube: find("youtube"),
   };
 }
 

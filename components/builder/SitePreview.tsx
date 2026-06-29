@@ -1,6 +1,7 @@
 import type { SiteTheme } from "@/lib/site/blueprint";
 import type { RenderSection } from "@/lib/site/section";
 import { SiteBlockRenderer } from "@/components/site-blocks/SiteBlockRenderer";
+import type { SocialLinks } from "@/lib/site/social-links";
 
 export type SitePreviewProps = {
   businessName: string;
@@ -14,6 +15,7 @@ export type SitePreviewProps = {
   visualStyle?: string | null;
   sections: RenderSection[];
   editable?: boolean;
+  socialLinks?: SocialLinks;
 };
 
 /**
@@ -32,6 +34,7 @@ export function SitePreview({
   visualStyle,
   sections,
   editable = false,
+  socialLinks,
 }: SitePreviewProps) {
   return (
     <SiteBlockRenderer
@@ -39,7 +42,7 @@ export function SitePreview({
       theme={theme}
       visualStyle={visualStyle}
       editable={editable}
-      site={{ businessName, businessType, phone, email, location, publicSlug, showBranding }}
+      site={{ businessName, businessType, phone, email, location, publicSlug, showBranding, socialLinks }}
     />
   );
 }

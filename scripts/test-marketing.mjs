@@ -1,5 +1,5 @@
 const baseUrl = process.env.BASE_URL || "http://localhost:3010";
-const publicRoutes = ["/", "/templates", "/domains", "/pricing", "/examples", "/help", "/terms", "/privacy", "/cookies", "/refund-policy", "/acceptable-use"];
+const publicRoutes = ["/", "/para-negocios", "/domains", "/pricing", "/help", "/terms", "/privacy", "/cookies", "/refund-policy", "/acceptable-use"];
 
 const pages = await Promise.all(publicRoutes.map(async (route) => {
   const response = await fetch(`${baseUrl}${route}`);
@@ -14,7 +14,8 @@ for (const page of pages) {
 
 const home = pages[0].html;
 assert(!home.includes("data-home-mode") && !home.includes("ai-builder:onboarding"), "el constructor todavía se carga en el home");
-for (const route of ["/templates", "/domains", "/pricing", "/examples", "/help"]) assert(home.includes(`href="${route}"`), `falta ${route} en el header`);
+for (const route of ["/para-negocios", "/pricing", "/help"]) assert(home.includes(`href="${route}"`), `falta ${route} en el header`);
+assert(!home.includes('href="/templates"') && !home.includes('href="/examples"'), "el header todavía enlaza páginas retiradas");
 
 const builder = await fetch(`${baseUrl}/builder`).then((response) => response.text());
 assert(builder.includes("data-home-mode") && builder.includes("advanced-mode-tab"), "los modos guiado y avanzado no están en /builder");

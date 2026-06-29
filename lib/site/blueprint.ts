@@ -66,6 +66,14 @@ export const blueprintSeoSchema = z.object({
   secondaryKeywords: z.array(z.string()).optional().default([]),
 });
 
+export const socialLinksSchema = z.object({
+  instagram: z.string().optional().default(""),
+  facebook: z.string().optional().default(""),
+  tiktok: z.string().optional().default(""),
+  linkedin: z.string().optional().default(""),
+  youtube: z.string().optional().default(""),
+});
+
 export const blueprintSiteSchema = z.object({
   businessName: z.string().optional().default(""),
   businessType: z.string().optional().default(""),
@@ -73,6 +81,7 @@ export const blueprintSiteSchema = z.object({
   goal: z.string().optional().default(""),
   tone: z.string().optional().default(""),
   visualStyle: blueprintVisualStyleSchema.optional().default({}),
+  socialLinks: socialLinksSchema.optional().default({}),
   seo: blueprintSeoSchema.optional().default({}),
   pages: z.array(blueprintPageSchema).default([]),
 });

@@ -7,6 +7,7 @@ import { prisma } from "@/lib/db";
 import { absolutePublicSiteUrl } from "@/lib/site/public-url";
 import { toRenderSection } from "@/lib/site/section";
 import { themeFromSite } from "@/lib/site/theme";
+import { socialLinksFromBlueprint } from "@/lib/site/social-links";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -64,6 +65,7 @@ export default async function PublicSitePage({ params }: { params: Promise<{ slu
         location={site.location}
         publicSlug={site.publicSlug}
         showBranding={site.user?.planStatus !== "ACTIVE"}
+        socialLinks={socialLinksFromBlueprint(site.blueprintJson)}
         theme={themeFromSite(site)}
         visualStyle={site.visualStyle}
         sections={site.sections.map(toRenderSection)}

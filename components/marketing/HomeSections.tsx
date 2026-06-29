@@ -61,7 +61,7 @@ function Showcase({ sites }: { sites: ShowcaseSite[] }) {
 
       <div className="mt-10 flex flex-col justify-center gap-3 sm:flex-row">
         <Button asChild size="lg"><Link href="/builder">Crear un sitio <ArrowUpRight /></Link></Button>
-        <Button asChild size="lg" variant="outline" className="border-[#bcb3c6] bg-transparent text-[#18131f] hover:bg-white hover:text-[#18131f]"><Link href="/examples">Explorar sitios publicados</Link></Button>
+        <Button asChild size="lg" variant="outline" className="border-[#bcb3c6] bg-transparent text-[#18131f] hover:bg-white hover:text-[#18131f]"><Link href="/para-negocios">Ver qué incluye</Link></Button>
       </div>
     </div>
   </section>;

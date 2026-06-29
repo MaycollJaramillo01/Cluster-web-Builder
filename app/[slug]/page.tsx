@@ -1,16 +1,16 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowRight, Check, CircleHelp, Globe2, LayoutTemplate, ShieldCheck } from "lucide-react";
+import { ArrowRight, Check, CheckCircle2, CircleHelp, Globe2, LayoutTemplate, MessageSquareText, PencilLine, Rocket, ShieldCheck } from "lucide-react";
 
 import { MarketingChrome } from "@/components/marketing/MarketingChrome";
+import { PricingShowcasePage } from "@/components/marketing/PricingShowcasePage";
 import { Button } from "@/components/ui/button";
 
 const pages = {
-  templates: { title: "Plantillas para empezar con dirección", description: "Elige una categoría; Cluster adapta el contenido, la paleta y hasta seis estilos a tu negocio." },
   domains: { title: "Tu dominio, conectado sin complicaciones", description: "Publica primero con un enlace gratuito y conecta tu dominio cuando estés listo." },
   pricing: { title: "Empieza gratis. Mejora cuando lo necesites.", description: "Prueba el constructor sin tarjeta. Cluster Pro reúne dominio, hosting y mayor capacidad de IA en un solo plan." },
-  help: { title: "Ayuda directa para publicar", description: "Respuestas breves para crear, editar, publicar y administrar tu sitio." },
+  help: { title: "Cómo funciona Cluster", description: "Crea el primer borrador, elige un diseño y publica cuando el sitio represente a tu negocio." },
   terms: { title: "Términos de servicio", description: "Reglas básicas para utilizar Cluster." },
   privacy: { title: "Política de privacidad", description: "Qué datos procesa Cluster y para qué se utilizan." },
   cookies: { title: "Política de cookies", description: "Cómo se usa el almacenamiento necesario para operar la plataforma." },
@@ -31,6 +31,8 @@ export default async function PublicPage({ params }: { params: Promise<{ slug: s
   const slug = (await params).slug as Slug;
   const page = pages[slug];
   if (!page) notFound();
+  if (slug === "help") return <MarketingChrome><Help /></MarketingChrome>;
+  if (slug === "pricing") return <MarketingChrome><Pricing /></MarketingChrome>;
   return <MarketingChrome><main><Hero title={page.title} description={page.description} />{renderPage(slug)}</main></MarketingChrome>;
 }
 
@@ -38,17 +40,9 @@ function Hero({ title, description }: { title: string; description: string }) {
   return <section className="border-b border-border px-5 py-16 sm:px-8 sm:py-24"><div className="mx-auto max-w-5xl text-center"><h1 className="font-[var(--font-outfit)] text-4xl font-semibold tracking-[-.04em] sm:text-6xl">{title}</h1><p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-muted-foreground">{description}</p></div></section>;
 }
 
-function renderPage(slug: Slug) {
-  if (slug === "templates") return <Templates />;
+function renderPage(slug: Exclude<Slug, "help" | "pricing">) {
   if (slug === "domains") return <Domains />;
-  if (slug === "pricing") return <Pricing />;
-  if (slug === "help") return <Help />;
   return <Legal slug={slug} />;
-}
-
-function Templates() {
-  const categories = ["Restaurantes", "Servicios profesionales", "Belleza y bienestar", "Salud", "Tiendas locales", "Portafolios"];
-  return <section className="px-5 py-16 sm:px-8"><div className="mx-auto grid max-w-7xl gap-5 sm:grid-cols-2 lg:grid-cols-3">{categories.map((category, index) => <article key={category} className="overflow-hidden rounded-xl border border-border bg-card"><div className={`h-44 soft-grid p-5 ${index % 2 ? "bg-[#181329]" : "bg-[#211a2d]"}`}><div className="h-full rounded-lg border border-[#5b4774] bg-[#f7f3ed] p-4"><div className="h-2 w-1/3 bg-[#17131b]" /><div className="mt-8 h-4 w-4/5 bg-[#17131b]" /><div className="mt-2 h-4 w-3/5 bg-[#17131b]" /><div className="mt-5 h-8 w-24 rounded bg-[#8b5cf6]" /></div></div><div className="p-5"><LayoutTemplate className="h-5 w-5 text-[#a078ff]" /><h2 className="mt-3 text-xl font-semibold">{category}</h2><p className="mt-2 text-sm leading-6 text-muted-foreground">Contenido y estructura adaptados a esta actividad.</p><Link href="/builder" className="mt-4 inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-[#d0bcff]">Crear con esta categoría <ArrowRight className="h-4 w-4" /></Link></div></article>)}</div></section>;
 }
 
 function Domains() {
@@ -60,7 +54,7 @@ function Domains() {
 }
 
 function Pricing() {
-  return <section className="px-5 py-16 sm:px-8"><div className="mx-auto grid max-w-4xl gap-6 md:grid-cols-2"><article className="rounded-xl border border-border bg-card p-7"><p className="text-sm font-bold text-muted-foreground">Gratis</p><h2 className="mt-3 text-3xl font-semibold">Crea antes de pagar</h2><ul className="mt-6 space-y-3 text-sm">{["Generación con IA", "Editor visual", "Subdominio público", "Formulario de contactos", "Descarga ZIP"].map((item) => <li key={item} className="flex gap-2"><Check className="h-5 w-5 text-emerald-400" />{item}</li>)}</ul><Button asChild variant="outline" className="mt-8 w-full"><Link href="/builder">Probar gratis</Link></Button></article><article className="rounded-xl border border-[#6e46a5] bg-[#21182e] p-7 shadow-[var(--shadow-glow)]"><p className="text-sm font-bold text-[#d0bcff]">Un solo plan</p><h2 className="mt-3 text-3xl font-semibold">Cluster Pro</h2><p className="mt-2 text-sm text-muted-foreground">El precio vigente se muestra antes de confirmar el pago.</p><ul className="mt-6 space-y-3 text-sm">{["Dominio personalizado y SSL", "Hosting administrado", "100 generaciones por hora", "Sin marca Cluster"].map((item) => <li key={item} className="flex gap-2"><Check className="h-5 w-5 text-emerald-400" />{item}</li>)}</ul><Button asChild className="mt-8 w-full"><Link href="/billing">Ver Cluster Pro</Link></Button></article></div></section>;
+  return <PricingShowcasePage />;
 }
 
 function Help() {
@@ -72,10 +66,116 @@ function Help() {
     ["¿Puedo usar mi dominio?", "Sí, con Cluster Pro desde la opción Dominio del proyecto."],
     ["¿Puedo descargar el sitio?", "Sí. La descarga entrega un ZIP estático desde el editor."],
   ];
-  return <section className="px-5 py-16 sm:px-8"><div className="mx-auto grid max-w-4xl gap-4">{questions.map(([question, answer]) => <details key={question} className="rounded-xl border border-border bg-card p-5"><summary className="flex min-h-11 cursor-pointer list-none items-center gap-3 font-semibold"><CircleHelp className="h-5 w-5 shrink-0 text-[#a078ff]" />{question}</summary><p className="pl-8 pt-3 text-sm leading-6 text-muted-foreground">{answer}</p></details>)}</div></section>;
+  const steps = [
+    { number: "01", icon: MessageSquareText, title: "Cuéntanos qué necesitas", copy: "Escribe una idea breve o completa la guía con los datos reales de tu negocio." },
+    { number: "02", icon: LayoutTemplate, title: "Compara diseños reales", copy: "Cluster interpreta la actividad y te presenta hasta seis composiciones para elegir." },
+    { number: "03", icon: Rocket, title: "Edita y publica", copy: "Ajusta contenido, colores y secciones. Inicia sesión solo cuando quieras guardar, descargar o publicar." },
+  ];
+
+  return <main>
+    <section className="relative overflow-hidden border-b border-border px-5 py-16 sm:px-8 sm:py-24 lg:py-28">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_76%_18%,rgb(139_92_246/0.2),transparent_28rem)]" />
+      <div className="relative mx-auto grid max-w-7xl gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(28rem,.8fr)] lg:items-center">
+        <div>
+          <div className="inline-flex min-h-9 items-center gap-2 rounded-full border border-[#8b5cf6]/40 bg-[#8b5cf6]/10 px-3 text-sm font-semibold text-[#d0bcff]">
+            <CheckCircle2 className="h-4 w-4" aria-hidden="true" /> Sin registro para empezar
+          </div>
+          <p className="mt-8 text-xs font-bold uppercase tracking-[0.2em] text-[#a078ff]">Cómo funciona Cluster</p>
+          <h1 className="mt-4 max-w-4xl font-[var(--font-outfit)] text-5xl font-semibold leading-[0.96] tracking-[-0.055em] text-[#f7f2fb] sm:text-7xl">
+            De una idea a un sitio que ya puedes usar.
+          </h1>
+          <p className="mt-6 max-w-2xl text-base leading-7 text-[#b8afc2] sm:text-lg sm:leading-8">
+            No empiezas frente a un lienzo vacío. Cluster convierte la información de tu negocio en diseños completos, editables y listos para publicar.
+          </p>
+          <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+            <Button asChild size="lg"><Link href="/builder">Crear mi sitio <ArrowRight /></Link></Button>
+            <Button asChild size="lg" variant="outline"><Link href="/para-negocios">Ver qué incluye <CheckCircle2 /></Link></Button>
+          </div>
+        </div>
+
+        <div className="relative mx-auto w-full max-w-xl">
+          <div className="absolute -inset-4 rounded-[2rem] bg-[#8b5cf6]/10 blur-2xl" />
+          <div className="relative overflow-hidden rounded-2xl border border-[#554a61] bg-[#15121b] shadow-[0_32px_90px_rgb(0_0_0/0.4)]">
+            <div className="flex items-center justify-between border-b border-[#3e3747] bg-[#1d1a23] px-5 py-4">
+              <div className="flex gap-1.5" aria-hidden="true"><span className="h-2.5 w-2.5 rounded-full bg-[#6d6477]" /><span className="h-2.5 w-2.5 rounded-full bg-[#6d6477]" /><span className="h-2.5 w-2.5 rounded-full bg-[#a078ff]" /></div>
+              <span className="text-xs font-semibold text-[#aca2b8]">Nuevo proyecto</span>
+            </div>
+            <div className="p-5 sm:p-7">
+              <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#9d7cff]">Tu brief</p>
+              <div className="mt-3 rounded-xl border border-[#51475e] bg-[#0f0d15] p-4 text-sm leading-6 text-[#ded6e5]">
+                “Sitio web para un restaurante familiar con menú, reservas y un estilo cálido.”
+              </div>
+              <div className="mt-6 space-y-2.5">
+                {[
+                  ["Contenido organizado", "Listo"],
+                  ["6 composiciones para elegir", "Listo"],
+                  ["Formulario y contacto", "Activo"],
+                ].map(([label, state]) => <div key={label} className="flex min-h-12 items-center justify-between gap-4 rounded-lg border border-[#3d3546] bg-[#211d27] px-4">
+                  <span className="flex items-center gap-3 text-sm text-[#d8d0df]"><Check className="h-4 w-4 text-[#72dca8]" aria-hidden="true" />{label}</span>
+                  <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#8ce8b9]">{state}</span>
+                </div>)}
+              </div>
+              <div className="mt-5 flex min-h-12 items-center justify-between rounded-lg bg-[#8b5cf6] px-4 text-sm font-bold text-white">
+                Abrir diseños <ArrowRight className="h-4 w-4" aria-hidden="true" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section className="bg-[#f3f0f7] px-5 py-20 text-[#17131c] sm:px-8 sm:py-28" aria-labelledby="workflow-title">
+      <div className="mx-auto max-w-7xl">
+        <div className="grid gap-6 border-b border-[#d0c9d7] pb-10 lg:grid-cols-[1fr_1fr] lg:items-end">
+          <div><p className="text-xs font-bold uppercase tracking-[0.2em] text-[#7047bd]">Un recorrido claro</p><h2 id="workflow-title" className="mt-4 max-w-3xl font-[var(--font-outfit)] text-4xl font-semibold leading-[1] tracking-[-0.045em] sm:text-6xl">Tres decisiones. Ningún lienzo vacío.</h2></div>
+          <p className="max-w-xl text-base leading-7 text-[#625a68] lg:justify-self-end">Cada etapa entrega algo utilizable. Puedes revisar el contenido, comparar composiciones y entrar al editor antes de crear una cuenta.</p>
+        </div>
+        <div className="mt-10 grid border border-[#cec7d4] bg-[#cec7d4] gap-px lg:grid-cols-3">
+          {steps.map(({ number, icon: Icon, title, copy }, index) => <article key={number} className={`min-h-[22rem] p-7 sm:p-9 ${index === 1 ? "bg-[#21192c] text-white" : "bg-[#faf8fc]"}`}>
+            <div className="flex items-center justify-between"><span className={`font-mono text-sm ${index === 1 ? "text-[#b89cff]" : "text-[#7047bd]"}`}>{number} / 03</span><Icon className={`h-6 w-6 ${index === 1 ? "text-[#b89cff]" : "text-[#7047bd]"}`} aria-hidden="true" /></div>
+            <h3 className="mt-20 font-[var(--font-outfit)] text-3xl font-semibold leading-tight tracking-[-0.035em]">{title}</h3>
+            <p className={`mt-4 max-w-sm text-sm leading-6 ${index === 1 ? "text-[#c8bdcf]" : "text-[#655d6b]"}`}>{copy}</p>
+          </article>)}
+        </div>
+      </div>
+    </section>
+
+    <section className="border-b border-border bg-[#0f0d15] px-5 py-20 sm:px-8 sm:py-28">
+      <div className="mx-auto grid max-w-7xl gap-12 lg:grid-cols-[.9fr_1.1fr] lg:items-center">
+        <div className="relative order-2 lg:order-1">
+          <div className="rounded-2xl border border-[#493e56] bg-[#17131d] p-4 shadow-[0_24px_70px_rgb(0_0_0/0.35)] sm:p-6">
+            <div className="flex items-center justify-between border-b border-[#3a3242] pb-4"><span className="flex items-center gap-2 text-sm font-semibold"><PencilLine className="h-4 w-4 text-[#a078ff]" /> Editor visual</span><span className="text-xs text-[#8ce8b9]">Cambios guardados</span></div>
+            <div className="mt-5 grid gap-3 sm:grid-cols-2">
+              {["Portada dividida", "Editorial", "Inmersivo", "Catálogo", "Negocio local", "Minimal"].map((item, index) => <div key={item} className={`min-h-24 rounded-lg border p-4 ${index === 2 ? "border-[#8b5cf6] bg-[#2b1d42]" : "border-[#403747] bg-[#201b26]"}`}><span className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#9f91aa]">Diseño {index + 1}</span><p className="mt-5 text-sm font-semibold text-[#eee8f2]">{item}</p></div>)}
+            </div>
+          </div>
+        </div>
+        <div className="order-1 lg:order-2">
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#a078ff]">Tú mantienes el control</p>
+          <h2 className="mt-4 max-w-2xl font-[var(--font-outfit)] text-4xl font-semibold leading-[1] tracking-[-0.045em] text-white sm:text-6xl">La IA prepara. Tú decides qué se publica.</h2>
+          <p className="mt-6 max-w-xl text-base leading-7 text-[#b8afc2]">Cambia textos, orden, imágenes y paleta desde el editor. El formulario queda conectado a tu panel y las redes sociales abren los perfiles reales del negocio.</p>
+          <ul className="mt-8 grid gap-3 text-sm text-[#d8d0df] sm:grid-cols-2">{["Vista previa antes de publicar", "Paleta respetada", "Contactos en un solo panel", "Descarga del código en ZIP"].map((item) => <li key={item} className="flex min-h-11 items-center gap-3 border-t border-[#3d3545] pt-3"><Check className="h-4 w-4 text-[#8ce8b9]" />{item}</li>)}</ul>
+        </div>
+      </div>
+    </section>
+
+    <section className="bg-[#15121b] px-5 py-20 sm:px-8 sm:py-28" aria-labelledby="faq-title">
+      <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[22rem_1fr]">
+        <div><p className="text-xs font-bold uppercase tracking-[0.2em] text-[#a078ff]">Antes de empezar</p><h2 id="faq-title" className="mt-4 font-[var(--font-outfit)] text-4xl font-semibold tracking-[-0.04em] text-white">Preguntas concretas.</h2><p className="mt-4 text-sm leading-6 text-[#a99fae]">Lo necesario para probar el producto sin sorpresas.</p></div>
+        <div className="border-t border-[#4a4251]">{questions.map(([question, answer], index) => <details key={question} className="group border-b border-[#4a4251] py-2">
+          <summary className="flex min-h-16 cursor-pointer list-none items-center justify-between gap-5 py-3 font-semibold text-[#eee8f2]"><span className="flex items-center gap-4"><span className="font-mono text-xs text-[#8f7d9c]">{String(index + 1).padStart(2, "0")}</span>{question}</span><CircleHelp className="h-5 w-5 shrink-0 text-[#a078ff] transition-transform duration-200 group-open:rotate-45" /></summary>
+          <p className="max-w-2xl pb-5 pl-10 text-sm leading-7 text-[#b2a8bb]">{answer}</p>
+        </details>)}</div>
+      </div>
+    </section>
+
+    <section className="bg-[#8b5cf6] px-5 py-16 text-white sm:px-8 sm:py-20">
+      <div className="mx-auto flex max-w-7xl flex-col gap-7 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-xs font-bold uppercase tracking-[0.18em] text-white/70">Tu primera versión empieza aquí</p><h2 className="mt-3 max-w-3xl font-[var(--font-outfit)] text-4xl font-semibold tracking-[-0.04em] sm:text-5xl">Describe el negocio. Compara. Publica.</h2></div><Button asChild size="lg" variant="secondary" className="min-h-12 shrink-0"><Link href="/builder">Crear mi sitio <ArrowRight /></Link></Button></div>
+    </section>
+  </main>;
 }
 
-function Legal({ slug }: { slug: Exclude<Slug, "templates" | "domains" | "pricing" | "help"> }) {
+function Legal({ slug }: { slug: Exclude<Slug, "domains" | "pricing" | "help"> }) {
   const content: Record<string, string[]> = {
     terms: ["Debes proporcionar información verdadera y utilizar Cluster conforme a la ley.", "Conservas la propiedad de tu contenido y autorizas su procesamiento para generar, alojar y publicar el sitio.", "El servicio puede cambiar o suspenderse para proteger su seguridad y funcionamiento."],
     privacy: ["Procesamos datos de cuenta, proyectos, contactos recibidos y datos técnicos necesarios para operar la plataforma.", "Usamos estos datos para autenticar usuarios, generar sitios, prestar hosting, procesar pagos y prevenir abuso.", "No vendemos datos personales. Los proveedores técnicos reciben únicamente lo necesario para prestar el servicio."],

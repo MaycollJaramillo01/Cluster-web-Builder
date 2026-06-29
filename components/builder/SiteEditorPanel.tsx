@@ -43,6 +43,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import type { SiteTheme } from "@/lib/site/blueprint";
 import type { RenderSection } from "@/lib/site/section";
+import type { SocialLinks } from "@/lib/site/social-links";
 import { cn } from "@/lib/utils";
 
 export type EditorSite = {
@@ -59,6 +60,7 @@ export type EditorSite = {
   publicSlug: string;
   publicUrl: string;
   theme: SiteTheme;
+  socialLinks?: SocialLinks;
 };
 
 type SavePayload = {
@@ -1134,6 +1136,7 @@ export function SiteEditorPanel({
                 theme={previewTheme}
                 visualStyle={initialSite.visualStyle}
                 sections={sections}
+                socialLinks={initialSite.socialLinks}
                 editable
               />
             </div>

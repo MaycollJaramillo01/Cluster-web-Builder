@@ -33,6 +33,7 @@ export function buildSiteGenerationPrompt(
     email: input.email || null,
     domain: input.domain || null,
     language: LANGUAGE_LABELS[input.language] ?? input.language,
+    socialLinks: input.socialLinks ?? {},
   };
 
   const system = `Eres un generador de sitios web para pequenos negocios.
@@ -81,6 +82,7 @@ Schema exacto:
       "fontStyle": "",
       "designNotes": ""
     },
+    "socialLinks": { "instagram": "", "facebook": "", "tiktok": "", "linkedin": "", "youtube": "" },
     "seo": {
       "title": "",
       "metaDescription": "",

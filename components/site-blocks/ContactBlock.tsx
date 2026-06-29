@@ -7,6 +7,7 @@ import { getContrastText } from "@/lib/site/theme-surface";
 
 export function ContactBlock({ section, theme, preset, site }: BlockProps) {
   const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
+  const [feedback, setFeedback] = useState("");
   const surface = getThemeSurface(theme);
   const fieldPrefix = `contact-${section.id}`;
   const inputRadius = preset.buttonRadius === "9999px" ? "0.5rem" : "var(--site-btn-radius)";
@@ -27,6 +28,7 @@ export function ContactBlock({ section, theme, preset, site }: BlockProps) {
     event.preventDefault();
     if (!site.publicSlug) {
       setStatus("error");
+      setFeedback("El formulario quedará activo cuando publiques el sitio.");
       return;
     }
     setStatus("sending");
@@ -37,11 +39,14 @@ export function ContactBlock({ section, theme, preset, site }: BlockProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(Object.fromEntries(new FormData(form))),
       });
-      if (!response.ok) throw new Error();
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || "No se pudo enviar el mensaje.");
       form.reset();
       setStatus("sent");
-    } catch {
+      setFeedback("Mensaje enviado correctamente.");
+    } catch (error) {
       setStatus("error");
+      setFeedback(error instanceof Error ? error.message : "No se pudo enviar. Intenta de nuevo.");
     }
   }
 
@@ -177,7 +182,7 @@ export function ContactBlock({ section, theme, preset, site }: BlockProps) {
                 maxLength={120}
                 autoComplete="name"
                 placeholder="Tu nombre"
-                className="w-full px-3.5 py-2.5 text-sm transition-[border-color] focus:outline-none"
+                className="min-h-11 w-full px-3.5 py-2.5 text-base transition-[border-color,box-shadow] focus-visible:ring-2 focus-visible:ring-offset-2"
                 style={inputStyle}
               />
             </div>
@@ -197,7 +202,7 @@ export function ContactBlock({ section, theme, preset, site }: BlockProps) {
                 maxLength={160}
                 autoComplete="email"
                 placeholder="tu@email.com"
-                className="w-full px-3.5 py-2.5 text-sm transition-[border-color] focus:outline-none"
+                className="min-h-11 w-full px-3.5 py-2.5 text-base transition-[border-color,box-shadow] focus-visible:ring-2 focus-visible:ring-offset-2"
                 style={inputStyle}
               />
             </div>
@@ -218,7 +223,7 @@ export function ContactBlock({ section, theme, preset, site }: BlockProps) {
               maxLength={40}
               autoComplete="tel"
               placeholder="+52 55 1234 5678"
-              className="w-full px-3.5 py-2.5 text-sm transition-[border-color] focus:outline-none"
+              className="min-h-11 w-full px-3.5 py-2.5 text-base transition-[border-color,box-shadow] focus-visible:ring-2 focus-visible:ring-offset-2"
               style={inputStyle}
             />
           </div>
@@ -238,7 +243,7 @@ export function ContactBlock({ section, theme, preset, site }: BlockProps) {
               maxLength={2000}
               rows={4}
               placeholder="¿En qué podemos ayudarte?"
-              className="w-full resize-none px-3.5 py-2.5 text-sm transition-[border-color] focus:outline-none"
+              className="w-full resize-none px-3.5 py-2.5 text-base transition-[border-color,box-shadow] focus-visible:ring-2 focus-visible:ring-offset-2"
               style={inputStyle}
             />
           </div>
@@ -254,7 +259,7 @@ export function ContactBlock({ section, theme, preset, site }: BlockProps) {
           <button
             type="submit"
             disabled={status === "sending"}
-            className="w-full py-3 text-sm font-semibold transition-[filter,opacity] duration-200 hover:brightness-95 active:opacity-90"
+            className="min-h-12 w-full py-3 text-sm font-semibold transition-[filter,opacity] duration-200 hover:brightness-95 active:opacity-90 disabled:cursor-wait disabled:opacity-60"
             style={{
               backgroundColor: theme.primary,
               color: getContrastText(theme.primary),
@@ -264,14 +269,8 @@ export function ContactBlock({ section, theme, preset, site }: BlockProps) {
             {status === "sending" ? "Enviando..." : section.ctaText || "Enviar mensaje"}
           </button>
 
-          <p className="text-center text-xs" style={{ color: surface.muted, opacity: 0.6 }}>
-            {status === "sent"
-              ? "Mensaje enviado correctamente."
-              : status === "error"
-                ? site.publicSlug
-                  ? "No se pudo enviar. Intenta de nuevo."
-                  : "El formulario estará disponible al publicar."
-                : "Responderemos a la brevedad posible."}
+          <p aria-live="polite" role={status === "error" ? "alert" : "status"} className="text-center text-xs" style={{ color: surface.muted, opacity: 0.75 }}>
+            {feedback || "Responderemos a la brevedad posible."}
           </p>
         </form>
       </div>

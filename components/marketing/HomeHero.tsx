@@ -227,7 +227,7 @@ export function HomeHero() {
               minutos tendrás un sitio profesional listo para editar y publicar.
             </p>
             <Button asChild size="lg" className="mt-8">
-              <Link href="/builder">Crear sitio gratis <ArrowRight /></Link>
+              <Link href="/builder">Crear mi sitio <ArrowRight /></Link>
             </Button>
           </div>
         </div>

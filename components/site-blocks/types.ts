@@ -1,6 +1,7 @@
 import type { SiteTheme } from "@/lib/site/blueprint";
 import type { RenderSection } from "@/lib/site/section";
 import type { DesignPreset } from "@/lib/site/design";
+import type { SocialLinks } from "@/lib/site/social-links";
 
 export type BlockSiteInfo = {
   businessName: string;
@@ -10,6 +11,7 @@ export type BlockSiteInfo = {
   location?: string | null;
   publicSlug?: string | null;
   showBranding?: boolean;
+  socialLinks?: SocialLinks;
 };
 
 export type BlockProps = {

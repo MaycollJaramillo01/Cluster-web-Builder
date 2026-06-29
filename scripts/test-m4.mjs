@@ -16,7 +16,7 @@ try {
     businessType: "Cafetería",
     publicSlug: `m4-${suffix}`,
     status: "GENERATED",
-    visualStyle: "Flat",
+    visualStyle: "Service",
     primaryColor: "#123456",
     secondaryColor: "#234567",
     accentColor: "#345678",
@@ -34,8 +34,8 @@ try {
   assert((html.match(/<article/g) || []).length === 3, "la pantalla inicial no muestra exactamente tres opciones");
   assert(html.includes("Ver 3 diseños más") && !html.includes("Opción 4"), "la divulgación progresiva hasta seis opciones no funciona");
 
-  const preview = await fetch(`${baseUrl}/preview/${site.id}?style=Neobrutalist`, { headers }).then((response) => response.text());
-  assert(preview.includes('data-design-style="Neobrutalist"'), "el preview no aplica el estilo solicitado");
+  const preview = await fetch(`${baseUrl}/preview/${site.id}?style=Immersive`, { headers }).then((response) => response.text());
+  assert(preview.includes('data-design-style="Immersive"') && preview.includes('data-site-template="immersive"'), "el preview no aplica la composición solicitada");
 
   const update = await fetch(`${baseUrl}/api/sites/${site.id}/template`, { method: "PUT", headers: { ...headers, "Content-Type": "application/json" }, body: JSON.stringify({ visualStyle: "Editorial" }) });
   const saved = await prisma.site.findUnique({ where: { id: site.id } });

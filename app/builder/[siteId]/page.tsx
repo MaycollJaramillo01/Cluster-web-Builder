@@ -7,6 +7,7 @@ import { toRenderSection } from "@/lib/site/section";
 import { themeFromSite } from "@/lib/site/theme";
 import { publicSiteUrl } from "@/lib/site/public-url";
 import { SiteEditorPanel } from "@/components/builder/SiteEditorPanel";
+import { socialLinksFromBlueprint } from "@/lib/site/social-links";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -52,6 +53,7 @@ export default async function SiteEditorPage({
         publicSlug: site.publicSlug,
         publicUrl: site.domainVerifiedAt && site.customDomain ? `https://${site.customDomain}` : publicSiteUrl(site.publicSlug),
         theme,
+        socialLinks: socialLinksFromBlueprint(site.blueprintJson),
       }}
       initialSections={site.sections.map(toRenderSection)}
     />

@@ -21,6 +21,7 @@ import { GenericBlock } from "./GenericBlock";
 import { ProcessBlock } from "./ProcessBlock";
 import { Reveal } from "./Reveal";
 import { SiteNav } from "./SiteNav";
+import { SocialDock } from "./SocialDock";
 import type { BlockProps, BlockSiteInfo } from "./types";
 
 type BlockComponent = (props: BlockProps) => React.ReactNode;
@@ -59,8 +60,6 @@ export function SiteBlockRenderer({
   editable = false,
 }: SiteBlockRendererProps) {
   const preset = getDesignPreset(visualStyle);
-  const whatsapp = site.phone?.replace(/\D/g, "");
-
   const rootStyle = {
     backgroundColor: theme.background,
     color: theme.text,
@@ -124,7 +123,7 @@ export function SiteBlockRenderer({
   };
 
   return (
-    <div id="top" data-design-style={preset.id} data-design-motion={preset.motionStyle} style={rootStyle}>
+    <div id="top" data-design-style={preset.id} data-site-template={preset.id.toLowerCase()} data-design-motion={preset.motionStyle} style={rootStyle}>
       <SiteNav
         businessName={site.businessName}
         navItems={landingNav}
@@ -134,7 +133,7 @@ export function SiteBlockRenderer({
         ctaHref={hero?.ctaLink || "#contact"}
       />
 
-      {pageSections.map(renderSection)}
+      {renderTemplateFlow(preset.id, pageSections.map(renderSection))}
 
       {footer && (
         <>
@@ -145,17 +144,17 @@ export function SiteBlockRenderer({
           </div>
         </>
       )}
-      {whatsapp && whatsapp.length >= 8 && (
-        <a
-          href={`https://wa.me/${whatsapp}`}
-          target="_blank"
-          rel="noreferrer"
-          aria-label={`Contactar a ${site.businessName} por WhatsApp`}
-          className="fixed bottom-5 right-5 z-40 inline-flex min-h-12 items-center rounded-full bg-[#25d366] px-5 text-sm font-bold text-[#062b13] shadow-xl transition-transform hover:scale-105"
-        >
-          WhatsApp
-        </a>
-      )}
+      <SocialDock businessName={site.businessName} phone={site.phone} links={site.socialLinks} />
     </div>
   );
+}
+
+function renderTemplateFlow(template: string, sections: React.ReactNode[]) {
+  const [hero, ...rest] = sections;
+  if (template === "Editorial") return <main className="site-flow site-flow-editorial">{hero}<div className="site-editorial-body">{rest}</div></main>;
+  if (template === "Immersive") return <main className="site-flow site-flow-immersive">{sections}</main>;
+  if (template === "Catalog") return <main className="site-flow site-flow-catalog">{hero}<div className="site-catalog-body">{rest}</div></main>;
+  if (template === "Local") return <main className="site-flow site-flow-local">{sections}</main>;
+  if (template === "Minimal") return <main className="site-flow site-flow-minimal">{sections}</main>;
+  return <main className="site-flow site-flow-service">{sections}</main>;
 }

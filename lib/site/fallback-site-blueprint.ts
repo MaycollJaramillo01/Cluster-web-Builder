@@ -1,4 +1,5 @@
 import type { Blueprint, BlueprintSection } from "@/lib/site/blueprint";
+import { normalizeSocialLinks } from "@/lib/site/social-links";
 import {
   GOAL_LABELS,
   parseServiceFacts,
@@ -28,7 +29,7 @@ export function buildFallbackSiteBlueprint(
   sectionPlan: string[] = ["hero", "services", "about_us", "cta", "contact", "footer"]
 ): Blueprint {
   const businessType = resolveBusinessTypeLabel(input);
-  const imageKw = IMAGE_KEYWORDS[input.businessType] ?? `${input.businessType} professional business`;
+  const imageKw = resolveImageKeywords(input);
   const services = parseServiceFacts(input.services);
   const serviceNames = services.map((item) => item.name);
   const proofPoints = splitFactLines(input.proofPoints);
@@ -141,6 +142,7 @@ export function buildFallbackSiteBlueprint(
         fontStyle: "",
         designNotes: "Contenido local generado solo con datos del formulario.",
       },
+      socialLinks: normalizeSocialLinks(input.socialLinks),
       seo: {
         title: `${input.businessName} | ${businessType}`,
         metaDescription: `${input.businessName}: ${naturalList(serviceNames)} en ${input.location}.`,
@@ -155,6 +157,16 @@ export function buildFallbackSiteBlueprint(
       }],
     },
   };
+}
+
+function resolveImageKeywords(input: OnboardingInput) {
+  if (input.businessType !== "other") return IMAGE_KEYWORDS[input.businessType] ?? "professional local business";
+  const custom = (input.customBusinessType ?? "").toLocaleLowerCase("es");
+  if (/pesca|fishing/.test(custom)) return "fishing outdoors lake river boat angler";
+  if (/arquitect/.test(custom)) return "architecture studio modern building design";
+  if (/fotograf/.test(custom)) return "professional photography creative studio";
+  if (/tienda|producto/.test(custom)) return "small business products retail collection";
+  return `${input.customBusinessType || "professional local business"} service`;
 }
 
 function ctaForGoal(goal: OnboardingInput["goal"]): string {

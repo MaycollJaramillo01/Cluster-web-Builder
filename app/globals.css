@@ -111,6 +111,9 @@
   .design-reveal {
     animation: none !important;
   }
+  .site-social-dock {
+    animation: none !important;
+  }
   .about-kenburns,
   .about-float,
   .about-clip,
@@ -130,7 +133,7 @@
 @keyframes about-tilt-in { from { opacity: 0; transform: rotate(-6deg) translateY(16px); } to { opacity: 1; transform: rotate(-3deg) translateY(0); } }
 
 .about-kenburns { animation: about-kenburns 9s ease-out both; }
-.about-float { animation: about-float 6s ease-in-out infinite; }
+.about-float { animation: about-rise 500ms ease-out both; }
 .about-clip { animation: about-clip-in 900ms cubic-bezier(0.22, 1, 0.36, 1) both; }
 .about-rise { animation: about-rise 700ms ease-out both; }
 .about-pop { animation: about-pop 650ms cubic-bezier(0.22, 1, 0.36, 1) both; }
@@ -157,3 +160,14 @@
 .design-reveal-kinetic { animation: site-reveal-kinetic 360ms cubic-bezier(.2, .8, .2, 1) both; }
 [data-design-motion="stagger"] .design-reveal:nth-of-type(2n) { animation-delay: 70ms; }
 [data-design-motion="stagger"] .design-reveal:nth-of-type(3n) { animation-delay: 140ms; }
+
+@keyframes social-dock-enter {
+  from { opacity: 0; transform: translateY(12px) scale(.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.site-social-dock { animation: social-dock-enter 240ms ease-out both; }
+.site-flow-editorial .site-editorial-body { border-top: 1px solid color-mix(in srgb, currentColor 16%, transparent); }
+.site-flow-catalog .site-catalog-body { background-image: radial-gradient(circle at 10% 20%, color-mix(in srgb, currentColor 4%, transparent) 0 1px, transparent 1px); background-size: 24px 24px; }
+.site-flow-minimal .design-reveal + .design-reveal { border-top: 1px solid color-mix(in srgb, currentColor 12%, transparent); }
+.site-flow-local .design-reveal { position: relative; }

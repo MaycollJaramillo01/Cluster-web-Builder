@@ -31,7 +31,7 @@ export default async function TemplatesPage({ params }: { params: Promise<{ site
   });
   if (!site) notFound();
 
-  const candidates = getTemplateCandidates(site.visualStyle, `${site.id}:${site.businessName}`);
+  const candidates = getTemplateCandidates(site.visualStyle);
   return (
     <main className="min-h-dvh bg-background text-foreground">
       <header className="border-b border-border bg-[#0f0d15]">

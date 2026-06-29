@@ -12,12 +12,12 @@ import { normalizeSiteBlueprint } from "@/lib/site/normalize-site-blueprint";
 import { applyPageStructure } from "@/lib/site/structure";
 import { getDesignPreset, resolvePalette } from "@/lib/site/design";
 import { createPublicSlug } from "@/lib/site/public-url";
+import { normalizeSocialLinks } from "@/lib/site/social-links";
 import type { SectionType } from "@/lib/site/blueprint";
 import {
   buildLandingDesignBrief,
   getStyleCopyVoice,
-  LANDING_DESIGN_STYLES,
-  selectRandomLandingStyle,
+  selectLandingTemplate,
   type LandingDesignStyle,
 } from "@/lib/site/landing-design-brief";
 import {
@@ -86,31 +86,11 @@ export async function POST(req: NextRequest) {
     return jsonError("No se pudo leer la solicitud.", 400);
   }
 
-  // Both entry points must use the same 25-recipe design engine. Previously,
-  // only free-prompt requests reached this branch; guided requests kept one of
-  // seven legacy presets and therefore looked nearly identical.
-  let recentStyles: string[] = [];
-  try {
-    const recentSites = await prisma.site.findMany({
-      where: {
-        ...(authUser ? { userId: authUser.id } : { userId: null, guestTokenHash: guestAccess!.tokenHash }),
-        visualStyle: { in: [...LANDING_DESIGN_STYLES] },
-      },
-      orderBy: { createdAt: "desc" },
-      take: LANDING_DESIGN_STYLES.length - 1,
-      select: { visualStyle: true },
-    });
-    recentStyles = recentSites.flatMap((site) =>
-      site.visualStyle ? [site.visualStyle] : []
-    );
-  } catch {
-    // Persistence errors are reported later; style selection can still proceed.
-  }
-
-  const selectedDesignStyle: LandingDesignStyle = selectRandomLandingStyle(recentStyles);
+  const designRequest = originalRequest ?? buildGuidedDesignRequest(input);
+  const selectedDesignStyle: LandingDesignStyle = selectLandingTemplate(input, designRequest);
   const designBrief = buildLandingDesignBrief(
     selectedDesignStyle,
-    originalRequest ?? buildGuidedDesignRequest(input)
+    designRequest
   );
   const designPreset = getDesignPreset(selectedDesignStyle);
   const sectionPlan = [...designPreset.sectionPlan] as SectionType[];
@@ -148,10 +128,7 @@ export async function POST(req: NextRequest) {
 
         let normalizedSite: ReturnType<typeof normalizeSiteBlueprint>;
 
-        if (originalRequest && shouldUseFastLocalGenerator(originalRequest)) {
-          send("status", { message: "Usando secciones precargadas para crear el borrador..." });
-          normalizedSite = normalizeSiteBlueprint(buildFallbackSiteBlueprint(input, sectionPlan));
-        } else try {
+        try {
           const abort = new AbortController();
           const timeout = setTimeout(() => abort.abort(), 12_000);
           try {
@@ -218,6 +195,7 @@ export async function POST(req: NextRequest) {
             designBrief ?? blueprint.site.visualStyle?.designNotes ?? "",
           colors: { ...theme },
         };
+        blueprint.site.socialLinks = normalizeSocialLinks(input.socialLinks);
 
         // Persist Site + SiteSections.
         await prisma.site.deleteMany({ where: { userId: null, guestExpiresAt: { lt: new Date() } } });
@@ -312,9 +290,6 @@ function canUseLocalGenerator(err: unknown): boolean {
   return false;
 }
 
-function shouldUseFastLocalGenerator(prompt: string) {
-  return prompt.trim().split(/\s+/).length <= 8;
-}
 
 function localGeneratorMessage(err: unknown): string {
   if (err instanceof NvidiaError && err.status === 429) {

@@ -360,6 +360,7 @@ function GuidedHomeForm() {
         background: palette.colors[3],
         text: palette.colors[4],
       },
+      socialLinks: { instagram, facebook },
     }));
     router.push("/builder/generating");
   };

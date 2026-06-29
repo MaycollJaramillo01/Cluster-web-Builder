@@ -8,6 +8,7 @@ import { toRenderSection } from "@/lib/site/section";
 import { themeFromSite } from "@/lib/site/theme";
 import { SitePreview } from "@/components/builder/SitePreview";
 import { isDesignStyle } from "@/lib/site/template-selection";
+import { socialLinksFromBlueprint } from "@/lib/site/social-links";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -80,6 +81,8 @@ export default async function PreviewPage({
         phone={site.phone}
         email={site.email}
         location={site.location}
+        publicSlug={site.status === "PUBLISHED" ? site.publicSlug : undefined}
+        socialLinks={socialLinksFromBlueprint(site.blueprintJson)}
         theme={theme}
         visualStyle={visualStyle}
         sections={sections.map(toRenderSection)}
