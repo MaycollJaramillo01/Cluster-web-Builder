@@ -9,6 +9,7 @@ export const metadata: Metadata = {
   title: "Cluster Web Builder",
   description:
     "Convierte un brief en el primer borrador editable de un sitio web profesional.",
+  icons: { icon: "/icon.png" },
 };
 
 export default function RootLayout({

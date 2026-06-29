@@ -62,6 +62,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
           <div className="flex shrink-0 items-center gap-2">
             <Button asChild size="sm" className="w-11 px-0 sm:w-auto sm:px-3"><Link href="/builder"><Plus /><span className="hidden sm:inline">Nuevo sitio</span></Link></Button>
             <Button asChild variant="outline" size="sm" className="w-11 px-0 sm:w-auto sm:px-3"><Link href="/billing"><CreditCard /><span className="hidden sm:inline">Plan</span></Link></Button>
+            {user.role === "ADMIN" && <Button asChild variant="outline" size="sm" className="w-11 px-0 sm:w-auto sm:px-3"><Link href="/admin/sites"><LayoutGrid /><span className="hidden sm:inline">Sitios</span></Link></Button>}
             {user.role === "ADMIN" && <Button asChild variant="outline" size="sm" className="w-11 px-0 sm:w-auto sm:px-3"><Link href="/admin/users"><Users /><span className="hidden sm:inline">Usuarios</span></Link></Button>}
             <LogoutButton />
           </div>
