@@ -7,7 +7,10 @@ import { prisma } from "@/lib/db";
 
 export async function HomeSections() {
   const sites = await prisma.site.findMany({
-    where: { status: "PUBLISHED" },
+    where: {
+      status: "PUBLISHED",
+      NOT: { user: { username: { startsWith: "qa-" } } },
+    },
     orderBy: [{ publishedAt: "desc" }, { updatedAt: "desc" }],
     take: 3,
     select: {

@@ -147,8 +147,9 @@ export function promptToOnboardingInput(prompt: string): OnboardingInput {
   const email = value.match(/[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}/)?.[0] ?? "";
   const phone = value.match(/\+?\d[\d\s()-]{7,}\d/)?.[0]?.trim() ?? "";
   const explicitName =
-    value.match(/["“]([^"”]{2,80})["”]/)?.[1]?.trim() ??
-    value.match(/(?:se llama|llamad[oa])\s+(.+?)(?=\s+en\s+[^,.;\n]+|[,.;\n]|$)/i)?.[1]?.trim();
+    value.match(/[“”]([^””]{2,80})[“”]/)?.[1]?.trim() ??
+    value.match(/(?:se llama|llamad[oa])\s+(.+?)(?=\s+en\s+[^,.;\n]+|[,.;\n]|$)/i)?.[1]?.trim() ??
+    extractLeadingName(value);
   const location =
     value
       .match(
@@ -204,6 +205,16 @@ function detectCustomBusinessType(value: string): string {
     return requestedSubject.charAt(0).toLocaleUpperCase("es") + requestedSubject.slice(1);
   }
   return "Negocio";
+}
+
+// Detecta "NombreEmpresa, descripción..." — nombre propio antes de la primera coma.
+// No aplica cuando el prompt empieza con una frase de acción (quiero, crea, necesito, etc.).
+function extractLeadingName(value: string): string | undefined {
+  const beforeComma = value.split(",")[0]?.trim();
+  if (!beforeComma || beforeComma.length < 3 || beforeComma.length > 80) return undefined;
+  if (/^(quiero|necesito|crea|dame|haz|por\s+favor|generar|hacer|tengo un|mi |el |la |los |las )/i.test(beforeComma)) return undefined;
+  if (!/^[A-ZÁÉÍÓÚÑ]/u.test(beforeComma)) return undefined;
+  return beforeComma;
 }
 
 function detectBusinessType(value: string): OnboardingInput["businessType"] {

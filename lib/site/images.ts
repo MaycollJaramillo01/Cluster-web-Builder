@@ -5,8 +5,11 @@
  * API key private, caches searches and falls back when the provider is down.
  */
 
-// Maps the leading English word of the stored businessType label to good tags.
+// Maps the leading word of the stored businessType label to good Pexels tags.
+// Includes both English keys (from businessType enum) and Spanish labels
+// (from resolveBusinessTypeLabel) so lookups work regardless of which is stored.
 const KEYWORDS: Record<string, string> = {
+  // ── English keys (enum values) ───────────────────────────────────────────
   roofing: "roof,house,construction",
   painting: "painting,house,wall",
   landscaping: "garden,landscaping,lawn",
@@ -23,6 +26,25 @@ const KEYWORDS: Record<string, string> = {
   fitness: "gym,fitness,workout",
   gym: "gym,fitness,workout",
   estudio: "modernarchitecture,modernhouse,interiordesign",
+  // ── Spanish labels (from BUSINESS_TYPE_LABELS + resolveBusinessTypeLabel) ─
+  jardineria:  "garden,landscaping,lawn,plants",
+  jardiner:    "garden,landscaping,lawn,plants",
+  limpieza:    "cleaning,clean,home,sparkling",
+  pintura:     "painting,house,wall,brush",
+  techos:      "roof,house,construction,tiles",
+  techo:       "roof,house,construction,tiles",
+  restaurante: "restaurant,food,dining,cuisine",
+  servicios:   "office,professional,business,team",
+  bienes:      "house,realestate,property,modern",
+  clinica:     "clinic,medical,doctor,healthcare",
+  clínica:     "clinic,medical,doctor,healthcare",
+  belleza:     "beauty,salon,spa,makeup",
+  gimnasio:    "gym,fitness,workout,weights",
+  consultoria: "consulting,meeting,office,professional",
+  consultoría: "consulting,meeting,office,professional",
+  agencia:     "marketing,branding,creative,office",
+  portafolio:  "portfolio,creative,design,studio",
+  tienda:      "retail,store,shopping,products",
   architecture: "modernarchitecture,building,design",
   automotive: "car,automobile,showroom",
   auto: "car,automobile,showroom",

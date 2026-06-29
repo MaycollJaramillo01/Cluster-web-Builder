@@ -7,11 +7,28 @@ import {
   type OnboardingInput,
 } from "@/lib/validators/site-onboarding";
 
+// English search keywords per business type — used for imagePrompts sent to Pexels/loremflickr.
+// Must stay in English so photo search APIs return relevant results.
+const IMAGE_KEYWORDS: Record<string, string> = {
+  roofing:     "roofing contractor house roof repair tiles",
+  painting:    "painting contractor house exterior interior walls",
+  landscaping: "landscaping garden design green plants outdoor",
+  cleaning:    "professional cleaning service home office sparkling",
+  restaurant:  "restaurant dining food cuisine chef kitchen",
+  law_firm:    "law firm legal attorney office professional",
+  real_estate: "real estate property house architecture modern",
+  medical:     "medical clinic healthcare professional doctor office",
+  beauty:      "beauty salon spa hair makeup treatment",
+  fitness:     "fitness gym workout exercise training weights",
+  other:       "professional business service local team",
+};
+
 export function buildFallbackSiteBlueprint(
   input: OnboardingInput,
   sectionPlan: string[] = ["hero", "services", "about_us", "cta", "contact", "footer"]
 ): Blueprint {
   const businessType = resolveBusinessTypeLabel(input);
+  const imageKw = IMAGE_KEYWORDS[input.businessType] ?? `${input.businessType} professional business`;
   const services = parseServiceFacts(input.services);
   const serviceNames = services.map((item) => item.name);
   const proofPoints = splitFactLines(input.proofPoints);
@@ -25,7 +42,7 @@ export function buildFallbackSiteBlueprint(
       body: `Servicios para ${input.targetCustomer}.`,
       ctaText,
       ctaLink: "#contact",
-      imagePrompt: `professional ${businessType} small business at work, realistic photography`,
+      imagePrompt: `${imageKw}, realistic photography high quality`,
     }),
     section("services", {
       title: "Servicios y productos",
@@ -52,7 +69,7 @@ export function buildFallbackSiteBlueprint(
         `${input.businessName} atiende a ${input.targetCustomer}${hasLocation ? ` en ${input.location}` : ""}. Ofrece ${naturalList(serviceNames)}.`,
         proofPoints.length > 0 ? `Datos confirmados: ${naturalList(proofPoints)}.` : "",
       ].filter(Boolean).join(" "),
-      imagePrompt: `professional ${businessType} service for local customers, realistic photography`,
+      imagePrompt: `${imageKw} team serving local clients, realistic photography`,
       settings: { highlights: [
         { title: "Actividad", description: businessType },
         { title: "Servicios", description: naturalList(serviceNames) },
