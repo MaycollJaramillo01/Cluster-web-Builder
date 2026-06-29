@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { Menu, WandSparkles } from "lucide-react";
+import Image from "next/image";
+import { Menu } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 
@@ -48,8 +49,15 @@ export function MarketingChrome({ children }: { children: React.ReactNode }) {
 }
 
 export function Brand() {
-  return <Link href="/" className="flex shrink-0 items-center gap-2.5 font-semibold tracking-tight text-[#f7f2fb]">
-    <span className="flex h-8 w-8 items-center justify-center rounded bg-[#8b5cf6] text-white shadow-[0_0_20px_rgb(139_92_246/0.25)]"><WandSparkles className="h-4 w-4" /></span>
+  return <Link href="/" className="flex shrink-0 items-center gap-3 font-semibold tracking-tight text-[#f7f2fb]">
+    <Image
+      src="/cluster-logo.webp"
+      alt="Cluster logo"
+      width={52}
+      height={52}
+      className="object-contain"
+      style={{ filter: "invert(1)", mixBlendMode: "screen" }}
+    />
     <span>Cluster</span>
   </Link>;
 }
