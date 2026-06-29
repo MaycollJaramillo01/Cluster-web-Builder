@@ -1,139 +1,139 @@
 {
-  "runAt": "2026-06-29T03:57:08.507Z",
+  "runAt": "2026-06-29T06:28:03.138Z",
   "company": "Jardinería Torres",
   "command": "npm run test:20-designs",
-  "baseUrl": "http://localhost:3010",
+  "baseUrl": "http://localhost:3000",
   "keepMode": true,
-  "keepUserId": "cmqyoohpk0000kup4kjs4hd0i",
+  "keepUserId": "cmqyu27c50000kuoc3yreyfkc",
   "summary": {
     "total": 20,
     "passed": 20,
     "failed": 0,
     "uniqueStyles": 20,
-    "validSites": 18,
-    "aiGenerations": 19,
-    "fallbackGenerations": 1
+    "validSites": 20,
+    "aiGenerations": 14,
+    "fallbackGenerations": 6
   },
   "results": [
     {
       "index": 1,
       "mode": "guided",
-      "style": "Monochromatic",
-      "mood": "cohesiva, segura y contemplativa",
-      "sections": 6,
+      "style": "Bauhaus",
+      "mood": "clara, enérgica y universal",
+      "sections": 8,
       "valid": true,
-      "elapsed": 1713,
+      "elapsed": 1879,
       "engine": "fallback",
-      "siteId": "cmqyooit6005fku0womo1h4lh",
-      "previewUrl": "http://localhost:3010/preview/cmqyooit6005fku0womo1h4lh"
+      "siteId": "cmqyu28ln0001kuog6gb1hcj8",
+      "previewUrl": "http://localhost:3000/preview/cmqyu28ln0001kuog6gb1hcj8"
     },
     {
       "index": 2,
-      "mode": "guided",
-      "style": "Modernist",
-      "mood": "atemporal, confiada y funcional",
-      "sections": 7,
-      "valid": false,
-      "elapsed": 9676,
-      "engine": "ai",
-      "siteId": "cmqyoorbs005nku0wcg31ztdv",
-      "previewUrl": "http://localhost:3010/preview/cmqyoorbs005nku0wcg31ztdv"
-    },
-    {
-      "index": 3,
-      "mode": "guided",
-      "style": "Neo-Geo",
-      "mood": "intelectual, rítmica y contemporánea",
-      "sections": 8,
-      "valid": true,
-      "elapsed": 12888,
-      "engine": "ai",
-      "siteId": "cmqyop1if005wku0w5h4u5007",
-      "previewUrl": "http://localhost:3010/preview/cmqyop1if005wku0w5h4u5007"
-    },
-    {
-      "index": 4,
-      "mode": "guided",
-      "style": "Neobrutalist",
-      "mood": "directa, audaz y deliberadamente cruda",
-      "sections": 8,
-      "valid": false,
-      "elapsed": 11565,
-      "engine": "ai",
-      "siteId": "cmqyopaqc0066ku0ww8fxqbf4",
-      "previewUrl": "http://localhost:3010/preview/cmqyopaqc0066ku0ww8fxqbf4"
-    },
-    {
-      "index": 5,
-      "mode": "guided",
-      "style": "Artisan",
-      "mood": "auténtica, arraigada y evocadora",
-      "sections": 8,
-      "valid": true,
-      "elapsed": 12819,
-      "engine": "ai",
-      "siteId": "cmqyopkux006gku0wr88vf7z7",
-      "previewUrl": "http://localhost:3010/preview/cmqyopkux006gku0wr88vf7z7"
-    },
-    {
-      "index": 6,
-      "mode": "guided",
-      "style": "Editorial",
-      "mood": "sofisticada, curiosa y cultural",
-      "sections": 9,
-      "valid": true,
-      "elapsed": 10502,
-      "engine": "ai",
-      "siteId": "cmqyopt5e006qku0wdf13uzju",
-      "previewUrl": "http://localhost:3010/preview/cmqyopt5e006qku0wdf13uzju"
-    },
-    {
-      "index": 7,
-      "mode": "guided",
-      "style": "Kinetic",
-      "mood": "enérgica, progresiva y viva",
-      "sections": 8,
-      "valid": true,
-      "elapsed": 12815,
-      "engine": "ai",
-      "siteId": "cmqyoq3c70071ku0w4ztcjv4f",
-      "previewUrl": "http://localhost:3010/preview/cmqyoq3c70071ku0w4ztcjv4f"
-    },
-    {
-      "index": 8,
-      "mode": "guided",
-      "style": "Luxury Minimal",
-      "mood": "exclusiva, silenciosa y segura de sí",
-      "sections": 7,
-      "valid": true,
-      "elapsed": 12748,
-      "engine": "ai",
-      "siteId": "cmqyoqdfg007bku0wsc0j3iee",
-      "previewUrl": "http://localhost:3010/preview/cmqyoqdfg007bku0wsc0j3iee"
-    },
-    {
-      "index": 9,
-      "mode": "guided",
-      "style": "Tech Forward",
-      "mood": "innovadora, precisa y optimista",
-      "sections": 8,
-      "valid": true,
-      "elapsed": 12812,
-      "engine": "ai",
-      "siteId": "cmqyoqnjw007kku0wnsyxled2",
-      "previewUrl": "http://localhost:3010/preview/cmqyoqnjw007kku0wnsyxled2"
-    },
-    {
-      "index": 10,
       "mode": "guided",
       "style": "Glassmorphism",
       "mood": "etérea, tecnológica y envolvente",
       "sections": 8,
       "valid": true,
-      "elapsed": 12756,
+      "elapsed": 12770,
       "engine": "ai",
-      "siteId": "cmqyoqxn1007uku0wujfc4zwq",
-      "previewUrl": "http://localhost:3010/preview/cmqyoqxn1007uku0wujfc4zwq"
+      "siteId": "cmqyu2jtx000bkuogdf88hlm7",
+      "previewUrl": "http://localhost:3000/preview/cmqyu2jtx000bkuogdf88hlm7"
+    },
+    {
+      "index": 3,
+      "mode": "guided",
+      "style": "Tech Forward",
+      "mood": "innovadora, precisa y optimista",
+      "sections": 8,
+      "valid": true,
+      "elapsed": 12815,
+      "engine": "ai",
+      "siteId": "cmqyu2typ000lkuogq2gmnpyv",
+      "previewUrl": "http://localhost:3000/preview/cmqyu2typ000lkuogq2gmnpyv"
+    },
+    {
+      "index": 4,
+      "mode": "guided",
+      "style": "Luxury Minimal",
+      "mood": "exclusiva, silenciosa y segura de sí",
+      "sections": 7,
+      "valid": true,
+      "elapsed": 12816,
+      "engine": "ai",
+      "siteId": "cmqyu341q000vkuog5wpwuufh",
+      "previewUrl": "http://localhost:3000/preview/cmqyu341q000vkuog5wpwuufh"
+    },
+    {
+      "index": 5,
+      "mode": "guided",
+      "style": "Gradient Modern",
+      "mood": "luminosa, optimista y envolvente",
+      "sections": 9,
+      "valid": true,
+      "elapsed": 12902,
+      "engine": "ai",
+      "siteId": "cmqyu3e8r0014kuogd8v0st6o",
+      "previewUrl": "http://localhost:3000/preview/cmqyu3e8r0014kuogd8v0st6o"
+    },
+    {
+      "index": 6,
+      "mode": "guided",
+      "style": "Modernist",
+      "mood": "atemporal, confiada y funcional",
+      "sections": 8,
+      "valid": true,
+      "elapsed": 12736,
+      "engine": "ai",
+      "siteId": "cmqyu3odi001fkuogy9ypa1ca",
+      "previewUrl": "http://localhost:3000/preview/cmqyu3odi001fkuogy9ypa1ca"
+    },
+    {
+      "index": 7,
+      "mode": "guided",
+      "style": "Japandi",
+      "mood": "serena, artesanal y equilibrada",
+      "sections": 6,
+      "valid": true,
+      "elapsed": 12876,
+      "engine": "ai",
+      "siteId": "cmqyu3yhw001pkuog162cf29j",
+      "previewUrl": "http://localhost:3000/preview/cmqyu3yhw001pkuog162cf29j"
+    },
+    {
+      "index": 8,
+      "mode": "guided",
+      "style": "Swiss/International",
+      "mood": "serena, racional y confiable",
+      "sections": 8,
+      "valid": true,
+      "elapsed": 847,
+      "engine": "fallback",
+      "siteId": "cmqyu3zg4001xkuogz3ldk68k",
+      "previewUrl": "http://localhost:3000/preview/cmqyu3zg4001xkuogz3ldk68k"
+    },
+    {
+      "index": 9,
+      "mode": "guided",
+      "style": "Corporate Professional",
+      "mood": "estable, competente y confiable",
+      "sections": 9,
+      "valid": true,
+      "elapsed": 12746,
+      "engine": "ai",
+      "siteId": "cmqyu49ix0027kuogq5pougue",
+      "previewUrl": "http://localhost:3000/preview/cmqyu49ix0027kuogq5pougue"
+    },
+    {
+      "index": 10,
+      "mode": "guided",
+      "style": "Scandinavian",
+      "mood": "cálida, honesta y luminosa",
+      "sections": 8,
+      "valid": true,
+      "elapsed": 12824,
+      "engine": "ai",
+      "siteId": "cmqyu4jog002ikuog57jkb7s8",
+      "previewUrl": "http://localhost:3000/preview/cmqyu4jog002ikuog57jkb7s8"
     },
     {
       "index": 11,
@@ -142,58 +142,58 @@
       "mood": "familiar, ordenada y táctil",
       "sections": 8,
       "valid": true,
-      "elapsed": 5638,
+      "elapsed": 12817,
       "engine": "ai",
-      "siteId": "cmqyor28x0084ku0wnqap4d3s",
-      "previewUrl": "http://localhost:3010/preview/cmqyor28x0084ku0wnqap4d3s"
+      "siteId": "cmqyu4ttd002skuog9okrzu21",
+      "previewUrl": "http://localhost:3000/preview/cmqyu4ttd002skuog9okrzu21"
     },
     {
       "index": 12,
+      "mode": "advanced",
+      "style": "Flat",
+      "mood": "amable, clara y accesible",
+      "sections": 8,
+      "valid": true,
+      "elapsed": 12755,
+      "engine": "ai",
+      "siteId": "cmqyu53wa0032kuog3lfmw47h",
+      "previewUrl": "http://localhost:3000/preview/cmqyu53wa0032kuog3lfmw47h"
+    },
+    {
+      "index": 13,
+      "mode": "advanced",
+      "style": "Neo-Geo",
+      "mood": "intelectual, rítmica y contemporánea",
+      "sections": 8,
+      "valid": true,
+      "elapsed": 852,
+      "engine": "fallback",
+      "siteId": "cmqyu54su003ckuoge92pj88n",
+      "previewUrl": "http://localhost:3000/preview/cmqyu54su003ckuoge92pj88n"
+    },
+    {
+      "index": 14,
+      "mode": "advanced",
+      "style": "Editorial",
+      "mood": "sofisticada, curiosa y cultural",
+      "sections": 8,
+      "valid": true,
+      "elapsed": 12823,
+      "engine": "ai",
+      "siteId": "cmqyu5ey5003mkuog02tv54ok",
+      "previewUrl": "http://localhost:3000/preview/cmqyu5ey5003mkuog02tv54ok"
+    },
+    {
+      "index": 15,
       "mode": "advanced",
       "style": "Typography First",
       "mood": "expresiva, inteligente y memorable",
       "sections": 8,
       "valid": true,
-      "elapsed": 5543,
+      "elapsed": 12809,
       "engine": "ai",
-      "siteId": "cmqyor6rf008eku0weia5jy7n",
-      "previewUrl": "http://localhost:3010/preview/cmqyor6rf008eku0weia5jy7n"
-    },
-    {
-      "index": 13,
-      "mode": "advanced",
-      "style": "Gradient Modern",
-      "mood": "luminosa, optimista y envolvente",
-      "sections": 9,
-      "valid": true,
-      "elapsed": 5618,
-      "engine": "ai",
-      "siteId": "cmqyorbcc008oku0wby1dqror",
-      "previewUrl": "http://localhost:3010/preview/cmqyorbcc008oku0wby1dqror"
-    },
-    {
-      "index": 14,
-      "mode": "advanced",
-      "style": "Japandi",
-      "mood": "serena, artesanal y equilibrada",
-      "sections": 6,
-      "valid": true,
-      "elapsed": 5616,
-      "engine": "ai",
-      "siteId": "cmqyorfxl008zku0w8uvbr1xy",
-      "previewUrl": "http://localhost:3010/preview/cmqyorfxl008zku0w8uvbr1xy"
-    },
-    {
-      "index": 15,
-      "mode": "advanced",
-      "style": "Swiss/International",
-      "mood": "serena, racional y confiable",
-      "sections": 8,
-      "valid": true,
-      "elapsed": 5560,
-      "engine": "ai",
-      "siteId": "cmqyorkgx0097ku0wlq2s5cdq",
-      "previewUrl": "http://localhost:3010/preview/cmqyorkgx0097ku0wlq2s5cdq"
+      "siteId": "cmqyu5p33003wkuogj7mpy1yw",
+      "previewUrl": "http://localhost:3000/preview/cmqyu5p33003wkuogj7mpy1yw"
     },
     {
       "index": 16,
@@ -202,46 +202,46 @@
       "mood": "suave, íntima y táctil",
       "sections": 7,
       "valid": true,
-      "elapsed": 5517,
+      "elapsed": 10695,
       "engine": "ai",
-      "siteId": "cmqyorozc009hku0wjvno38nf",
-      "previewUrl": "http://localhost:3010/preview/cmqyorozc009hku0wjvno38nf"
+      "siteId": "cmqyu5xl20046kuog3wg3q76f",
+      "previewUrl": "http://localhost:3000/preview/cmqyu5xl20046kuog3wg3q76f"
     },
     {
       "index": 17,
       "mode": "advanced",
-      "style": "Dark Mode First",
-      "mood": "inmersiva, premium y concentrada",
-      "sections": 9,
+      "style": "Kinetic",
+      "mood": "enérgica, progresiva y viva",
+      "sections": 8,
       "valid": true,
-      "elapsed": 5619,
-      "engine": "ai",
-      "siteId": "cmqyortk6009qku0wbs0z7hhd",
-      "previewUrl": "http://localhost:3010/preview/cmqyortk6009qku0wbs0z7hhd"
+      "elapsed": 870,
+      "engine": "fallback",
+      "siteId": "cmqyu5yht004fkuogvhffbfe6",
+      "previewUrl": "http://localhost:3000/preview/cmqyu5yht004fkuogvhffbfe6"
     },
     {
       "index": 18,
       "mode": "advanced",
-      "style": "Corporate Professional",
-      "mood": "estable, competente y confiable",
-      "sections": 9,
+      "style": "Art Deco",
+      "mood": "lujosa, teatral y refinada",
+      "sections": 7,
       "valid": true,
-      "elapsed": 5526,
-      "engine": "ai",
-      "siteId": "cmqyory2k00a1ku0wg3o5rsmq",
-      "previewUrl": "http://localhost:3010/preview/cmqyory2k00a1ku0wg3o5rsmq"
+      "elapsed": 875,
+      "engine": "fallback",
+      "siteId": "cmqyu5zeo004pkuoge4gfpzft",
+      "previewUrl": "http://localhost:3000/preview/cmqyu5zeo004pkuoge4gfpzft"
     },
     {
       "index": 19,
       "mode": "advanced",
-      "style": "Retro-futuristic",
-      "mood": "optimista, nostálgica y visionaria",
-      "sections": 8,
+      "style": "Artisan",
+      "mood": "auténtica, arraigada y evocadora",
+      "sections": 9,
       "valid": true,
-      "elapsed": 5522,
-      "engine": "ai",
-      "siteId": "cmqyos2kg00acku0weqtt93w3",
-      "previewUrl": "http://localhost:3010/preview/cmqyos2kg00acku0weqtt93w3"
+      "elapsed": 870,
+      "engine": "fallback",
+      "siteId": "cmqyu60bf004ykuog5vexxrtt",
+      "previewUrl": "http://localhost:3000/preview/cmqyu60bf004ykuog5vexxrtt"
     },
     {
       "index": 20,
@@ -250,28 +250,28 @@
       "mood": "calmada, esencial y segura",
       "sections": 5,
       "valid": true,
-      "elapsed": 5678,
+      "elapsed": 11915,
       "engine": "ai",
-      "siteId": "cmqyos75x00amku0wh6by8paj",
-      "previewUrl": "http://localhost:3010/preview/cmqyos75x00amku0wh6by8paj"
+      "siteId": "cmqyu69r00059kuog3mweaezq",
+      "previewUrl": "http://localhost:3000/preview/cmqyu69r00059kuog3mweaezq"
     }
   ],
   "untestedStyles": [
     {
-      "style": "Bauhaus",
-      "mood": "clara, enérgica y universal"
+      "style": "Neobrutalist",
+      "mood": "directa, audaz y deliberadamente cruda"
     },
     {
-      "style": "Art Deco",
-      "mood": "lujosa, teatral y refinada"
+      "style": "Retro-futuristic",
+      "mood": "optimista, nostálgica y visionaria"
     },
     {
-      "style": "Flat",
-      "mood": "amable, clara y accesible"
+      "style": "Monochromatic",
+      "mood": "cohesiva, segura y contemplativa"
     },
     {
-      "style": "Scandinavian",
-      "mood": "cálida, honesta y luminosa"
+      "style": "Dark Mode First",
+      "mood": "inmersiva, premium y concentrada"
     },
     {
       "style": "Organic/Fluid",

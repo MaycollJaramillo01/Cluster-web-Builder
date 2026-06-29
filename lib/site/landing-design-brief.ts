@@ -53,6 +53,39 @@ function profile(
   return { mood, hierarchy, typography, interaction, references };
 }
 
+const COPY_VOICES: Record<LandingDesignStyle, string> = {
+  Neobrutalist: "Titulares de 3-5 palabras. Directo, sin adjetivos vacíos, con punch. Verbos de acción. Nada de 'experiencia premium' ni 'soluciones innovadoras'.",
+  "Swiss/International": "Preciso y objetivo. Frases cortas. Hechos sobre adjetivos. Jerarquía tipográfica visible en el copy.",
+  Editorial: "Voz narrativa, culta. Usa contraste de escala en titulares. Permite pausas y frases algo más largas con ritmo.",
+  Glassmorphism: "Moderno y aspiracional. Frases fluidas. Vocabulario tecnológico accesible, nunca técnico por el solo hecho de serlo.",
+  "Retro-futuristic": "Optimista y visionario. Metáforas de progreso. Titulares con energía y ligeramente cinematográficos.",
+  Bauhaus: "Funcional y directo. Nada ornamental. 'Forma sigue función' en cada palabra. Sin adjetivos decorativos.",
+  "Art Deco": "Ceremoniosa y refinada. Vocabulario elegante. Cadencia medida, nunca apresurada. Evita coloquialismos.",
+  Minimal: "Lo menos posible. Cada palabra debe ganarse su lugar. Sin redundancias. Preferir omitir a explicar de más.",
+  Flat: "Amable y accesible. Tono conversacional. Frases que cualquiera entiende a la primera lectura.",
+  Material: "Clara y funcional. Orientada a la acción. Verbos concretos. Estructura predecible y reconfortante.",
+  Neumorphic: "Suave e íntima. Tono cálido, casi susurrado. Evita el exceso de mayúsculas y la urgencia.",
+  Monochromatic: "Contemplativa y disciplinada. Frases que construyen sin prisa. Equilibrio entre lo dicho y lo omitido.",
+  Scandinavian: "Cálida y honesta. Sin exageraciones. Tono de conversación entre personas reales, no de publicidad.",
+  Japandi: "Serena. Muy pocas palabras. Cada frase tiene peso. El silencio entre frases también comunica.",
+  "Dark Mode First": "Cinematográfica y premium. Titulares de alto impacto. Frases que crean tensión y resolución.",
+  Modernist: "Sobria y autorizada. Sin adornos. Proporciona evidencia y claridad, no promesas vacías.",
+  "Organic/Fluid": "Cercana y vital. Tono humano, sin tecnicismos. Fluye como una conversación natural sin forzar.",
+  "Corporate Professional": "Orientada a resultados y competencia. Lenguaje ejecutivo claro. Sin jerga pero con autoridad real.",
+  "Tech Forward": "Cortante y optimista. Beneficios antes que características. Ritmo rápido. Verbos en segunda persona.",
+  "Luxury Minimal": "Muy pocas palabras. Peso en cada frase. Nunca grites — susurra con confianza absoluta.",
+  "Neo-Geo": "Estructurada y rítmica. Titulares que parecen patrones. Muy concisa. Repetición deliberada como recurso.",
+  Kinetic: "Enérgica y condensada. Usa verbos de acción. Cada línea impulsa hacia la siguiente sin pausa.",
+  "Gradient Modern": "Optimista y envolvente. Tono positivo y accesible. Frases que fluyen con suavidad y calor.",
+  "Typography First": "El texto ES el diseño. Titulares como imágenes. Muy poco body, mucho impacto por línea.",
+  Metropolitan: "Cosmopolita y culta. Sofisticado sin ser pedante. Capas de significado en pocas palabras.",
+  Artisan: "Auténtica y evocadora. Vocabulario de oficio. Nada corporativo. Cada frase suena hecha a mano.",
+};
+
+export function getStyleCopyVoice(style: LandingDesignStyle): string {
+  return COPY_VOICES[style] ?? "Directo, claro y específico. Evita frases vacías.";
+}
+
 export function selectRandomLandingStyle(
   excluded: readonly string[] = []
 ): LandingDesignStyle {

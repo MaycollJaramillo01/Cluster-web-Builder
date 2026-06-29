@@ -15,6 +15,7 @@ import { createPublicSlug } from "@/lib/site/public-url";
 import type { SectionType } from "@/lib/site/blueprint";
 import {
   buildLandingDesignBrief,
+  getStyleCopyVoice,
   LANDING_DESIGN_STYLES,
   selectRandomLandingStyle,
   type LandingDesignStyle,
@@ -117,7 +118,8 @@ export async function POST(req: NextRequest) {
     input,
     originalRequest,
     designBrief,
-    sectionPlan
+    sectionPlan,
+    getStyleCopyVoice(selectedDesignStyle),
   );
 
   const stream = new ReadableStream<Uint8Array>({
