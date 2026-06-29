@@ -16,6 +16,13 @@ const COUNTRY_COORDS: Record<string, [number, number]> = {
   colombia: [4.57, -74.30],
   españa: [40.46, -3.75],
   espana: [40.46, -3.75],
+  brasil: [-14.24, -51.93],
+  brazil: [-14.24, -51.93],
+  argentina: [-38.42, -63.62],
+  venezuela: [6.42, -66.59],
+  chile: [-35.68, -71.54],
+  perú: [-9.19, -75.02],
+  peru: [-9.19, -75.02],
 };
 
 // City-level lookup (city name lowercase → [lat, lon])
@@ -39,6 +46,10 @@ const CITY_COORDS: Record<string, [number, number]> = {
   tijuana: [32.53, -117.04],
   mérida: [20.97, -89.62],
   merida: [20.97, -89.62],
+  "san luis potosí": [22.15, -100.98],
+  "san luis potosi": [22.15, -100.98],
+  querétaro: [20.59, -100.39],
+  queretaro: [20.59, -100.39],
   // Estados Unidos
   "new york": [40.71, -74.01],
   "nueva york": [40.71, -74.01],
@@ -76,6 +87,8 @@ const CITY_COORDS: Record<string, [number, number]> = {
   cali: [3.44, -76.52],
   cartagena: [10.39, -75.48],
   barranquilla: [10.96, -74.80],
+  bucaramanga: [7.13, -73.13],
+  pereira: [4.81, -75.69],
   // España
   madrid: [40.42, -3.70],
   barcelona: [41.39, 2.16],
@@ -84,6 +97,52 @@ const CITY_COORDS: Record<string, [number, number]> = {
   bilbao: [43.26, -2.93],
   málaga: [36.72, -4.42],
   malaga: [36.72, -4.42],
+  // Brasil
+  "são paulo": [-23.55, -46.63],
+  "sao paulo": [-23.55, -46.63],
+  "rio de janeiro": [-22.91, -43.17],
+  brasília: [-15.78, -47.93],
+  brasilia: [-15.78, -47.93],
+  "belo horizonte": [-19.92, -43.94],
+  salvador: [-12.97, -38.50],
+  fortaleza: [-3.72, -38.54],
+  curitiba: [-25.43, -49.27],
+  manaus: [-3.10, -60.02],
+  recife: [-8.05, -34.88],
+  porto: [-30.03, -51.23],
+  "porto alegre": [-30.03, -51.23],
+  // Argentina
+  "buenos aires": [-34.61, -58.38],
+  córdoba: [-31.42, -64.19],
+  cordoba: [-31.42, -64.19],
+  rosario: [-32.95, -60.64],
+  mendoza: [-32.89, -68.85],
+  tucumán: [-26.82, -65.22],
+  tucuman: [-26.82, -65.22],
+  salta: [-24.79, -65.41],
+  "mar del plata": [-38.00, -57.56],
+  // Venezuela
+  caracas: [10.49, -66.88],
+  maracaibo: [10.63, -71.64],
+  barquisimeto: [10.07, -69.32],
+  maturín: [9.75, -63.18],
+  maturin: [9.75, -63.18],
+  // Chile
+  santiago: [-33.46, -70.65],
+  valparaíso: [-33.05, -71.62],
+  valparaiso: [-33.05, -71.62],
+  concepción: [-36.83, -73.05],
+  concepcion: [-36.83, -73.05],
+  antofagasta: [-23.65, -70.40],
+  temuco: [-38.74, -72.59],
+  // Perú
+  lima: [-12.05, -77.04],
+  arequipa: [-16.41, -71.54],
+  cusco: [-13.53, -71.97],
+  cuzco: [-13.53, -71.97],
+  trujillo: [-8.11, -79.03],
+  chiclayo: [-6.77, -79.84],
+  piura: [-5.19, -80.63],
 };
 
 function resolveCoords(location: string | null): [number, number] | null {
