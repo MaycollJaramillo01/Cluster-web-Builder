@@ -71,16 +71,11 @@ async function proxyImage(url: string, query: string, width: number, height: num
       },
     });
   } catch {
-    const safeQuery = escapeXml(query);
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#21182e"/><stop offset="1" stop-color="#8b5cf6"/></linearGradient></defs><rect width="100%" height="100%" fill="url(#g)"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#f7f2fb" font-family="system-ui,sans-serif" font-size="${Math.max(18, Math.round(width / 32))}">${safeQuery}</text></svg>`;
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#17131e"/><stop offset=".55" stop-color="#39245a"/><stop offset="1" stop-color="#8b5cf6"/></linearGradient></defs><rect width="100%" height="100%" fill="url(#g)"/><circle cx="${Math.round(width * .78)}" cy="${Math.round(height * .18)}" r="${Math.round(width * .22)}" fill="#fff" opacity=".05"/><circle cx="${Math.round(width * .2)}" cy="${Math.round(height * .86)}" r="${Math.round(width * .3)}" fill="#fff" opacity=".035"/></svg>`;
     return new NextResponse(svg, {
       headers: { "Content-Type": "image/svg+xml; charset=utf-8", "Cache-Control": "public, max-age=3600", "X-Image-Provider": "Generated-Fallback" },
     });
   }
-}
-
-function escapeXml(value: string) {
-  return value.replace(/[&<>"']/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&apos;" })[character] || character);
 }
 
 function dimension(value: string | null, fallback: number) {
