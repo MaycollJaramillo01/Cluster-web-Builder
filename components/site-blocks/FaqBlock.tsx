@@ -20,7 +20,7 @@ export function FaqBlock({ section, theme, preset }: BlockProps) {
           style={{ backgroundColor: surface.panel, borderColor: `${theme.text}1f`, borderRadius: "var(--site-radius)" }}
         >
           {items.map((item, i) => (
-            <details key={i} className="group p-5">
+            <details key={i} data-motion-item className="group p-5">
               <summary
                 className="flex cursor-pointer list-none items-center justify-between font-medium"
                 style={{ color: theme.text }}

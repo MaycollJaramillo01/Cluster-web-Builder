@@ -117,7 +117,7 @@ export function SiteBlockRenderer({
     const animate = !editable;
     return (
       <div id={`section-${section.type}`} key={section.id} className={`scroll-mt-16 design-reveal design-reveal-${preset.motionStyle}`}>
-        <Reveal disabled={!animate}>{content}</Reveal>
+        <Reveal disabled={!animate} motion={preset.motionStyle} delay={Math.min(section.order, 6) * 40}>{content}</Reveal>
       </div>
     );
   };
@@ -133,7 +133,7 @@ export function SiteBlockRenderer({
         ctaHref={hero?.ctaLink || "#contact"}
       />
 
-      {renderTemplateFlow(preset.id, pageSections.map(renderSection))}
+      {renderTemplateFlow(preset.family, pageSections.map(renderSection))}
 
       {footer && (
         <>
@@ -151,10 +151,10 @@ export function SiteBlockRenderer({
 
 function renderTemplateFlow(template: string, sections: React.ReactNode[]) {
   const [hero, ...rest] = sections;
-  if (template === "Editorial") return <main className="site-flow site-flow-editorial">{hero}<div className="site-editorial-body">{rest}</div></main>;
-  if (template === "Immersive") return <main className="site-flow site-flow-immersive">{sections}</main>;
-  if (template === "Catalog") return <main className="site-flow site-flow-catalog">{hero}<div className="site-catalog-body">{rest}</div></main>;
-  if (template === "Local") return <main className="site-flow site-flow-local">{sections}</main>;
-  if (template === "Minimal") return <main className="site-flow site-flow-minimal">{sections}</main>;
+  if (template === "editorial") return <main className="site-flow site-flow-editorial">{hero}<div className="site-editorial-body">{rest}</div></main>;
+  if (template === "immersive") return <main className="site-flow site-flow-immersive">{sections}</main>;
+  if (template === "catalog") return <main className="site-flow site-flow-catalog">{hero}<div className="site-catalog-body">{rest}</div></main>;
+  if (template === "local") return <main className="site-flow site-flow-local">{sections}</main>;
+  if (template === "minimal") return <main className="site-flow site-flow-minimal">{sections}</main>;
   return <main className="site-flow site-flow-service">{sections}</main>;
 }

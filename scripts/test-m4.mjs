@@ -23,7 +23,12 @@ try {
     blueprintJson: { site: { visualStyle: { colors: { primary: "#123456", secondary: "#234567", accent: "#345678", background: "#fefefe", text: "#111111" } } } },
     sections: { create: [
       { type: "hero", title: businessName, order: 0, content: { subtitle: "Café local", body: "Contenido real del negocio", ctaText: "Visítanos", ctaLink: "#contact" }, settingsJson: {} },
-      { type: "footer", title: businessName, order: 1, content: { body: "Managua" }, settingsJson: {} },
+      { type: "services", title: "Servicios", order: 1, content: { items: [{ title: "Café", description: "Tostado local" }] }, settingsJson: {} },
+      { type: "about_us", title: "Nuestra historia", order: 2, content: { body: "Tradición familiar" }, settingsJson: {} },
+      { type: "gallery", title: "Galería", order: 3, content: {}, settingsJson: {} },
+      { type: "contact", title: "Contacto", order: 4, content: {}, settingsJson: {} },
+      { type: "cta", title: "Reserva", order: 5, content: { ctaText: "Reservar", ctaLink: "#contact" }, settingsJson: {} },
+      { type: "footer", title: businessName, order: 6, content: { body: "Managua" }, settingsJson: {} },
     ] },
   } });
   const headers = { Cookie: `__cluster_guest=${guestToken}` };
@@ -38,15 +43,16 @@ try {
   assert(preview.includes('data-design-style="Immersive"') && preview.includes('data-site-template="immersive"'), "el preview no aplica la composición solicitada");
 
   const update = await fetch(`${baseUrl}/api/sites/${site.id}/template`, { method: "PUT", headers: { ...headers, "Content-Type": "application/json" }, body: JSON.stringify({ visualStyle: "Editorial" }) });
-  const saved = await prisma.site.findUnique({ where: { id: site.id } });
+  const saved = await prisma.site.findUnique({ where: { id: site.id }, include: { sections: { orderBy: { order: "asc" } } } });
   assert(update.status === 200 && saved?.visualStyle === "Editorial", "la plantilla elegida no se guarda");
+  assert(saved?.sections.map((section) => section.type).join(">") === "hero>about_us>gallery>services>cta>contact>footer", "la plantilla elegida no aplica su orden estructural");
   assert(saved?.primaryColor === "#123456" && saved.secondaryColor === "#234567" && saved.accentColor === "#345678", "cambiar plantilla altera la paleta elegida");
   assert(await prisma.site.count({ where: { businessName } }) === 1, "M4 duplicó el proyecto al generar alternativas");
 
   assert((await fetch(`${baseUrl}/api/sites/${site.id}/template`, { method: "PUT", headers: { ...headers, "Content-Type": "application/json" }, body: JSON.stringify({ visualStyle: "Inventado" }) })).status === 400, "la API acepta plantillas inexistentes");
   assert((await fetch(`${baseUrl}/api/sites/${site.id}/template`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ visualStyle: "Minimal" }) })).status === 404, "la API permite cambiar proyectos sin autorización");
 
-  console.log("M4: OK — 3/6 previews, selección invitada, paleta y proyecto único verificados.");
+  console.log("M4: OK — 3/6 previews, selección invitada, orden estructural, paleta y proyecto único verificados.");
 } finally {
   await prisma.site.deleteMany({ where: { businessName } });
   await prisma.$disconnect();

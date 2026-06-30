@@ -62,6 +62,16 @@ OBJETIVO DE EXPERIENCIA:
 - Piensa mobile-first: titulos breves, contraste accesible, orden semantico y bloques que funcionen sin depender de hover.
 - El SEO debe reflejar el objetivo, la actividad y la ubicacion solo cuando esos datos aparecen en FACTS.
 
+CONTROL EDITORIAL INTERNO (NO LO MENCIONES EN LA RESPUESTA):
+- Antes de devolver el JSON, revisa y reescribe silenciosamente cualquier texto que no cumpla estas metricas.
+- seo.title: 25 a 65 caracteres. seo.metaDescription: 80 a 165 caracteres.
+- Hero: titulo de 8 a 72 caracteres, subtitulo de 12 a 110, body de 45 a 240 y CTA de 1 a 5 palabras.
+- Titulos de seccion: 4 a 80 caracteres. Body de about_us, contact y CTA: 35 a 360 caracteres.
+- Descripciones de servicios, beneficios, proceso y respuestas FAQ: 25 a 200 caracteres.
+- Cada seccion debe aportar informacion distinta. No repitas titulares, subtitulos ni parrafos completos.
+- Si un texto queda corto, amplialo solo con FACTS. Si queda largo, condensalo sin eliminar datos verificables.
+- Realiza esta auditoria internamente y entrega directamente la version corregida. Nunca informes al cliente que faltaba contenido ni muestres puntuaciones, advertencias o la rubrica.
+
 Sigue sectionPlan al pie de la letra: ese orden y esas secciones. No agregues secciones extra ni reordenes. Si una seccion no tiene datos en FACTS, omitela (pero no la reemplaces con otra).
 
 Tipos permitidos: hero, services, about_us, benefits, gallery, faq, contact, cta, trust_badges, process, pricing, location, footer.

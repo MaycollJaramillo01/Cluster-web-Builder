@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sitios de Prueba — Cluster Web Builder</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, sans-serif; background: #0f0f14; color: #e2e2f0; }
+
+    .sidebar {
+      position: fixed; top: 0; left: 0; width: 320px; height: 100vh;
+      background: #13131f; border-right: 1px solid #2a2a4a;
+      overflow-y: auto; display: flex; flex-direction: column;
+    }
+    .sidebar-header {
+      padding: 20px 18px 14px;
+      border-bottom: 1px solid #2a2a4a;
+    }
+    .sidebar-header h1 { font-size: 1rem; font-weight: 700; margin-bottom: 2px; }
+    .sidebar-header p { font-size: 0.75rem; color: #666; }
+
+    .site-list { flex: 1; padding: 10px 0; }
+    .site-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 18px; cursor: pointer;
+      border-left: 3px solid transparent;
+      transition: background 0.15s;
+    }
+    .site-item:hover { background: #1a1a2e; }
+    .site-item.active { background: #1e1e3a; border-left-color: #7878f0; }
+    .site-thumb {
+      width: 52px; height: 36px; object-fit: cover; border-radius: 4px;
+      border: 1px solid #2a2a4a; flex-shrink: 0;
+    }
+    .site-info { min-width: 0; }
+    .site-name { font-size: 0.8rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .site-meta { font-size: 0.7rem; color: #666; margin-top: 2px; }
+    .badge {
+      display: inline-block; font-size: 0.65rem; padding: 1px 6px;
+      border-radius: 99px; font-weight: 500; margin-left: 4px;
+    }
+    .badge-ai { background: #1e3a1e; color: #6dcea0; }
+    .badge-local { background: #3a2e1e; color: #c0902a; }
+
+    .preview-area {
+      margin-left: 320px; height: 100vh; display: flex; flex-direction: column;
+    }
+    .preview-toolbar {
+      height: 44px; background: #13131f; border-bottom: 1px solid #2a2a4a;
+      display: flex; align-items: center; padding: 0 18px; gap: 12px; flex-shrink: 0;
+    }
+    .preview-url {
+      flex: 1; background: #1a1a2e; border: 1px solid #2a2a4a; border-radius: 6px;
+      padding: 5px 10px; font-size: 0.78rem; color: #a0a0c0; font-family: monospace;
+    }
+    .preview-open {
+      font-size: 0.78rem; color: #7878f0; text-decoration: none;
+      padding: 5px 12px; border: 1px solid #3a3a7a; border-radius: 6px;
+      white-space: nowrap;
+    }
+    .preview-open:hover { background: #1e1e4a; }
+    .preview-frame {
+      flex: 1; border: none; background: #fff;
+    }
+    .placeholder {
+      flex: 1; display: flex; align-items: center; justify-content: center;
+      color: #444; font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+
+<div class="sidebar">
+  <div class="sidebar-header">
+    <h1>Sitios de Prueba</h1>
+    <p>2026-06-30 · OpenRouter · 7 sitios</p>
+  </div>
+  <div class="site-list" id="siteList"></div>
+</div>
+
+<div class="preview-area">
+  <div class="preview-toolbar">
+    <span class="preview-url" id="previewUrl">Selecciona un sitio</span>
+    <a class="preview-open" id="previewLink" href="#" target="_blank">Abrir en nueva pestana</a>
+  </div>
+  <div class="placeholder" id="placeholder">Selecciona un sitio de la lista</div>
+  <iframe class="preview-frame" id="previewFrame" style="display:none"></iframe>
+</div>
+
+<script>
+const sites = [
+  {
+    id: "cmr07vnt3000ckuek36s7z52t",
+    name: "Salon de belleza Valentina",
+    location: "Medellin",
+    style: "Immersive",
+    engine: "ai",
+    tokens: 460,
+    time: "4.3s",
+    thumb: "site-salon-valentina-immersive.png"
+  },
+  {
+    id: "cmr07v62i0001kuekqeev9ovg",
+    name: "Taller Mecanico Lopez",
+    location: "Bogota",
+    style: "Metrics",
+    engine: "ai",
+    tokens: 1008,
+    time: "10.5s",
+    thumb: "site-taller-lopez-metrics.png"
+  },
+  {
+    id: "cmr08q5me000ukub0hrdr3epk",
+    name: "Estudio de Yoga Dharma",
+    location: "Bogota",
+    style: "StudioSplit",
+    engine: "ai",
+    tokens: 2160,
+    time: "34.6s",
+    thumb: "site-yoga-dharma-studiosplit.png"
+  },
+  {
+    id: "cmr08jwi3000bkub0qju7dntk",
+    name: "Gimnasio FitZona",
+    location: "Bogota",
+    style: "Manifesto",
+    engine: "ai",
+    tokens: 265,
+    time: "43.2s",
+    thumb: "site-gimnasio-fitzona-manifesto.png"
+  },
+  {
+    id: "cmr08irbs0001kub0evdjro0q",
+    name: "Clinica Dental Sonrisa",
+    location: "Cali",
+    style: "StudioSplit",
+    engine: "local",
+    tokens: 2464,
+    time: "47.6s",
+    thumb: "site-clinica-dental-sonrisa.png"
+  },
+  {
+    id: "cmr08pbpg000jkub0vqpzf38t",
+    name: "Peluqueria Estilo Libre",
+    location: "Medellin",
+    style: "Service",
+    engine: "local",
+    tokens: 3553,
+    time: "56.1s",
+    thumb: "site-peluqueria-estilo-libre.png"
+  },
+  {
+    id: "cmr08rfby0014kub0a691ln6n",
+    name: "Pasteleria La Dulce Vida",
+    location: "Cali",
+    style: "Metrics",
+    engine: "local",
+    tokens: 159,
+    time: "56.4s",
+    thumb: "site-pasteleria-dulce-vida.png"
+  }
+];
+
+const list = document.getElementById("siteList");
+const frame = document.getElementById("previewFrame");
+const placeholder = document.getElementById("placeholder");
+const urlBar = document.getElementById("previewUrl");
+const openLink = document.getElementById("previewLink");
+
+function loadSite(site, el) {
+  document.querySelectorAll(".site-item").forEach(i => i.classList.remove("active"));
+  el.classList.add("active");
+
+  const url = "http://localhost:3000/preview/" + site.id;
+  urlBar.textContent = url;
+  openLink.href = url;
+  placeholder.style.display = "none";
+  frame.style.display = "block";
+  frame.src = url;
+}
+
+sites.forEach(site => {
+  const item = document.createElement("div");
+  item.className = "site-item";
+  item.innerHTML =
+    '<img class="site-thumb" src="' + site.thumb + '" alt="' + site.name + '" />' +
+    '<div class="site-info">' +
+      '<div class="site-name">' + site.name + '</div>' +
+      '<div class="site-meta">' +
+        site.location + ' &middot; ' + site.style +
+        ' <span class="badge ' + (site.engine === 'ai' ? 'badge-ai' : 'badge-local') + '">' +
+          (site.engine === 'ai' ? 'IA real' : 'Motor local') +
+        '</span>' +
+      '</div>' +
+    '</div>';
+  item.addEventListener("click", function() { loadSite(site, item); });
+  list.appendChild(item);
+});
+</script>
+
+</body>
+</html>

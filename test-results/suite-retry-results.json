@@ -1,0 +1,37 @@
+﻿[
+    {
+        "test":  "test:ui",
+        "exitCode":  0,
+        "status":  "PASS"
+    },
+    {
+        "test":  "test:home-modes",
+        "exitCode":  0,
+        "status":  "PASS"
+    },
+    {
+        "test":  "test:multi-user",
+        "exitCode":  0,
+        "status":  "PASS"
+    },
+    {
+        "test":  "test:m3",
+        "exitCode":  0,
+        "status":  "PASS"
+    },
+    {
+        "test":  "test:m4",
+        "exitCode":  0,
+        "status":  "PASS"
+    },
+    {
+        "test":  "test:fast-prompt",
+        "exitCode":  0,
+        "status":  "PASS"
+    },
+    {
+        "test":  "test:marketing",
+        "exitCode":  0,
+        "status":  "PASS"
+    }
+]

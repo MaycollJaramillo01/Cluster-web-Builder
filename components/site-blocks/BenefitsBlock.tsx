@@ -25,6 +25,7 @@ export function BenefitsBlock({ section, theme, preset }: BlockProps) {
             {items.map((item, i) => (
               <div
                 key={i}
+                data-motion-item
                 className="min-h-44 border-b-[3px] border-r-[3px] p-6"
                 style={{ borderColor: theme.text, backgroundColor: i % 2 ? `${theme.primary}10` : "transparent" }}
               >
@@ -71,6 +72,7 @@ export function BenefitsBlock({ section, theme, preset }: BlockProps) {
             {items.map((item, i) => (
               <div
                 key={i}
+                data-motion-item
                 className={`relative overflow-hidden border p-6 ${preset.cardShadow}`}
                 style={{
                   borderRadius: "var(--site-radius)",
@@ -126,6 +128,7 @@ export function BenefitsBlock({ section, theme, preset }: BlockProps) {
             {items.map((item, i) => (
               <div
                 key={i}
+                data-motion-item
                 className="flex gap-5 border-l-4 py-5 pl-5 pr-4"
                 style={{
                   borderColor: i % 2 === 0 ? theme.primary : theme.accent,
@@ -171,6 +174,7 @@ export function BenefitsBlock({ section, theme, preset }: BlockProps) {
           {items.map((item, i) => (
             <div
               key={i}
+              data-motion-item
               className={`relative border-t-2 pt-5 ${preset.cardShadow}`}
               style={{
                 borderColor: i === 0 ? theme.primary : `${theme.primary}55`,

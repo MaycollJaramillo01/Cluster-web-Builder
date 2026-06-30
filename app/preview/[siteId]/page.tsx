@@ -9,6 +9,7 @@ import { themeFromSite } from "@/lib/site/theme";
 import { SitePreview } from "@/components/builder/SitePreview";
 import { isDesignStyle } from "@/lib/site/template-selection";
 import { socialLinksFromBlueprint } from "@/lib/site/social-links";
+import { orderSectionsForTemplate } from "@/lib/site/template-layout";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -72,7 +73,8 @@ export default async function PreviewPage({
   const query = await searchParams;
   const requestedStyle = query.style;
   const visualStyle = requestedStyle && isDesignStyle(requestedStyle) ? requestedStyle : site.visualStyle;
-  const sections = query.compact === "1" ? compactSections(site.sections) : site.sections;
+  const orderedSections = orderSectionsForTemplate(site.sections, visualStyle);
+  const sections = query.compact === "1" ? compactSections(orderedSections) : orderedSections;
   return (
     <main>
       <SitePreview

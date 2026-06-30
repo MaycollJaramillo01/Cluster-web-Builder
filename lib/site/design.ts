@@ -1,4 +1,12 @@
-export const DESIGN_STYLE_IDS = ["Service", "Editorial", "Immersive", "Catalog", "Local", "Minimal"] as const;
+export const DESIGN_STYLE_IDS = [
+  "Service", "Editorial", "Immersive", "Catalog", "Local", "Minimal",
+  "StudioSplit", "Manifesto", "Statement", "Gridline", "Overlap", "Panorama",
+  "Collage", "Portrait", "Reverse", "Masthead", "Framed", "Metrics", "Quote",
+  "Timeline", "Columns", "Accent", "Numbered", "BigType", "SplitStats", "Badges",
+] as const;
+
+export type DesignStyleId = (typeof DESIGN_STYLE_IDS)[number];
+export type TemplateFamily = "service" | "editorial" | "immersive" | "catalog" | "local" | "minimal";
 
 /**
  * Design presets mapped from the onboarding `visualStyle` choice.
@@ -21,9 +29,16 @@ export type ServicesStyle = "cards" | "list" | "bento" | "editorial" | "bordered
 export type SectionStyle = "centered" | "asymmetric" | "contained" | "fullBleed" | "grid";
 export type ImageStyle = "rounded" | "square" | "arch" | "fullBleed" | "monochrome" | "offset";
 export type SurfaceStyle = "plain" | "soft" | "outlined" | "glass" | "brutal" | "tonal" | "dark";
-export type MotionStyle = "subtle" | "stagger" | "kinetic";
+export type MotionStyle = "subtle" | "stagger" | "kinetic" | "editorial" | "cinematic" | "minimal";
 export type CtaStyle = "solid" | "outline" | "pill" | "offset" | "link";
 export type FooterStyle = "minimal" | "columns" | "editorial" | "brutal" | "darkBand" | "centered";
+export const CONTACT_STYLES = [
+  "split", "editorial", "spotlight", "glass", "floating", "minimalLine",
+  "reverse", "brutal", "centered", "bordered", "offset", "dark",
+  "asymmetric", "quote", "sidebar", "banner", "framed", "steps",
+  "stacked", "compact",
+] as const;
+export type ContactStyle = (typeof CONTACT_STYLES)[number];
 /** All About-Us variant ids. */
 export const ABOUT_US_STYLES = [
   "split", "editorial", "manifesto", "statement", "grid", "immersive",
@@ -34,17 +49,9 @@ export const ABOUT_US_STYLES = [
 ] as const;
 export type AboutUsStyle = (typeof ABOUT_US_STYLES)[number];
 
-const ABOUT_BY_STYLE: Record<string, AboutUsStyle> = {
-  Service: "checklist",
-  Editorial: "editorial",
-  Immersive: "immersive",
-  Catalog: "mosaic",
-  Local: "polaroid",
-  Minimal: "minimalline",
-};
-
 export type DesignPreset = {
-  id: string;
+  id: DesignStyleId;
+  family: TemplateFamily;
   /** CSS font-family for headings (must be loaded in layout). */
   headingFont: string;
   /** CSS font-family for body text. */
@@ -73,51 +80,84 @@ export type DesignPreset = {
   motionStyle: MotionStyle;
   ctaStyle: CtaStyle;
   footerStyle: FooterStyle;
+  contactStyle: ContactStyle;
   aboutUsStyle: AboutUsStyle;
   paletteId: string;
   sectionPlan: string[];
 };
 
-type RecipeInput = Omit<DesignPreset, "bodyFont" | "useImages" | "footerStyle" | "aboutUsStyle"> &
-  Partial<Pick<DesignPreset, "bodyFont" | "useImages" | "footerStyle" | "aboutUsStyle">>;
+const CONTACT_STYLE_BY_ID: Record<DesignStyleId, ContactStyle> = {
+  Service: "split",
+  Editorial: "editorial",
+  Immersive: "spotlight",
+  Catalog: "glass",
+  Local: "floating",
+  Minimal: "minimalLine",
+  StudioSplit: "reverse",
+  Manifesto: "brutal",
+  Statement: "centered",
+  Gridline: "bordered",
+  Overlap: "offset",
+  Panorama: "dark",
+  Collage: "asymmetric",
+  Portrait: "quote",
+  Reverse: "sidebar",
+  Masthead: "banner",
+  Framed: "framed",
+  Metrics: "steps",
+  Quote: "stacked",
+  Timeline: "compact",
+  Columns: "bordered",
+  Accent: "brutal",
+  Numbered: "steps",
+  BigType: "spotlight",
+  SplitStats: "asymmetric",
+  Badges: "floating",
+};
+
+type RecipeInput = Omit<DesignPreset, "bodyFont" | "useImages" | "contactStyle"> &
+  Partial<Pick<DesignPreset, "bodyFont" | "useImages" | "contactStyle">>;
 
 function recipe(input: RecipeInput): DesignPreset {
-  const footerStyle: FooterStyle = input.footerStyle
-    ?? (input.surfaceStyle === "brutal" ? "brutal"
-      : input.heroStyle === "editorial" || input.servicesStyle === "editorial" ? "editorial"
-        : input.surfaceStyle === "dark" ? "darkBand"
-          : input.navStyle === "floating" ? "columns"
-            : input.sectionStyle === "centered" ? "centered"
-              : "minimal");
-  const aboutUsStyle: AboutUsStyle = input.aboutUsStyle
-    ?? ABOUT_BY_STYLE[input.id]
-    ?? (input.surfaceStyle === "brutal" ? "manifesto"
-      : input.heroStyle === "editorial" || input.servicesStyle === "editorial" ? "editorial"
-        : input.sectionStyle === "fullBleed" ? "immersive"
-          : input.sectionStyle === "grid" ? "grid"
-            : input.sectionStyle === "centered" ? "statement"
-              : "split");
-
   return {
     bodyFont: '"Inter", system-ui, sans-serif',
     useImages: true,
+    contactStyle: CONTACT_STYLE_BY_ID[input.id],
     ...input,
-    footerStyle,
-    aboutUsStyle,
     sectionPlan: input.sectionPlan.map((type) => type === "about" ? "about_us" : type),
   };
 }
 
-const PRESETS: Record<string, DesignPreset> = {
-  Service: recipe({ id: "Service", headingFont: '"Inter", system-ui, sans-serif', radius: "0.5rem", buttonRadius: "0.35rem", cardShadow: "shadow-sm", uppercaseHeadings: false, heroStyle: "split", headingTracking: "-0.025em", headingWeight: 750, navStyle: "bar", servicesStyle: "bordered", sectionStyle: "contained", imageStyle: "square", surfaceStyle: "plain", motionStyle: "subtle", ctaStyle: "solid", paletteId: "corporate", sectionPlan: ["hero", "services", "benefits", "process", "about_us", "faq", "contact", "cta", "footer"] }),
-  Editorial: recipe({ id: "Editorial", headingFont: '"Playfair Display", Georgia, serif', radius: "0rem", buttonRadius: "0rem", cardShadow: "shadow-none", uppercaseHeadings: false, heroStyle: "editorial", headingTracking: "-0.03em", headingWeight: 700, navStyle: "minimal", servicesStyle: "editorial", sectionStyle: "asymmetric", imageStyle: "offset", surfaceStyle: "plain", motionStyle: "subtle", ctaStyle: "link", paletteId: "luxury_light", sectionPlan: ["hero", "about_us", "gallery", "services", "faq", "cta", "contact", "footer"] }),
-  Immersive: recipe({ id: "Immersive", headingFont: '"Space Grotesk", system-ui, sans-serif', radius: "0.75rem", buttonRadius: "0.5rem", cardShadow: "shadow-xl", uppercaseHeadings: false, heroStyle: "immersive", headingTracking: "-0.045em", headingWeight: 800, navStyle: "dark", servicesStyle: "bento", sectionStyle: "fullBleed", imageStyle: "fullBleed", surfaceStyle: "dark", motionStyle: "stagger", ctaStyle: "solid", paletteId: "cybersecurity", sectionPlan: ["hero", "benefits", "gallery", "services", "process", "cta", "contact", "footer"] }),
-  Catalog: recipe({ id: "Catalog", headingFont: '"Poppins", system-ui, sans-serif', radius: "1rem", buttonRadius: "9999px", cardShadow: "shadow-md", uppercaseHeadings: false, heroStyle: "gradient", headingTracking: "-0.03em", headingWeight: 750, navStyle: "floating", servicesStyle: "bento", sectionStyle: "grid", imageStyle: "rounded", surfaceStyle: "tonal", motionStyle: "stagger", ctaStyle: "pill", paletteId: "ecommerce_fashion", sectionPlan: ["hero", "services", "gallery", "benefits", "faq", "contact", "cta", "footer"] }),
-  Local: recipe({ id: "Local", headingFont: '"Poppins", system-ui, sans-serif', radius: "1.25rem", buttonRadius: "9999px", cardShadow: "shadow-lg", uppercaseHeadings: false, heroStyle: "framed", headingTracking: "-0.02em", headingWeight: 700, navStyle: "floating", servicesStyle: "cards", sectionStyle: "contained", imageStyle: "rounded", surfaceStyle: "soft", motionStyle: "subtle", ctaStyle: "pill", paletteId: "local_trustworthy", sectionPlan: ["hero", "services", "benefits", "about_us", "location", "contact", "cta", "footer"] }),
-  Minimal: recipe({ id: "Minimal", headingFont: '"Inter", system-ui, sans-serif', radius: "0rem", buttonRadius: "0rem", cardShadow: "shadow-none", uppercaseHeadings: true, heroStyle: "minimal", useImages: false, headingTracking: "0.06em", headingWeight: 650, navStyle: "minimal", servicesStyle: "list", sectionStyle: "centered", imageStyle: "square", surfaceStyle: "plain", motionStyle: "subtle", ctaStyle: "link", paletteId: "minimalist", sectionPlan: ["hero", "services", "about_us", "contact", "cta", "footer"] }),
+const PRESETS: Record<DesignStyleId, DesignPreset> = {
+  Service: recipe({ id: "Service", family: "service", headingFont: '"Inter", system-ui, sans-serif', radius: "0.5rem", buttonRadius: "0.35rem", cardShadow: "shadow-sm", uppercaseHeadings: false, heroStyle: "split", headingTracking: "-0.025em", headingWeight: 750, navStyle: "bar", servicesStyle: "bordered", sectionStyle: "contained", imageStyle: "square", surfaceStyle: "plain", motionStyle: "subtle", ctaStyle: "solid", footerStyle: "minimal", contactStyle: "split", aboutUsStyle: "checklist", paletteId: "corporate", sectionPlan: ["hero", "services", "benefits", "process", "about_us", "faq", "contact", "cta", "footer"] }),
+  Editorial: recipe({ id: "Editorial", family: "editorial", headingFont: '"Playfair Display", Georgia, serif', radius: "0rem", buttonRadius: "0rem", cardShadow: "shadow-none", uppercaseHeadings: false, heroStyle: "editorial", headingTracking: "-0.03em", headingWeight: 700, navStyle: "minimal", servicesStyle: "editorial", sectionStyle: "asymmetric", imageStyle: "offset", surfaceStyle: "plain", motionStyle: "editorial", ctaStyle: "link", footerStyle: "editorial", aboutUsStyle: "editorial", paletteId: "luxury_light", sectionPlan: ["hero", "about_us", "gallery", "services", "faq", "cta", "contact", "footer"] }),
+  Immersive: recipe({ id: "Immersive", family: "immersive", headingFont: '"Space Grotesk", system-ui, sans-serif', radius: "0.75rem", buttonRadius: "0.5rem", cardShadow: "shadow-xl", uppercaseHeadings: false, heroStyle: "immersive", headingTracking: "-0.045em", headingWeight: 800, navStyle: "dark", servicesStyle: "bento", sectionStyle: "fullBleed", imageStyle: "fullBleed", surfaceStyle: "dark", motionStyle: "cinematic", ctaStyle: "solid", footerStyle: "darkBand", aboutUsStyle: "immersive", paletteId: "cybersecurity", sectionPlan: ["hero", "benefits", "gallery", "services", "process", "cta", "contact", "footer"] }),
+  Catalog: recipe({ id: "Catalog", family: "catalog", headingFont: '"Poppins", system-ui, sans-serif', radius: "1rem", buttonRadius: "9999px", cardShadow: "shadow-md", uppercaseHeadings: false, heroStyle: "gradient", headingTracking: "-0.03em", headingWeight: 750, navStyle: "floating", servicesStyle: "bento", sectionStyle: "grid", imageStyle: "rounded", surfaceStyle: "tonal", motionStyle: "stagger", ctaStyle: "pill", footerStyle: "columns", aboutUsStyle: "mosaic", paletteId: "ecommerce_fashion", sectionPlan: ["hero", "services", "gallery", "benefits", "faq", "contact", "cta", "footer"] }),
+  Local: recipe({ id: "Local", family: "local", headingFont: '"Poppins", system-ui, sans-serif', radius: "1.25rem", buttonRadius: "9999px", cardShadow: "shadow-lg", uppercaseHeadings: false, heroStyle: "framed", headingTracking: "-0.02em", headingWeight: 700, navStyle: "floating", servicesStyle: "cards", sectionStyle: "contained", imageStyle: "rounded", surfaceStyle: "soft", motionStyle: "subtle", ctaStyle: "pill", footerStyle: "columns", aboutUsStyle: "polaroid", paletteId: "local_trustworthy", sectionPlan: ["hero", "services", "benefits", "about_us", "location", "contact", "cta", "footer"] }),
+  Minimal: recipe({ id: "Minimal", family: "minimal", headingFont: '"Inter", system-ui, sans-serif', radius: "0rem", buttonRadius: "0rem", cardShadow: "shadow-none", uppercaseHeadings: true, heroStyle: "minimal", useImages: false, headingTracking: "0.06em", headingWeight: 650, navStyle: "minimal", servicesStyle: "list", sectionStyle: "centered", imageStyle: "square", surfaceStyle: "plain", motionStyle: "minimal", ctaStyle: "link", footerStyle: "centered", aboutUsStyle: "minimalline", paletteId: "minimalist", sectionPlan: ["hero", "services", "about_us", "contact", "cta", "footer"] }),
+  StudioSplit: recipe({ id: "StudioSplit", family: "service", headingFont: '"Space Grotesk", system-ui, sans-serif', radius: "0.25rem", buttonRadius: "0.25rem", cardShadow: "shadow-md", uppercaseHeadings: false, heroStyle: "split", headingTracking: "-0.04em", headingWeight: 780, navStyle: "bordered", servicesStyle: "split", sectionStyle: "asymmetric", imageStyle: "offset", surfaceStyle: "outlined", motionStyle: "stagger", ctaStyle: "outline", footerStyle: "columns", aboutUsStyle: "split", paletteId: "modern_clean", sectionPlan: ["hero", "about_us", "services", "process", "gallery", "contact", "cta", "footer"] }),
+  Manifesto: recipe({ id: "Manifesto", family: "immersive", headingFont: '"Arial Black", Impact, sans-serif', radius: "0rem", buttonRadius: "0rem", cardShadow: "shadow-none", uppercaseHeadings: true, heroStyle: "poster", headingTracking: "-0.055em", headingWeight: 900, navStyle: "dark", servicesStyle: "list", sectionStyle: "fullBleed", imageStyle: "square", surfaceStyle: "brutal", motionStyle: "kinetic", ctaStyle: "offset", footerStyle: "brutal", aboutUsStyle: "manifesto", paletteId: "bold", sectionPlan: ["hero", "about_us", "services", "benefits", "cta", "contact", "footer"] }),
+  Statement: recipe({ id: "Statement", family: "minimal", headingFont: '"Helvetica Neue", Arial, sans-serif', radius: "0rem", buttonRadius: "9999px", cardShadow: "shadow-none", uppercaseHeadings: false, heroStyle: "minimal", useImages: false, headingTracking: "-0.045em", headingWeight: 500, navStyle: "minimal", servicesStyle: "list", sectionStyle: "centered", imageStyle: "square", surfaceStyle: "plain", motionStyle: "minimal", ctaStyle: "pill", footerStyle: "centered", aboutUsStyle: "statement", paletteId: "minimalist", sectionPlan: ["hero", "about_us", "benefits", "services", "cta", "contact", "footer"] }),
+  Gridline: recipe({ id: "Gridline", family: "catalog", headingFont: '"Space Mono", monospace', bodyFont: '"Space Mono", monospace', radius: "0rem", buttonRadius: "0rem", cardShadow: "shadow-none", uppercaseHeadings: true, heroStyle: "gradient", headingTracking: "0.02em", headingWeight: 700, navStyle: "bordered", servicesStyle: "bento", sectionStyle: "grid", imageStyle: "square", surfaceStyle: "outlined", motionStyle: "stagger", ctaStyle: "solid", footerStyle: "columns", aboutUsStyle: "grid", paletteId: "tech_saas", sectionPlan: ["hero", "services", "gallery", "about_us", "process", "contact", "cta", "footer"] }),
+  Overlap: recipe({ id: "Overlap", family: "editorial", headingFont: '"Playfair Display", Georgia, serif', radius: "1.5rem", buttonRadius: "9999px", cardShadow: "shadow-xl", uppercaseHeadings: false, heroStyle: "split", headingTracking: "-0.035em", headingWeight: 700, navStyle: "floating", servicesStyle: "editorial", sectionStyle: "asymmetric", imageStyle: "offset", surfaceStyle: "soft", motionStyle: "editorial", ctaStyle: "pill", footerStyle: "editorial", aboutUsStyle: "overlap", paletteId: "luxury_light", sectionPlan: ["hero", "gallery", "about_us", "services", "benefits", "contact", "cta", "footer"] }),
+  Panorama: recipe({ id: "Panorama", family: "immersive", headingFont: '"Space Grotesk", system-ui, sans-serif', radius: "0rem", buttonRadius: "0rem", cardShadow: "shadow-lg", uppercaseHeadings: true, heroStyle: "cinematic", headingTracking: "0.04em", headingWeight: 800, navStyle: "dark", servicesStyle: "bordered", sectionStyle: "fullBleed", imageStyle: "fullBleed", surfaceStyle: "dark", motionStyle: "cinematic", ctaStyle: "outline", footerStyle: "darkBand", aboutUsStyle: "banner", paletteId: "artisan_nature", sectionPlan: ["hero", "gallery", "services", "about_us", "process", "cta", "contact", "footer"] }),
+  Collage: recipe({ id: "Collage", family: "editorial", headingFont: '"Poppins", system-ui, sans-serif', radius: "0.75rem", buttonRadius: "0.5rem", cardShadow: "shadow-lg", uppercaseHeadings: false, heroStyle: "editorial", headingTracking: "-0.04em", headingWeight: 800, navStyle: "minimal", servicesStyle: "cards", sectionStyle: "asymmetric", imageStyle: "offset", surfaceStyle: "tonal", motionStyle: "stagger", ctaStyle: "solid", footerStyle: "editorial", aboutUsStyle: "collage", paletteId: "creative", sectionPlan: ["hero", "about_us", "services", "gallery", "benefits", "cta", "contact", "footer"] }),
+  Portrait: recipe({ id: "Portrait", family: "editorial", headingFont: '"Cormorant Garamond", Georgia, serif', radius: "9999px", buttonRadius: "9999px", cardShadow: "shadow-md", uppercaseHeadings: false, heroStyle: "editorial", headingTracking: "-0.025em", headingWeight: 650, navStyle: "minimal", servicesStyle: "editorial", sectionStyle: "contained", imageStyle: "arch", surfaceStyle: "plain", motionStyle: "editorial", ctaStyle: "link", footerStyle: "editorial", aboutUsStyle: "portrait", paletteId: "premium_elegant", sectionPlan: ["hero", "about_us", "benefits", "services", "gallery", "contact", "footer"] }),
+  Reverse: recipe({ id: "Reverse", family: "service", headingFont: '"Inter", system-ui, sans-serif', radius: "0.75rem", buttonRadius: "0.5rem", cardShadow: "shadow-sm", uppercaseHeadings: false, heroStyle: "split", headingTracking: "-0.03em", headingWeight: 750, navStyle: "bar", servicesStyle: "bordered", sectionStyle: "asymmetric", imageStyle: "rounded", surfaceStyle: "outlined", motionStyle: "subtle", ctaStyle: "solid", footerStyle: "minimal", aboutUsStyle: "reverse", paletteId: "legal_professional", sectionPlan: ["hero", "services", "about_us", "process", "benefits", "faq", "contact", "footer"] }),
+  Masthead: recipe({ id: "Masthead", family: "editorial", headingFont: '"Playfair Display", Georgia, serif', radius: "0rem", buttonRadius: "0rem", cardShadow: "shadow-none", uppercaseHeadings: true, heroStyle: "editorial", headingTracking: "0.01em", headingWeight: 800, navStyle: "bordered", servicesStyle: "editorial", sectionStyle: "centered", imageStyle: "fullBleed", surfaceStyle: "plain", motionStyle: "editorial", ctaStyle: "link", footerStyle: "editorial", aboutUsStyle: "masthead", paletteId: "luxury_light", sectionPlan: ["hero", "gallery", "about_us", "services", "faq", "contact", "cta", "footer"] }),
+  Framed: recipe({ id: "Framed", family: "local", headingFont: '"Poppins", system-ui, sans-serif', radius: "1rem", buttonRadius: "0.75rem", cardShadow: "shadow-xl", uppercaseHeadings: false, heroStyle: "framed", headingTracking: "-0.025em", headingWeight: 700, navStyle: "floating", servicesStyle: "cards", sectionStyle: "contained", imageStyle: "rounded", surfaceStyle: "glass", motionStyle: "stagger", ctaStyle: "solid", footerStyle: "columns", aboutUsStyle: "framed", paletteId: "real_estate", sectionPlan: ["hero", "services", "gallery", "about_us", "location", "benefits", "contact", "footer"] }),
+  Metrics: recipe({ id: "Metrics", family: "service", headingFont: '"Inter", system-ui, sans-serif', radius: "0.5rem", buttonRadius: "0.35rem", cardShadow: "shadow-sm", uppercaseHeadings: true, heroStyle: "gradient", headingTracking: "0.025em", headingWeight: 800, navStyle: "bar", servicesStyle: "split", sectionStyle: "grid", imageStyle: "square", surfaceStyle: "outlined", motionStyle: "stagger", ctaStyle: "solid", footerStyle: "minimal", aboutUsStyle: "stats", paletteId: "financial_trust", sectionPlan: ["hero", "about_us", "benefits", "services", "process", "faq", "cta", "contact", "footer"] }),
+  Quote: recipe({ id: "Quote", family: "minimal", headingFont: '"Playfair Display", Georgia, serif', radius: "0rem", buttonRadius: "0rem", cardShadow: "shadow-none", uppercaseHeadings: false, heroStyle: "minimal", useImages: false, headingTracking: "-0.03em", headingWeight: 500, navStyle: "minimal", servicesStyle: "list", sectionStyle: "centered", imageStyle: "monochrome", surfaceStyle: "plain", motionStyle: "minimal", ctaStyle: "link", footerStyle: "centered", aboutUsStyle: "quote", paletteId: "minimalist", sectionPlan: ["hero", "about_us", "services", "faq", "contact", "footer"] }),
+  Timeline: recipe({ id: "Timeline", family: "service", headingFont: '"Space Grotesk", system-ui, sans-serif', radius: "0.75rem", buttonRadius: "9999px", cardShadow: "shadow-md", uppercaseHeadings: false, heroStyle: "image", headingTracking: "-0.035em", headingWeight: 750, navStyle: "bar", servicesStyle: "cards", sectionStyle: "contained", imageStyle: "rounded", surfaceStyle: "soft", motionStyle: "stagger", ctaStyle: "pill", footerStyle: "columns", aboutUsStyle: "timeline", paletteId: "startup_modern", sectionPlan: ["hero", "process", "about_us", "services", "benefits", "contact", "cta", "footer"] }),
+  Columns: recipe({ id: "Columns", family: "catalog", headingFont: '"Poppins", system-ui, sans-serif', radius: "0.25rem", buttonRadius: "0.25rem", cardShadow: "shadow-sm", uppercaseHeadings: false, heroStyle: "split", headingTracking: "-0.03em", headingWeight: 700, navStyle: "bordered", servicesStyle: "bordered", sectionStyle: "grid", imageStyle: "square", surfaceStyle: "tonal", motionStyle: "subtle", ctaStyle: "outline", footerStyle: "columns", aboutUsStyle: "columns", paletteId: "education", sectionPlan: ["hero", "services", "about_us", "benefits", "gallery", "faq", "contact", "footer"] }),
+  Accent: recipe({ id: "Accent", family: "catalog", headingFont: '"Space Grotesk", system-ui, sans-serif', radius: "0rem", buttonRadius: "0rem", cardShadow: "shadow-none", uppercaseHeadings: true, heroStyle: "poster", headingTracking: "-0.04em", headingWeight: 850, navStyle: "bordered", servicesStyle: "bento", sectionStyle: "asymmetric", imageStyle: "square", surfaceStyle: "brutal", motionStyle: "kinetic", ctaStyle: "offset", footerStyle: "brutal", aboutUsStyle: "accent", paletteId: "bold", sectionPlan: ["hero", "services", "benefits", "about_us", "gallery", "cta", "contact", "footer"] }),
+  Numbered: recipe({ id: "Numbered", family: "service", headingFont: '"Inter", system-ui, sans-serif', radius: "0.5rem", buttonRadius: "0.5rem", cardShadow: "shadow-none", uppercaseHeadings: false, heroStyle: "gradient", headingTracking: "-0.03em", headingWeight: 800, navStyle: "bar", servicesStyle: "list", sectionStyle: "contained", imageStyle: "square", surfaceStyle: "outlined", motionStyle: "stagger", ctaStyle: "solid", footerStyle: "minimal", aboutUsStyle: "numbered", paletteId: "corporate", sectionPlan: ["hero", "process", "services", "about_us", "benefits", "faq", "contact", "cta", "footer"] }),
+  BigType: recipe({ id: "BigType", family: "immersive", headingFont: '"Arial Black", Impact, sans-serif', radius: "0rem", buttonRadius: "9999px", cardShadow: "shadow-none", uppercaseHeadings: true, heroStyle: "poster", headingTracking: "-0.065em", headingWeight: 900, navStyle: "minimal", servicesStyle: "list", sectionStyle: "fullBleed", imageStyle: "monochrome", surfaceStyle: "plain", motionStyle: "kinetic", ctaStyle: "pill", footerStyle: "centered", aboutUsStyle: "bigtype", paletteId: "creative", sectionPlan: ["hero", "about_us", "gallery", "services", "cta", "contact", "footer"] }),
+  SplitStats: recipe({ id: "SplitStats", family: "service", headingFont: '"Space Grotesk", system-ui, sans-serif', radius: "1rem", buttonRadius: "0.5rem", cardShadow: "shadow-lg", uppercaseHeadings: false, heroStyle: "split", headingTracking: "-0.04em", headingWeight: 800, navStyle: "floating", servicesStyle: "split", sectionStyle: "grid", imageStyle: "rounded", surfaceStyle: "tonal", motionStyle: "stagger", ctaStyle: "solid", footerStyle: "columns", aboutUsStyle: "splitstats", paletteId: "tech_saas", sectionPlan: ["hero", "about_us", "services", "process", "gallery", "benefits", "contact", "footer"] }),
+  Badges: recipe({ id: "Badges", family: "local", headingFont: '"Poppins", system-ui, sans-serif', radius: "1.5rem", buttonRadius: "9999px", cardShadow: "shadow-md", uppercaseHeadings: false, heroStyle: "framed", headingTracking: "-0.02em", headingWeight: 700, navStyle: "floating", servicesStyle: "cards", sectionStyle: "centered", imageStyle: "rounded", surfaceStyle: "soft", motionStyle: "subtle", ctaStyle: "pill", footerStyle: "centered", aboutUsStyle: "badges", paletteId: "nonprofit_community", sectionPlan: ["hero", "benefits", "about_us", "services", "location", "faq", "contact", "cta", "footer"] }),
 };
 
-const LEGACY_STYLE_MAP: Record<string, string> = {
+const LEGACY_STYLE_MAP: Record<string, DesignStyleId> = {
   modern_clean: "Service", premium_elegant: "Editorial", local_trustworthy: "Local",
   corporate: "Service", creative: "Catalog", minimalist: "Minimal", bold: "Immersive",
   Neobrutalist: "Immersive", "Swiss/International": "Service", Glassmorphism: "Immersive",
@@ -133,13 +173,13 @@ const DEFAULT_PRESET = PRESETS.Service;
 
 export function getDesignPreset(visualStyle?: string | null): DesignPreset {
   if (!visualStyle) return DEFAULT_PRESET;
-  return PRESETS[visualStyle] ?? PRESETS[LEGACY_STYLE_MAP[visualStyle]] ?? DEFAULT_PRESET;
+  return PRESETS[visualStyle as DesignStyleId] ?? PRESETS[LEGACY_STYLE_MAP[visualStyle]] ?? DEFAULT_PRESET;
 }
 
 export function getDesignRecipeFingerprint(preset: DesignPreset): string {
-  return [preset.heroStyle, preset.navStyle, preset.servicesStyle, preset.sectionStyle,
+  return [preset.family, preset.heroStyle, preset.navStyle, preset.servicesStyle, preset.sectionStyle,
     preset.imageStyle, preset.surfaceStyle, preset.motionStyle, preset.ctaStyle,
-    preset.footerStyle, preset.aboutUsStyle, preset.radius, preset.buttonRadius, preset.headingFont, preset.headingTracking,
+    preset.footerStyle, preset.contactStyle, preset.aboutUsStyle, preset.radius, preset.buttonRadius, preset.headingFont, preset.headingTracking,
     preset.sectionPlan.join(">")].join("|");
 }
 

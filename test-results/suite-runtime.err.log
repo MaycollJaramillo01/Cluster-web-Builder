@@ -1,0 +1,8 @@
+⨯ Another next dev server is already running.
+
+- Local:        http://localhost:3000
+- PID:          3252
+- Dir:          C:\Users\Mayco\Documents\Cluster-web-Builder
+- Log:          .next\dev\logs\next-development.log
+
+Run taskkill /PID 3252 /F to stop it.

@@ -50,7 +50,7 @@ export function SiteNav({
 
   return (
     <header
-      className={`sticky z-30 ${floating ? "top-3 px-2 sm:px-4" : "top-0"} ${minimal ? "" : "backdrop-blur"}`}
+      className={`site-nav-enter sticky z-30 ${floating ? "top-3 px-2 sm:px-4" : "top-0"} ${minimal ? "" : "backdrop-blur"}`}
       style={{ backgroundColor: floating ? "transparent" : `${navBackground}f5` }}
     >
       <nav

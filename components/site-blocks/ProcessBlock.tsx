@@ -62,7 +62,7 @@ export function ProcessBlock({ section, theme, preset }: BlockProps) {
             style={{ borderColor: `${theme.primary}28` }}
           >
             {items.map((item, i) => (
-              <li key={i} className="relative">
+              <li key={i} data-motion-item className="relative">
                 <span
                   className="absolute -left-[3.25rem] flex h-11 w-11 items-center justify-center text-sm font-bold text-white"
                   style={{ backgroundColor: theme.primary, borderRadius: stepRadius }}
@@ -119,7 +119,7 @@ export function ProcessBlock({ section, theme, preset }: BlockProps) {
         {/* Mobile: vertical list */}
         <ol className="mt-12 space-y-6 md:hidden">
           {items.map((item, i) => (
-            <li key={i} className="flex items-start gap-4">
+            <li key={i} data-motion-item className="flex items-start gap-4">
               <span
                 className="flex h-10 w-10 shrink-0 items-center justify-center text-sm font-bold text-white"
                 style={{ backgroundColor: theme.primary, borderRadius: stepRadius }}
@@ -170,6 +170,7 @@ export function ProcessBlock({ section, theme, preset }: BlockProps) {
             {items.map((item, i) => (
               <div
                 key={i}
+                data-motion-item
                 className="flex flex-col items-center px-3 text-center"
               >
                 <span

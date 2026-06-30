@@ -4,11 +4,12 @@ import { ZodError } from "zod";
 import { createGuestAccess, GUEST_COOKIE, GUEST_MS, guestCookie, hashGuestToken, getUserBySessionToken, SESSION_COOKIE } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { consumeRateLimit } from "@/lib/rate-limit";
-import { nvidiaChatStream, parseChatStream, NvidiaError } from "@/lib/nvidia";
+import { openrouterChatStream, parseChatStream, OpenRouterError } from "@/lib/openrouter";
 import { buildSiteGenerationPrompt } from "@/lib/prompts/site-generator";
 import { extractJsonFromModelResponse } from "@/lib/json/extract-json";
 import { buildFallbackSiteBlueprint } from "@/lib/site/fallback-site-blueprint";
 import { normalizeSiteBlueprint } from "@/lib/site/normalize-site-blueprint";
+import { auditBlueprintCopy, enforceBlueprintCopyQuality } from "@/lib/site/copy-quality";
 import { applyPageStructure } from "@/lib/site/structure";
 import { getDesignPreset, resolvePalette } from "@/lib/site/design";
 import { createPublicSlug } from "@/lib/site/public-url";
@@ -130,9 +131,9 @@ export async function POST(req: NextRequest) {
 
         try {
           const abort = new AbortController();
-          const timeout = setTimeout(() => abort.abort(), 12_000);
+          const timeout = setTimeout(() => abort.abort(), 55_000);
           try {
-          const aiResponse = await nvidiaChatStream(
+          const aiResponse = await openrouterChatStream(
             [
               { role: "system", content: system },
               { role: "user", content: user },
@@ -162,14 +163,20 @@ export async function POST(req: NextRequest) {
 
           const rawJson = extractJsonFromModelResponse(full);
           normalizedSite = normalizeSiteBlueprint(rawJson);
+          if (!auditBlueprintCopy(normalizedSite.blueprint).passed) {
+            normalizedSite = normalizeSiteBlueprint(enforceBlueprintCopyQuality(normalizedSite.blueprint, input));
+          }
           } finally {
             clearTimeout(timeout);
           }
         } catch (err) {
           if (!canUseLocalGenerator(err)) throw err;
           send("status", { message: localGeneratorMessage(err) });
+          const fallbackBlueprint = buildFallbackSiteBlueprint(input, sectionPlan);
           normalizedSite = normalizeSiteBlueprint(
-            buildFallbackSiteBlueprint(input, sectionPlan)
+            auditBlueprintCopy(fallbackBlueprint).passed
+              ? fallbackBlueprint
+              : enforceBlueprintCopyQuality(fallbackBlueprint, input)
           );
         }
 
@@ -274,7 +281,7 @@ function buildGuidedDesignRequest(input: OnboardingInput): string {
 }
 
 function canUseLocalGenerator(err: unknown): boolean {
-  if (err instanceof NvidiaError) return true;
+  if (err instanceof OpenRouterError) return true;
   if (err instanceof ZodError) return true;
   if (err instanceof Error) {
     const message = err.message.toLowerCase();
@@ -283,27 +290,26 @@ function canUseLocalGenerator(err: unknown): boolean {
       message.includes("json") ||
       message.includes("pagina") ||
       message.includes("seccion") ||
-      message.includes("blueprint")
-      || message.includes("abort")
+      message.includes("blueprint") ||
+      message.includes("abort")
     );
   }
   return false;
 }
 
-
 function localGeneratorMessage(err: unknown): string {
-  if (err instanceof NvidiaError && err.status === 429) {
-    return "NVIDIA NIM está ocupado; generando el sitio con el motor local...";
+  if (err instanceof OpenRouterError && err.status === 429) {
+    return "Los modelos de IA están ocupados; generando el sitio con el motor local...";
   }
-  if (err instanceof NvidiaError) {
-    return "NVIDIA NIM no respondió; generando el sitio con el motor local...";
+  if (err instanceof OpenRouterError) {
+    return "La IA no respondió; generando el sitio con el motor local...";
   }
   return "La respuesta de IA no fue usable; generando el sitio con el motor local...";
 }
 
 /** Converts internal errors into user-friendly Spanish messages (no stack traces). */
 function humanizeError(err: unknown): string {
-  if (err instanceof NvidiaError) return err.message;
+  if (err instanceof OpenRouterError) return err.message;
   if (err instanceof ZodError) {
     return "La estructura generada por la IA no es valida. Intenta nuevamente.";
   }

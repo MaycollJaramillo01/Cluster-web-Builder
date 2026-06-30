@@ -289,7 +289,7 @@ export function HeroBlock({ section, theme, preset, site }: BlockProps) {
       <section
         className="px-6 py-28 sm:py-36"
         style={{
-          background: preset.id === "Gradient Modern"
+          background: preset.heroStyle === "gradient"
             ? `linear-gradient(135deg, ${theme.secondary}, ${theme.primary} 55%, ${theme.accent})`
             : theme.secondary,
           color: "#ffffff",

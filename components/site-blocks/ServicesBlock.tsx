@@ -18,7 +18,7 @@ export function ServicesBlock({ section, theme, preset, site }: BlockProps) {
           <SectionHeading title={section.title} subtitle={section.subtitle} theme={theme} preset={preset} align="left" />
           <div className="mt-12 border-t" style={{ borderColor: `${theme.text}4d` }}>
             {items.map((item, i) => (
-              <article key={i} className="grid gap-4 border-b py-7 md:grid-cols-[5rem_1fr_1.2fr] md:items-start" style={{ borderColor: `${theme.text}33` }}>
+              <article key={i} data-motion-item className="grid gap-4 border-b py-7 md:grid-cols-[5rem_1fr_1.2fr] md:items-start" style={{ borderColor: `${theme.text}33` }}>
                 <span className="text-sm font-semibold" style={{ color: theme.primary }}>{String(i + 1).padStart(2, "0")}</span>
                 <h3 className="text-xl font-semibold" style={{ color: theme.text, fontFamily: "var(--site-heading)" }}>{titleFor(item)}</h3>
                 {descriptionFor(item) && <p className="leading-relaxed" style={{ color: surface.muted }}>{descriptionFor(item)}</p>}
@@ -37,7 +37,7 @@ export function ServicesBlock({ section, theme, preset, site }: BlockProps) {
           <SectionHeading title={section.title} subtitle={section.subtitle} theme={theme} preset={preset} align="left" />
           <div className="mt-14 grid gap-x-12 gap-y-10 md:grid-cols-2">
             {items.map((item, i) => (
-              <article key={i} className="border-t pt-5" style={{ borderColor: theme.primary }}>
+              <article key={i} data-motion-item className="border-t pt-5" style={{ borderColor: theme.primary }}>
                 <span className="text-5xl font-light opacity-25" style={{ color: theme.text, fontFamily: "var(--site-heading)" }}>{String(i + 1).padStart(2, "0")}</span>
                 <h3 className="mt-4 text-2xl" style={{ color: theme.text, fontFamily: "var(--site-heading)", fontWeight: preset.headingWeight }}>{titleFor(item)}</h3>
                 {descriptionFor(item) && <p className="mt-3 max-w-md leading-relaxed" style={{ color: surface.muted }}>{descriptionFor(item)}</p>}
@@ -56,7 +56,7 @@ export function ServicesBlock({ section, theme, preset, site }: BlockProps) {
           <SectionHeading title={section.title} subtitle={section.subtitle} theme={theme} preset={preset} />
           <div className="mt-12 grid border-l border-t md:grid-cols-2 lg:grid-cols-3" style={{ borderColor: theme.text }}>
             {items.map((item, i) => (
-              <article key={i} className="min-h-64 border-b border-r p-7" style={{ borderColor: theme.text, backgroundColor: i % 2 ? surface.panel : "transparent" }}>
+              <article key={i} data-motion-item className="min-h-64 border-b border-r p-7" style={{ borderColor: theme.text, backgroundColor: i % 2 ? surface.panel : "transparent" }}>
                 <span className="text-sm font-bold" style={{ color: theme.primary }}>{String(i + 1).padStart(2, "0")}</span>
                 <h3 className="mt-12 text-2xl font-bold" style={{ color: theme.text, fontFamily: "var(--site-heading)" }}>{titleFor(item)}</h3>
                 {descriptionFor(item) && <p className="mt-4 text-sm leading-relaxed" style={{ color: surface.muted }}>{descriptionFor(item)}</p>}
@@ -75,7 +75,7 @@ export function ServicesBlock({ section, theme, preset, site }: BlockProps) {
           <div><SectionHeading title={section.title} subtitle={section.subtitle} theme={theme} preset={preset} align="left" /></div>
           <div className="grid gap-4 sm:grid-cols-2">
             {items.map((item, i) => (
-              <article key={i} className={`p-7 ${preset.cardShadow}`} style={{ backgroundColor: surface.panel, borderRadius: "var(--site-radius)" }}>
+              <article key={i} data-motion-item className={`p-7 ${preset.cardShadow}`} style={{ backgroundColor: surface.panel, borderRadius: "var(--site-radius)" }}>
                 <span className="text-xs font-bold uppercase tracking-widest" style={{ color: theme.primary }}>Servicio {i + 1}</span>
                 <h3 className="mt-6 text-xl font-semibold" style={{ color: theme.text, fontFamily: "var(--site-heading)" }}>{titleFor(item)}</h3>
                 {descriptionFor(item) && <p className="mt-3 text-sm leading-relaxed" style={{ color: surface.muted }}>{descriptionFor(item)}</p>}
@@ -94,7 +94,7 @@ export function ServicesBlock({ section, theme, preset, site }: BlockProps) {
           <SectionHeading title={section.title} subtitle={section.subtitle} theme={theme} preset={preset} />
           <div className="mt-12 grid auto-rows-[14rem] gap-4 md:grid-cols-2 lg:grid-cols-3">
             {items.map((item, i) => (
-              <article key={i} className={`relative overflow-hidden p-7 ${i === 0 ? "md:col-span-2 lg:row-span-2 lg:min-h-[29rem]" : ""} ${preset.cardShadow}`} style={{ backgroundColor: i === 0 ? theme.secondary : surface.panel, color: i === 0 ? "#fff" : theme.text, borderRadius: "var(--site-radius)" }}>
+              <article key={i} data-motion-item className={`relative overflow-hidden p-7 ${i === 0 ? "md:col-span-2 lg:row-span-2 lg:min-h-[29rem]" : ""} ${preset.cardShadow}`} style={{ backgroundColor: i === 0 ? theme.secondary : surface.panel, color: i === 0 ? "#fff" : theme.text, borderRadius: "var(--site-radius)" }}>
                 {i === 0 && <div className="absolute inset-0 bg-cover bg-center opacity-25" style={{ backgroundImage: `url("${stockImageUrl(site.businessType, "service-feature", 900, 700)}")` }} />}
                 <div className="relative flex h-full flex-col justify-end">
                   <span className="text-xs font-bold uppercase tracking-widest" style={{ color: i === 0 ? theme.accent : theme.primary }}>{String(i + 1).padStart(2, "0")}</span>
@@ -122,6 +122,7 @@ export function ServicesBlock({ section, theme, preset, site }: BlockProps) {
           {items.map((item, i) => (
             <div
               key={i}
+              data-motion-item
               className={`overflow-hidden border transition-colors duration-200 ${preset.cardShadow}`}
               style={{ backgroundColor: surface.panel, borderColor: `${theme.text}1f`, borderRadius: "var(--site-radius)" }}
             >

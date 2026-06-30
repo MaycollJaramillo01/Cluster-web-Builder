@@ -1,0 +1,18 @@
+{
+  "date": "2026-06-29",
+  "baseUrl": "http://localhost:3000",
+  "summary": { "passed": 10, "failed": 0 },
+  "tests": [
+    { "name": "check:design", "status": "PASS" },
+    { "name": "lint", "status": "PASS", "warnings": 1 },
+    { "name": "test:ui", "status": "PASS", "routes": 7, "viewports": 4 },
+    { "name": "test:home-modes", "status": "PASS" },
+    { "name": "test:multi-user", "status": "PASS" },
+    { "name": "test:m3", "status": "PASS" },
+    { "name": "test:m4", "status": "PASS" },
+    { "name": "test:fast-prompt", "status": "PASS", "elapsedMs": 12925 },
+    { "name": "test:marketing", "status": "PASS" },
+    { "name": "build", "status": "PASS", "routes": 29 }
+  ],
+  "environmentNote": "El primer intento en 3033 fue rechazado porque Next.js ya estaba activo para este proyecto en 3000. La repetición final en 3000 pasó completa."
+}

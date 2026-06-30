@@ -19,6 +19,7 @@ export function GalleryBlock({ section, theme, preset, site }: BlockProps) {
           {tiles.map((_, i) => (
             <div
               key={i}
+              data-motion-item
               className={`relative overflow-hidden border border-black/5 ${preset.sectionStyle === "grid" && i === 0 ? "col-span-2 row-span-2" : ""}`}
               style={{
                 borderRadius: preset.imageStyle === "arch" ? "999px 999px 0 0" : preset.imageStyle === "square" || preset.imageStyle === "fullBleed" ? "0" : "var(--site-radius)",

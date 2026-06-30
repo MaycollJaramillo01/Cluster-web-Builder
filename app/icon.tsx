@@ -1,15 +1,12 @@
+// app/icon.png (static) takes precedence over this file in Next.js App Router.
+// This file exists only as a fallback for environments where the static PNG
+// is not picked up.
 import { ImageResponse } from "next/og";
-import { readFileSync } from "fs";
-import path from "path";
 
-export const runtime = "nodejs";
 export const size = { width: 32, height: 32 };
 export const contentType = "image/png";
 
 export default function Icon() {
-  const buffer = readFileSync(path.join(process.cwd(), "public/cluster-logo.webp"));
-  const src = `data:image/webp;base64,${buffer.toString("base64")}`;
-
   return new ImageResponse(
     (
       <div
@@ -21,10 +18,13 @@ export default function Icon() {
           justifyContent: "center",
           background: "#15121b",
           borderRadius: 7,
+          fontSize: 18,
+          fontWeight: 700,
+          color: "#8b5cf6",
+          fontFamily: "sans-serif",
         }}
       >
-        {/* logo is black — invert makes it white on the dark bg */}
-        <img src={src} width={26} style={{ filter: "invert(1)", objectFit: "contain" }} />
+        C
       </div>
     ),
     size,

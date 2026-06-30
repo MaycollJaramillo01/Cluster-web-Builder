@@ -1,0 +1,47 @@
+﻿[
+    {
+        "test":  "check:design",
+        "exitCode":  0,
+        "status":  "PASS"
+    },
+    {
+        "test":  "lint",
+        "exitCode":  0,
+        "status":  "PASS"
+    },
+    {
+        "test":  "test:ui",
+        "exitCode":  1,
+        "status":  "FAIL"
+    },
+    {
+        "test":  "test:home-modes",
+        "exitCode":  1,
+        "status":  "FAIL"
+    },
+    {
+        "test":  "test:multi-user",
+        "exitCode":  1,
+        "status":  "FAIL"
+    },
+    {
+        "test":  "test:m3",
+        "exitCode":  1,
+        "status":  "FAIL"
+    },
+    {
+        "test":  "test:m4",
+        "exitCode":  1,
+        "status":  "FAIL"
+    },
+    {
+        "test":  "test:fast-prompt",
+        "exitCode":  1,
+        "status":  "FAIL"
+    },
+    {
+        "test":  "test:marketing",
+        "exitCode":  1,
+        "status":  "FAIL"
+    }
+]
