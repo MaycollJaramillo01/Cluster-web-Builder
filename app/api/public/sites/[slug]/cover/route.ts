@@ -76,9 +76,13 @@ function renderHeroCover({ heroStyle, title, subtitle, body, photoUrl, theme, up
   const heading = uppercase ? title.toUpperCase() : title;
 
   if (heroStyle === "gradient") {
-    return h("div", { style: { flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 72, textAlign: "center", color: "#fff", background: `linear-gradient(135deg, ${theme.secondary}, ${theme.primary} 58%, ${theme.accent})` } },
-      h("h1", { style: { margin: 0, maxWidth: 960, fontSize: 78, lineHeight: 0.98, letterSpacing: "-0.055em" } }, heading),
-      h("p", { style: { margin: "28px 0 0", maxWidth: 760, fontSize: 25, lineHeight: 1.35, opacity: 0.9 } }, subtitle),
+    return h("div", { style: { position: "relative", flex: 1, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", textAlign: "center", color: "#fff", background: theme.secondary } },
+      photoUrl ? h("img", { src: photoUrl, alt: "", style: { position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" } }) : null,
+      h("div", { style: { position: "absolute", inset: 0, background: `linear-gradient(135deg, ${theme.secondary}F2, ${theme.primary}C9 58%, ${theme.accent}99)` } }),
+      h("div", { style: { position: "relative", display: "flex", flexDirection: "column", alignItems: "center", padding: 72 } },
+        h("h1", { style: { margin: 0, maxWidth: 960, fontSize: 78, lineHeight: 0.98, letterSpacing: "-0.055em" } }, heading),
+        h("p", { style: { margin: "28px 0 0", maxWidth: 760, fontSize: 25, lineHeight: 1.35, opacity: 0.9 } }, subtitle),
+      ),
     );
   }
 
@@ -122,6 +126,7 @@ function renderHeroCover({ heroStyle, title, subtitle, body, photoUrl, theme, up
 }
 
 function heroPhoto(heroStyle: HeroStyle) {
+  if (heroStyle === "gradient") return { width: 1600, height: 1000, seed: "hero-gradient" };
   if (heroStyle === "editorial") return { width: 760, height: 940, seed: "hero-editorial" };
   if (heroStyle === "framed") return { width: 1500, height: 900, seed: "hero-framed" };
   if (heroStyle === "immersive") return { width: 1800, height: 1100, seed: "hero-immersive" };

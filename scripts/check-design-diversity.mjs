@@ -16,6 +16,8 @@ assert(CONTACT_STYLES.length === 20, `se esperaban 20 estilos de formulario, exi
 assert(new Set(presets.map((preset) => preset.contactStyle)).size === CONTACT_STYLES.length, "los 20 estilos de formulario no están conectados a los presets.");
 assert(presets.every((preset) => CONTACT_STYLES.includes(preset.contactStyle)), "algún preset usa un formulario inexistente.");
 assert(presets.every((preset) => preset.motionStyle), "algún template no tiene perfil de animación.");
+assert(presets.filter((preset) => preset.heroMedia === "video").length === 6, "deben existir seis presets con hero de video.");
+assert(presets.filter((preset) => preset.heroStyle === "gradient").every((preset) => preset.useImages), "ningún hero gradient puede quedar sin imagen.");
 assert(presets.every((preset) => preset.sectionPlan[0] === "hero" && preset.sectionPlan.at(-1) === "footer"), "hero y footer deben delimitar todas las composiciones.");
 assert(new Set(presets.map((preset) => preset.family)).size === 6, "faltan familias de diseño.");
 assert(JSON.stringify(resolvePalette(selectedPalette, "Service", "Negocio")) === JSON.stringify(selectedPalette), "la paleta elegida dejó de ser autoritativa.");

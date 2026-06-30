@@ -6,7 +6,10 @@ import { MarketingChrome } from "@/components/marketing/MarketingChrome";
 import { HomeSections } from "@/components/marketing/HomeSections";
 import { Button } from "@/components/ui/button";
 
-export const metadata = { title: "Cluster | Crea el sitio web de tu negocio", description: "Crea un sitio profesional con IA, edítalo y publícalo con hosting incluido." };
+export const metadata = {
+  title: "Cluster | Crea y publica el sitio web de tu negocio",
+  description: "Crea una página web profesional para tu negocio, personaliza su diseño y publícala con hosting incluido. Conoce sitios reales creados con Cluster.",
+};
 export const revalidate = 300;
 
 export default function HomePage() {

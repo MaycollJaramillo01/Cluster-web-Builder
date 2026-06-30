@@ -289,6 +289,7 @@ function canUseLocalGenerator(err: unknown): boolean {
       message.includes("ia") ||
       message.includes("json") ||
       message.includes("pagina") ||
+      message.includes("página") ||
       message.includes("seccion") ||
       message.includes("blueprint") ||
       message.includes("abort")

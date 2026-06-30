@@ -11,7 +11,10 @@ export async function HomeSections() {
       status: "PUBLISHED",
       NOT: { user: { username: { startsWith: "qa-" } } },
     },
-    orderBy: [{ publishedAt: "desc" }, { updatedAt: "desc" }],
+    orderBy: [
+      { publishedAt: { sort: "desc", nulls: "last" } },
+      { updatedAt: "desc" },
+    ],
     take: 3,
     select: {
       businessName: true,
@@ -39,9 +42,9 @@ function Showcase({ sites }: { sites: ShowcaseSite[] }) {
   return <section className="bg-[#f3f0f7] px-5 py-20 text-[#18131f] sm:px-8 sm:py-28" aria-labelledby="showcase-title">
     <div className="mx-auto max-w-7xl">
       <div className="mx-auto max-w-4xl text-center">
-        <p className="text-xs font-bold uppercase tracking-[.18em] text-[#6d35db]">Recién publicados</p>
-        <h2 id="showcase-title" className="mt-4 font-[var(--font-outfit)] text-4xl font-semibold leading-[1.02] tracking-[-.045em] sm:text-6xl">Los últimos sitios que salieron de Cluster.</h2>
-        <p className="mx-auto mt-5 max-w-2xl text-base leading-7 text-[#665e6d] sm:text-lg">Tres proyectos reales, ordenados por su fecha de publicación.</p>
+        <p className="text-xs font-bold uppercase tracking-[.18em] text-[#6d35db]">Sitios web publicados recientemente</p>
+        <h2 id="showcase-title" className="mt-4 font-[var(--font-outfit)] text-4xl font-semibold leading-[1.02] tracking-[-.045em] sm:text-6xl">Ejemplos recientes de sitios web para negocios creados con Cluster.</h2>
+        <p className="mx-auto mt-5 max-w-2xl text-base leading-7 text-[#665e6d] sm:text-lg">Conoce páginas web reales de empresas y profesionales, ordenadas desde la publicación más reciente.</p>
       </div>
 
       {sites.length ? <div className="mt-14 grid gap-5 lg:grid-cols-3">
@@ -53,7 +56,7 @@ function Showcase({ sites }: { sites: ShowcaseSite[] }) {
             <div className="absolute bottom-4 left-4 flex gap-1.5" aria-label={`Paleta de ${site.name}`}>{site.colors.map((color) => <span key={color} className="h-5 w-5 rounded-full border-2 border-white shadow" style={{ backgroundColor: color }} />)}</div>
           </div>
           <div className="p-3 pb-4 pt-5">
-            <div className="flex items-start justify-between gap-4"><div><h3 className="font-[var(--font-outfit)] text-2xl font-semibold tracking-tight">{site.name}</h3><p className="mt-2 leading-6 text-[#665e6d]">{site.description}</p></div><Link href={`/s/${site.slug}`} target="_blank" aria-label={`Visitar ${site.name}`} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#18131f] text-white transition-colors hover:bg-[#6d35db]"><ArrowUpRight className="h-4 w-4" /></Link></div>
+            <div className="flex items-start justify-between gap-4"><div><h3 className="font-[var(--font-outfit)] text-2xl font-semibold tracking-tight">{site.seoTitle}</h3><p className="mt-2 leading-6 text-[#665e6d]">{site.description}</p></div><Link href={`/s/${site.slug}`} target="_blank" aria-label={`Ver el sitio web de ${site.name}`} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#18131f] text-white transition-colors hover:bg-[#6d35db]"><ArrowUpRight className="h-4 w-4" /></Link></div>
             <div className="mt-5 flex items-center justify-between border-t border-[#e5dfea] pt-4 text-[11px] font-bold uppercase tracking-[.12em] text-[#766e7d]"><span>{site.publishedLabel}</span><span>{String(index + 1).padStart(2, "0")} / {String(sites.length).padStart(2, "0")}</span></div>
           </div>
         </article>)}
@@ -82,11 +85,14 @@ function toShowcaseSite(site: {
   const subtitle = typeof hero.subtitle === "string" ? hero.subtitle : "";
   const body = typeof hero.body === "string" ? hero.body : "";
   const ctaText = typeof hero.ctaText === "string" ? hero.ctaText : "Contactar";
+  const seoTitle = buildSeoTitle(site.businessName, site.businessType, site.location);
+  const description = buildDescription(subtitle, site.location);
   return {
     name: site.businessName,
+    seoTitle,
     category: site.businessType,
     slug: site.publicSlug,
-    description: [subtitle, site.location].filter(Boolean).join(" · ") || "Sitio creado y publicado con Cluster.",
+    description,
     body: body || subtitle || "Un proyecto creado para presentar el negocio con claridad.",
     ctaText,
     location: site.location || "En línea",
@@ -94,6 +100,29 @@ function toShowcaseSite(site: {
     colors: [site.secondaryColor || "#17131b", site.primaryColor || "#8b5cf6", site.accentColor || "#d0bcff"],
     publishedLabel: site.publishedAt ? new Intl.DateTimeFormat("es", { day: "numeric", month: "short", year: "numeric" }).format(site.publishedAt) : "Publicado recientemente",
   };
+}
+
+function buildSeoTitle(name: string, category: string, location: string | null) {
+  let title = name;
+  if (category.trim() && !normalizeForComparison(title).includes(normalizeForComparison(category))) {
+    title += ` — ${category}`;
+  }
+  if (location?.trim() && !normalizeForComparison(title).includes(normalizeForComparison(location))) {
+    title += ` en ${location}`;
+  }
+
+  return title;
+}
+
+function buildDescription(subtitle: string, location: string | null) {
+  if (!subtitle && !location) return "Sitio profesional creado y publicado con Cluster.";
+  if (!subtitle) return `Sitio web de un negocio ubicado en ${location}.`;
+  if (!location || normalizeForComparison(subtitle).includes(normalizeForComparison(location))) return subtitle;
+  return `${subtitle} · ${location}`;
+}
+
+function normalizeForComparison(value: string) {
+  return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 }
 
 function asRecord(value: unknown): Record<string, unknown> {
@@ -104,7 +133,7 @@ function ProjectSpotlight({ site }: { site: ShowcaseSite }) {
   return <section className="border-y border-[#352d3d] bg-[#110d16] px-5 py-20 text-[#f4eef7] sm:px-8 sm:py-28" aria-labelledby="spotlight-title">
     <div className="mx-auto max-w-7xl">
       <div className="grid gap-10 border-b border-[#403747] pb-8 sm:grid-cols-[1fr_auto] sm:items-end">
-        <div><p className="text-xs font-bold uppercase tracking-[.2em] text-[#b896ff]">Proyecto en detalle</p><h2 id="spotlight-title" className="mt-4 max-w-4xl font-[var(--font-outfit)] text-4xl font-semibold leading-[1.02] tracking-[-.045em] sm:text-6xl">Un negocio real, contado con su propia voz.</h2></div>
+        <div><p className="text-xs font-bold uppercase tracking-[.2em] text-[#b896ff]">Sitio web destacado</p><h2 id="spotlight-title" className="mt-4 max-w-4xl font-[var(--font-outfit)] text-4xl font-semibold leading-[1.02] tracking-[-.045em] sm:text-6xl">{site.seoTitle}: conoce sus servicios y formas de contacto.</h2></div>
         <span className="font-mono text-sm text-[#8f8498]">PROYECTO / 001</span>
       </div>
 

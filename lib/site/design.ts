@@ -24,6 +24,7 @@ export type HeroStyle =
   | "framed"
   | "immersive"
   | "cinematic";
+export type HeroMedia = "image" | "video";
 export type NavStyle = "bar" | "floating" | "minimal" | "bordered" | "dark";
 export type ServicesStyle = "cards" | "list" | "bento" | "editorial" | "bordered" | "split";
 export type SectionStyle = "centered" | "asymmetric" | "contained" | "fullBleed" | "grid";
@@ -68,6 +69,8 @@ export type DesignPreset = {
   heroStyle: HeroStyle;
   /** Whether sections should use a real background/feature image. */
   useImages: boolean;
+  /** Primary media used by image-capable hero compositions. */
+  heroMedia: HeroMedia;
   /** Extra letter-spacing for headings. */
   headingTracking: string;
   /** Font weight for big headings. */
@@ -115,14 +118,24 @@ const CONTACT_STYLE_BY_ID: Record<DesignStyleId, ContactStyle> = {
   Badges: "floating",
 };
 
-type RecipeInput = Omit<DesignPreset, "bodyFont" | "useImages" | "contactStyle"> &
-  Partial<Pick<DesignPreset, "bodyFont" | "useImages" | "contactStyle">>;
+const VIDEO_HERO_STYLES = new Set<DesignStyleId>([
+  "Immersive",
+  "Local",
+  "Panorama",
+  "Framed",
+  "Timeline",
+  "Badges",
+]);
+
+type RecipeInput = Omit<DesignPreset, "bodyFont" | "useImages" | "contactStyle" | "heroMedia"> &
+  Partial<Pick<DesignPreset, "bodyFont" | "useImages" | "contactStyle" | "heroMedia">>;
 
 function recipe(input: RecipeInput): DesignPreset {
   return {
     bodyFont: '"Inter", system-ui, sans-serif',
     useImages: true,
     contactStyle: CONTACT_STYLE_BY_ID[input.id],
+    heroMedia: VIDEO_HERO_STYLES.has(input.id) ? "video" : "image",
     ...input,
     sectionPlan: input.sectionPlan.map((type) => type === "about" ? "about_us" : type),
   };
@@ -177,7 +190,7 @@ export function getDesignPreset(visualStyle?: string | null): DesignPreset {
 }
 
 export function getDesignRecipeFingerprint(preset: DesignPreset): string {
-  return [preset.family, preset.heroStyle, preset.navStyle, preset.servicesStyle, preset.sectionStyle,
+  return [preset.family, preset.heroStyle, preset.heroMedia, preset.navStyle, preset.servicesStyle, preset.sectionStyle,
     preset.imageStyle, preset.surfaceStyle, preset.motionStyle, preset.ctaStyle,
     preset.footerStyle, preset.contactStyle, preset.aboutUsStyle, preset.radius, preset.buttonRadius, preset.headingFont, preset.headingTracking,
     preset.sectionPlan.join(">")].join("|");

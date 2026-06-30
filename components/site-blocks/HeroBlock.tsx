@@ -1,7 +1,9 @@
 /* eslint-disable @next/next/no-img-element */
 import { sectionImageUrl } from "@/lib/site/images";
+import { sectionVideoUrl } from "@/lib/site/videos";
 import { getContrastText } from "@/lib/site/theme-surface";
 import type { BlockProps } from "./types";
+import { HeroVideo } from "./HeroVideo";
 
 export function HeroBlock({ section, theme, preset, site }: BlockProps) {
   const heroImg = (w: number, h: number, seed: string) =>
@@ -12,6 +14,11 @@ export function HeroBlock({ section, theme, preset, site }: BlockProps) {
       width: w,
       height: h,
     });
+  const heroVideo = (seed: string) => sectionVideoUrl({
+    prompt: section.imagePrompt,
+    businessType: site.businessType,
+    seed: `${preset.id}-${seed}`,
+  });
 
   const heading = (
     <h1
@@ -80,10 +87,15 @@ export function HeroBlock({ section, theme, preset, site }: BlockProps) {
   }
 
   if (preset.heroStyle === "framed") {
+    const poster = heroImg(1500, 900, "hero-framed");
     return (
       <section className="px-6 py-16 sm:py-24" style={{ backgroundColor: theme.secondary }}>
         <div className="relative mx-auto min-h-[34rem] max-w-6xl overflow-hidden border" style={{ borderColor: `${theme.accent}80`, borderRadius: "var(--site-radius)" }}>
-          <div className="absolute inset-0 bg-cover bg-center opacity-60" style={{ backgroundImage: `url("${heroImg(1500, 900, "hero-framed")}")`, filter: preset.imageStyle === "monochrome" ? "grayscale(1)" : undefined }} />
+          {preset.heroMedia === "video" ? (
+            <HeroVideo src={heroVideo("hero-framed")} poster={poster} className="absolute inset-0 opacity-60" style={{ filter: preset.imageStyle === "monochrome" ? "grayscale(1)" : undefined }} />
+          ) : (
+            <div className="absolute inset-0 bg-cover bg-center opacity-60" style={{ backgroundImage: `url("${poster}")`, filter: preset.imageStyle === "monochrome" ? "grayscale(1)" : undefined }} />
+          )}
           <div className="absolute inset-0" style={{ background: `linear-gradient(90deg, ${theme.secondary} 0%, ${theme.secondary}E8 45%, ${theme.secondary}22 100%)` }} />
           <div className="relative flex min-h-[34rem] max-w-3xl flex-col justify-center p-8 text-white sm:p-14">
             {section.subtitle && <p className="mb-5 text-sm font-semibold uppercase tracking-[0.18em]" style={{ color: theme.accent }}>{section.subtitle}</p>}
@@ -97,9 +109,14 @@ export function HeroBlock({ section, theme, preset, site }: BlockProps) {
   }
 
   if (preset.heroStyle === "immersive") {
+    const poster = heroImg(1800, 1100, "hero-immersive");
     return (
       <section className="relative flex min-h-[78vh] items-end overflow-hidden">
-        <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url("${heroImg(1800, 1100, "hero-immersive")}")` }} />
+        {preset.heroMedia === "video" ? (
+          <HeroVideo src={heroVideo("hero-immersive")} poster={poster} className="absolute inset-0" />
+        ) : (
+          <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url("${poster}")` }} />
+        )}
         <div className="absolute inset-0" style={{ background: `linear-gradient(180deg, ${theme.secondary}22 0%, ${theme.secondary}F5 92%)` }} />
         <div className="relative mx-auto w-full max-w-6xl px-6 pb-20 text-white sm:pb-28">
           <div className="max-w-4xl [&_h1]:text-5xl [&_h1]:sm:text-8xl">{heading}</div>
@@ -176,18 +193,17 @@ export function HeroBlock({ section, theme, preset, site }: BlockProps) {
     const stats = section.settings?.stats as Array<{ value: string; label: string }> | undefined;
     const cta2Text = section.settings?.cta2Text as string | undefined;
     const cta2Link = section.settings?.cta2Link as string | undefined;
+    const poster = heroImg(1900, 1200, "hero-cinematic");
 
     return (
       <section className="relative flex min-h-[88vh] flex-col overflow-hidden">
         {/* Full-bleed background image */}
         <div className="absolute inset-0">
-          <div
-            className="h-full w-full bg-cover bg-center"
-            style={{
-              backgroundImage: `url("${heroImg(1900, 1200, "hero-cinematic")}")`,
-              filter: preset.imageStyle === "monochrome" ? "grayscale(1)" : undefined,
-            }}
-          />
+          {preset.heroMedia === "video" ? (
+            <HeroVideo src={heroVideo("hero-cinematic")} poster={poster} className="absolute inset-0" style={{ filter: preset.imageStyle === "monochrome" ? "grayscale(1)" : undefined }} />
+          ) : (
+            <div className="h-full w-full bg-cover bg-center" style={{ backgroundImage: `url("${poster}")`, filter: preset.imageStyle === "monochrome" ? "grayscale(1)" : undefined }} />
+          )}
           {/* Left-biased gradient overlay — dark on left, reveals photo on right */}
           <div
             className="absolute inset-0"
@@ -283,19 +299,13 @@ export function HeroBlock({ section, theme, preset, site }: BlockProps) {
     );
   }
 
-  // --- Solid: bold color without decorative gradients ---
-  if (preset.heroStyle === "gradient" || !preset.useImages) {
+  // --- Gradient treatment with a real cover image underneath. ---
+  if (preset.heroStyle === "gradient") {
     return (
-      <section
-        className="px-6 py-28 sm:py-36"
-        style={{
-          background: preset.heroStyle === "gradient"
-            ? `linear-gradient(135deg, ${theme.secondary}, ${theme.primary} 55%, ${theme.accent})`
-            : theme.secondary,
-          color: "#ffffff",
-        }}
-      >
-        <div className="mx-auto max-w-4xl text-center">
+      <section className="relative overflow-hidden px-6 py-28 text-white sm:py-36" style={{ backgroundColor: theme.secondary }}>
+        <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url("${heroImg(1600, 1000, "hero-gradient")}")` }} />
+        <div className="absolute inset-0" style={{ background: `linear-gradient(135deg, ${theme.secondary}F2, ${theme.primary}C9 58%, ${theme.accent}99)` }} />
+        <div className="relative mx-auto max-w-4xl text-center">
           {heading}
           {section.subtitle && <p className="mt-6 text-xl opacity-95 sm:text-2xl">{section.subtitle}</p>}
           {section.body && <p className="mx-auto mt-4 max-w-2xl text-base opacity-85">{section.body}</p>}
@@ -306,14 +316,15 @@ export function HeroBlock({ section, theme, preset, site }: BlockProps) {
   }
 
   // --- Default: full-bleed background image with overlay ---
+  const defaultPoster = heroImg(1600, 1000, "hero-bg");
   return (
     <section className="relative overflow-hidden">
       <div className="absolute inset-0 overflow-hidden">
-        <div
-          aria-hidden
-          className="h-full w-full bg-cover bg-center"
-          style={{ backgroundImage: `url("${heroImg(1600, 1000, "hero-bg")}")` }}
-        />
+        {preset.heroMedia === "video" ? (
+          <HeroVideo src={heroVideo("hero-bg")} poster={defaultPoster} className="absolute inset-0" />
+        ) : (
+          <div aria-hidden className="h-full w-full bg-cover bg-center" style={{ backgroundImage: `url("${defaultPoster}")` }} />
+        )}
         <div
           className="absolute inset-0"
           style={{

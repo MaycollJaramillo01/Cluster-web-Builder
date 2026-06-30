@@ -139,7 +139,7 @@ export function SiteBlockRenderer({
         <>
           <FooterBlock section={footer} theme={theme} preset={preset} site={site} index={footer.order} />
           <div className="py-2 text-center text-[10px]" style={{ backgroundColor: theme.secondary, color: getContrastText(theme.secondary) }}>
-            Fotos provistas por <a href="https://www.pexels.com" target="_blank" rel="noreferrer" className="underline underline-offset-2">Pexels</a>
+            Fotos y videos provistos por <a href="https://www.pexels.com" target="_blank" rel="noreferrer" className="underline underline-offset-2">Pexels</a>
             {site.showBranding !== false && <> · Creado con Cluster</>}
           </div>
         </>

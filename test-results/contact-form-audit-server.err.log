@@ -30,3 +30,5 @@ Can't load image http://localhost:3000/api/images/pexels?q=foto+profesional+equi
   [cause]: Error: Image size cannot be determined. Please provide the width and height of the image.
       at ignore-listed frames
 }
+[browser] Image with src "/api/public/sites/cluster-marketing-74c23e/cover" was detected as the Largest Contentful Paint (LCP). Please add the `loading="eager"` property if this image is above the fold.
+Read more: https://nextjs.org/docs/app/api-reference/components/image#loading
