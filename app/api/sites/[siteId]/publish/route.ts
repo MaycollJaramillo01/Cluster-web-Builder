@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 
 import { getUserBySessionToken, SESSION_COOKIE } from "@/lib/auth";
 import { prisma } from "@/lib/db";
@@ -25,6 +26,7 @@ export async function POST(
     const existing = await prisma.site.findFirst({ where: { id: siteId, userId: user.id }, select: { publicSlug: true } });
     if (!existing) throw new Error("not-found");
     await prisma.site.update({ where: { id: siteId }, data: { status: "PUBLISHED", publishedAt: new Date() } });
+    revalidatePath("/");
 
     return NextResponse.json({ ok: true, site: { id: siteId, status: "PUBLISHED", publicUrl: publicSiteUrl(existing.publicSlug) } });
   } catch {

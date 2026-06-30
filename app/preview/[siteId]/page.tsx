@@ -25,11 +25,13 @@ export async function generateMetadata({
   const site = await prisma.site.findFirst({
     where: {
       id: siteId,
-      OR: [
-        { status: "PUBLISHED" },
-        ...(user ? [{ userId: user.id }] : []),
-        ...(guestTokenHash ? [{ userId: null, guestTokenHash, guestExpiresAt: { gt: new Date() } }] : []),
-      ],
+      ...(user?.role === "ADMIN" ? {} : {
+        OR: [
+          { status: "PUBLISHED" as const },
+          ...(user ? [{ userId: user.id }] : []),
+          ...(guestTokenHash ? [{ userId: null, guestTokenHash, guestExpiresAt: { gt: new Date() } }] : []),
+        ],
+      }),
     },
   });
   if (!site) return { title: "Sitio no encontrado" };
@@ -58,11 +60,13 @@ export default async function PreviewPage({
   const site = await prisma.site.findFirst({
     where: {
       id: siteId,
-      OR: [
-        { status: "PUBLISHED" },
-        ...(user ? [{ userId: user.id }] : []),
-        ...(guestTokenHash ? [{ userId: null, guestTokenHash, guestExpiresAt: { gt: new Date() } }] : []),
-      ],
+      ...(user?.role === "ADMIN" ? {} : {
+        OR: [
+          { status: "PUBLISHED" as const },
+          ...(user ? [{ userId: user.id }] : []),
+          ...(guestTokenHash ? [{ userId: null, guestTokenHash, guestExpiresAt: { gt: new Date() } }] : []),
+        ],
+      }),
     },
     include: { sections: { orderBy: { order: "asc" } } },
   });

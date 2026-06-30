@@ -8,7 +8,7 @@ import { BrandMark } from "@/components/brand/BrandMark";
 function LoginForm() {
   const router = useRouter();
   const params = useSearchParams();
-  const from = params.get("from") ?? "/dashboard";
+  const from = params.get("from");
 
   const usernameRef = useRef<HTMLInputElement>(null);
   const passwordRef = useRef<HTMLInputElement>(null);
@@ -37,7 +37,8 @@ function LoginForm() {
         return;
       }
 
-      router.push(from.startsWith("/") && !from.startsWith("//") ? from : "/dashboard");
+      const safeFrom = from?.startsWith("/") && !from.startsWith("//") ? from : null;
+      router.push(safeFrom ?? (data?.role === "ADMIN" ? "/admin/sites" : "/dashboard"));
       router.refresh();
     } catch {
       setError("Error de red. Verifica tu conexión.");

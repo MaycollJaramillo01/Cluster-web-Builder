@@ -26,7 +26,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Demasiados intentos. Espera 15 minutos." }, { status: 429 });
   }
 
-  const user = await prisma.user.findUnique({ where: { username } });
+  const user = await prisma.user.findFirst({
+    where: { username: { equals: username, mode: "insensitive" } },
+  });
   if (!user || !verifyPassword(password, user.passwordHash)) {
     return NextResponse.json({ error: "Usuario o contraseña incorrectos." }, { status: 401 });
   }

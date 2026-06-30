@@ -24,3 +24,9 @@
   input: '/login',
   base: '{{APP_URL}}'
 }
+Can't load image http://localhost:3000/api/images/pexels?q=foto+profesional+equipo&seed=hero-split&w=900&h=700: Unsupported image type: image/avif
+⨯ Error: failed to pipe response
+    at ignore-listed frames {
+  [cause]: Error: Image size cannot be determined. Please provide the width and height of the image.
+      at ignore-listed frames
+}

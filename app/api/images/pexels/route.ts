@@ -13,11 +13,12 @@ export async function GET(request: NextRequest) {
   const seed = request.nextUrl.searchParams.get("seed") || query;
   const width = dimension(request.nextUrl.searchParams.get("w"), 1200);
   const height = dimension(request.nextUrl.searchParams.get("h"), 800);
+  const forceJpeg = request.nextUrl.searchParams.get("format") === "jpeg";
   // loremflickr uses the query term to pick relevant photos (unlike picsum which ignores it)
   const fallback = `https://loremflickr.com/${width}/${height}/${encodeURIComponent(query)}?lock=${stableLock(seed)}`;
   const apiKey = process.env.PEXELS_API_KEY;
 
-  if (!apiKey) return proxyImage(fallback, query, width, height);
+  if (!apiKey) return proxyImage(fallback, query, width, height, {}, forceJpeg);
 
   try {
     const endpoint = new URL("https://api.pexels.com/v1/search");
@@ -29,11 +30,11 @@ export async function GET(request: NextRequest) {
       headers: { Authorization: apiKey },
       next: { revalidate: 86_400 },
     });
-    if (!response.ok) return proxyImage(fallback, query, width, height);
+    if (!response.ok) return proxyImage(fallback, query, width, height, {}, forceJpeg);
 
     const data = (await response.json()) as { photos?: PexelsPhoto[] };
     const photos = data.photos ?? [];
-    if (!photos.length) return proxyImage(fallback, query, width, height);
+    if (!photos.length) return proxyImage(fallback, query, width, height, {}, forceJpeg);
 
     const photo = photos[stableLock(seed) % photos.length];
     const image = new URL(photo.src.original);
@@ -42,22 +43,23 @@ export async function GET(request: NextRequest) {
     image.searchParams.set("fit", "crop");
     image.searchParams.set("w", String(width));
     image.searchParams.set("h", String(height));
+    if (forceJpeg) image.searchParams.set("fm", "jpg");
 
     return proxyImage(image.toString(), query, width, height, {
       "X-Image-Provider": "Pexels",
       "X-Pexels-Photo-Id": String(photo.id),
       "X-Pexels-Photographer": encodeURIComponent(photo.photographer),
-    });
+    }, forceJpeg);
   } catch {
-    return proxyImage(fallback, query, width, height);
+    return proxyImage(fallback, query, width, height, {}, forceJpeg);
   }
 }
 
-async function proxyImage(url: string, query: string, width: number, height: number, extraHeaders: Record<string, string> = {}) {
+async function proxyImage(url: string, query: string, width: number, height: number, extraHeaders: Record<string, string> = {}, forceJpeg = false) {
   try {
     const response = await fetch(url, {
       redirect: "follow",
-      headers: { Accept: "image/avif,image/webp,image/*", "User-Agent": "Cluster-Web-Builder/1.0" },
+      headers: { Accept: forceJpeg ? "image/jpeg,image/*;q=0.8" : "image/avif,image/webp,image/*", "User-Agent": "Cluster-Web-Builder/1.0" },
       next: { revalidate: 86_400 },
     });
     const contentType = response.headers.get("content-type") || "";

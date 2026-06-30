@@ -79,7 +79,6 @@ function toShowcaseSite(site: {
   sections: { content: unknown }[];
 }) {
   const hero = asRecord(site.sections[0]?.content);
-  const imagePrompt = typeof hero.imagePrompt === "string" ? hero.imagePrompt : `${site.businessType} professional business`;
   const subtitle = typeof hero.subtitle === "string" ? hero.subtitle : "";
   const body = typeof hero.body === "string" ? hero.body : "";
   const ctaText = typeof hero.ctaText === "string" ? hero.ctaText : "Contactar";
@@ -91,7 +90,7 @@ function toShowcaseSite(site: {
     body: body || subtitle || "Un proyecto creado para presentar el negocio con claridad.",
     ctaText,
     location: site.location || "En línea",
-    image: `/api/images/pexels?q=${encodeURIComponent(imagePrompt.slice(0, 80))}&w=960&h=720&seed=${encodeURIComponent(site.publicSlug)}`,
+    image: `/api/public/sites/${encodeURIComponent(site.publicSlug)}/cover`,
     colors: [site.secondaryColor || "#17131b", site.primaryColor || "#8b5cf6", site.accentColor || "#d0bcff"],
     publishedLabel: site.publishedAt ? new Intl.DateTimeFormat("es", { day: "numeric", month: "short", year: "numeric" }).format(site.publishedAt) : "Publicado recientemente",
   };

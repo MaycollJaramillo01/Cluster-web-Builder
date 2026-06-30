@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ArrowUpRight, Globe, MapPin, Search } from "lucide-react";
+import { Globe, MapPin, Search } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -81,8 +81,8 @@ export default async function AdminSitesPage({
         <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#a078ff]">Administración</p>
-            <h1 className="mt-2 text-3xl font-semibold">Sitios generados</h1>
-            <p className="mt-1 text-sm text-muted-foreground">{totalAll} sitios en total</p>
+            <h1 className="mt-2 text-3xl font-semibold">Todos los sitios</h1>
+            <p className="mt-1 text-sm text-muted-foreground">{totalAll} proyectos creados · {total} visibles con los filtros actuales</p>
           </div>
           <div className="flex gap-2">
             <Button asChild variant="outline" size="sm"><Link href="/admin/users">Usuarios</Link></Button>
@@ -151,7 +151,7 @@ export default async function AdminSitesPage({
                 return (
                   <tr key={site.id} className="transition-colors hover:bg-[#0f0d15]/50">
                     <td className="px-4 py-3">
-                      <Link href={`/builder/${site.id}`} className="font-medium hover:text-[#d0bcff] hover:underline">
+                      <Link href={previewUrl} target="_blank" className="font-medium hover:text-[#d0bcff] hover:underline">
                         {site.businessName}
                       </Link>
                     </td>
@@ -181,11 +181,6 @@ export default async function AdminSitesPage({
                         <Button asChild size="icon" variant="ghost" className="h-7 w-7">
                           <Link href={previewUrl} target="_blank" aria-label="Ver preview">
                             <Globe className="h-3.5 w-3.5" />
-                          </Link>
-                        </Button>
-                        <Button asChild size="icon" variant="ghost" className="h-7 w-7">
-                          <Link href={`/builder/${site.id}`} aria-label="Editar sitio">
-                            <ArrowUpRight className="h-3.5 w-3.5" />
                           </Link>
                         </Button>
                       </div>
