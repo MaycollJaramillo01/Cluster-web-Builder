@@ -38,6 +38,7 @@ model User {
 
   sites Site[]
   sessions Session[]
+  passwordResets PasswordReset[]
 }
 
 model Session {
@@ -46,6 +47,19 @@ model Session {
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model PasswordReset {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  usedAt    DateTime?
   createdAt DateTime @default(now())
 
   @@index([userId])
@@ -87,12 +101,15 @@ model Site {
   primaryColor   String?
   secondaryColor String?
   accentColor    String?
+  logoUrl        String? @db.Text
+  coverUrl       String? @db.Text
 
   // Full AI blueprint (site + seo + visualStyle + pages) as returned by the model.
   blueprintJson Json?
 
   sections  SiteSection[]
   leads     Lead[]
+  views     SiteView[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -110,9 +127,33 @@ model Lead {
   email     String?
   phone     String?
   message   String
+  readAt    DateTime?
   createdAt DateTime @default(now())
 
   @@index([siteId, createdAt])
+}
+
+model ProductEvent {
+  id        String   @id @default(cuid())
+  name      String
+  userId    String?
+  siteId    String?
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  @@index([name, createdAt])
+  @@index([userId, createdAt])
+  @@index([siteId, createdAt])
+}
+
+model SiteView {
+  siteId  String
+  date    String
+  views   Int    @default(0)
+  site    Site   @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@id([siteId, date])
+  @@index([siteId])
 }
 
 model SiteSection {

@@ -30,7 +30,7 @@ try {
 
   const billing = await fetch(`${baseUrl}/billing`, { headers: freeHeaders }).then((response) => response.text());
   assert(billing.includes("Cluster Pro") && billing.includes("Un solo plan"), "la página de cobro no presenta el plan único");
-  assert((await fetch(`${baseUrl}/api/sites/${freeSite.id}/domain`, { method: "PUT", headers: { ...freeHeaders, "Content-Type": "application/json" }, body: JSON.stringify({ domain }) })).status === 403, "un usuario gratis puede configurar dominio propio");
+  assert((await fetch(`${baseUrl}/api/sites/${freeSite.id}/domain`, { method: "PUT", headers: { ...freeHeaders, "Content-Type": "application/json" }, body: JSON.stringify({ domain }) })).status === 402, "un usuario gratis puede configurar dominio propio");
 
   if (!process.env.VERCEL_TOKEN) {
     const pending = await fetch(`${baseUrl}/api/sites/${proSite.id}/domain`, { method: "PUT", headers: { ...proHeaders, "Content-Type": "application/json" }, body: JSON.stringify({ domain }) });
@@ -48,9 +48,9 @@ try {
   const hostResponse = await requestWithHost(domain);
   assert(hostResponse.status === 200 && hostResponse.body.includes(names[1]), `el proxy no resuelve el dominio personalizado (${hostResponse.status}: ${hostResponse.body.slice(0, 80)})`);
 
-  const freeZip = await zipHtml(freeSite.id, freeHeaders);
+  const freeZipResponse = await fetch(`${baseUrl}/api/sites/${freeSite.id}/download`, { headers: freeHeaders });
   const proZip = await zipHtml(proSite.id, proHeaders);
-  assert(freeZip.includes("Creado con Cluster") && !proZip.includes("Creado con Cluster"), "la descarga no respeta la marca blanca del plan");
+  assert(freeZipResponse.status === 402 && !proZip.includes("Creado con Cluster"), "la descarga no respeta los permisos del plan");
 
   const freeStatuses = await invalidGenerations(freeHeaders, `203.0.113.${Math.floor(Math.random() * 100) + 1}`, 11);
   const proStatuses = await invalidGenerations(proHeaders, `198.51.100.${Math.floor(Math.random() * 100) + 1}`, 11);

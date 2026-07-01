@@ -19,6 +19,7 @@ import { LocationBlock } from "./LocationBlock";
 import { GalleryBlock } from "./GalleryBlock";
 import { GenericBlock } from "./GenericBlock";
 import { ProcessBlock } from "./ProcessBlock";
+import { PricingBlock } from "./PricingBlock";
 import { Reveal } from "./Reveal";
 import { SiteNav } from "./SiteNav";
 import { SocialDock } from "./SocialDock";
@@ -41,7 +42,7 @@ const BLOCK_MAP: Record<string, BlockComponent> = {
   location: LocationBlock,
   gallery: GalleryBlock,
   process: ProcessBlock,
-  pricing: GenericBlock,
+  pricing: PricingBlock,
 };
 
 export type SiteBlockRendererProps = {
@@ -126,6 +127,7 @@ export function SiteBlockRenderer({
     <div id="top" data-design-style={preset.id} data-site-template={preset.id.toLowerCase()} data-design-motion={preset.motionStyle} style={rootStyle}>
       <SiteNav
         businessName={site.businessName}
+        logoUrl={site.logoUrl}
         navItems={landingNav}
         theme={theme}
         preset={preset}

@@ -3,6 +3,8 @@ import { z } from "zod";
 
 import { getUserBySessionToken, SESSION_COOKIE } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { hasProAccess } from "@/lib/entitlements";
+import { trackProductEvent } from "@/lib/product-events";
 import { addProjectDomain, removeProjectDomain, verifyProjectDomain } from "@/lib/vercel-domains";
 
 const schema = z.object({ domain: z.string().trim().toLowerCase().max(253).regex(/^(?=.{4,253}$)(?!-)(?:[a-z0-9-]+\.)+[a-z]{2,63}$/) });
@@ -18,13 +20,14 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
   const { siteId } = await params;
   const access = await owner(request, siteId);
   if (!access) return NextResponse.json({ error: "Sitio no encontrado." }, { status: 404 });
-  if (access.user.planStatus !== "ACTIVE") return NextResponse.json({ error: "El dominio personalizado requiere Cluster Pro." }, { status: 403 });
+  if (!hasProAccess(access.user)) return NextResponse.json({ error: "El dominio personalizado requiere Cluster Pro.", upgradeRequired: true }, { status: 402 });
   const parsed = schema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "Escribe un dominio válido, sin https ni rutas." }, { status: 400 });
 
   try {
     const result = await addProjectDomain(parsed.data.domain);
     await prisma.site.update({ where: { id: siteId }, data: { customDomain: parsed.data.domain, domainVerifiedAt: result?.verified ? new Date() : null } });
+    await trackProductEvent("domain_connected", { userId: access.user.id, siteId, metadata: { verified: Boolean(result?.verified) } });
     return NextResponse.json({ domain: parsed.data.domain, verified: Boolean(result?.verified), verification: result?.verification || [], providerConfigured: Boolean(result) });
   } catch (reason) {
     return NextResponse.json({ error: reason instanceof Error ? reason.message : "No se pudo agregar el dominio." }, { status: 502 });
@@ -35,7 +38,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const { siteId } = await params;
   const access = await owner(request, siteId);
   if (!access?.site.customDomain) return NextResponse.json({ error: "Dominio no configurado." }, { status: 404 });
-  if (access.user.planStatus !== "ACTIVE") return NextResponse.json({ error: "El dominio personalizado requiere Cluster Pro." }, { status: 403 });
+  if (!hasProAccess(access.user)) return NextResponse.json({ error: "El dominio personalizado requiere Cluster Pro.", upgradeRequired: true }, { status: 402 });
   try {
     const result = await verifyProjectDomain(access.site.customDomain);
     const verified = Boolean(result?.verified);

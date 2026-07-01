@@ -3,6 +3,8 @@ import { strToU8, zipSync } from "fflate";
 
 import { getUserBySessionToken, SESSION_COOKIE } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { hasProAccess, proRequiredResponse } from "@/lib/entitlements";
+import { trackProductEvent } from "@/lib/product-events";
 import { exportSiteHtml } from "@/lib/site/export-html";
 import { toRenderSection } from "@/lib/site/section";
 import { themeFromSite } from "@/lib/site/theme";
@@ -15,6 +17,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   const { siteId } = await params;
   const site = await prisma.site.findFirst({ where: { id: siteId, userId: user.id }, include: { sections: { orderBy: { order: "asc" } } } });
   if (!site) return NextResponse.json({ error: "Sitio no encontrado." }, { status: 404 });
+  if (!hasProAccess(user)) return NextResponse.json(proRequiredResponse, { status: 402 });
 
   const endpoint = `${request.nextUrl.origin}/api/public/sites/${site.publicSlug}/leads`;
   const showBranding = user.planStatus !== "ACTIVE";
@@ -24,5 +27,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     : "Abre index.html o súbelo a cualquier hosting estático. El formulario requiere que el proyecto permanezca publicado.";
   const zip = zipSync({ "index.html": strToU8(html), "README.txt": strToU8(readme) });
   await prisma.site.update({ where: { id: site.id }, data: { downloadedAt: new Date() } });
+  await trackProductEvent("site_downloaded", { userId: user.id, siteId: site.id });
   return new Response(zip, { headers: { "Content-Type": "application/zip", "Content-Disposition": `attachment; filename="${site.publicSlug}.zip"` } });
 }

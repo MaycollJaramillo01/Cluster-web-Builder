@@ -11,6 +11,8 @@ export type SitePreviewProps = {
   location?: string | null;
   publicSlug?: string | null;
   showBranding?: boolean;
+  logoUrl?: string | null;
+  coverUrl?: string | null;
   theme: SiteTheme;
   visualStyle?: string | null;
   sections: RenderSection[];
@@ -30,6 +32,8 @@ export function SitePreview({
   location,
   publicSlug,
   showBranding,
+  logoUrl,
+  coverUrl,
   theme,
   visualStyle,
   sections,
@@ -42,7 +46,7 @@ export function SitePreview({
       theme={theme}
       visualStyle={visualStyle}
       editable={editable}
-      site={{ businessName, businessType, phone, email, location, publicSlug, showBranding, socialLinks }}
+      site={{ businessName, businessType, phone, email, location, publicSlug, showBranding, logoUrl, coverUrl, socialLinks }}
     />
   );
 }

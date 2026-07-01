@@ -6,6 +6,7 @@ import { ArrowLeft, ArrowUp, ImageIcon, Loader2, Sparkles, Upload } from "lucide
 
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { compressImageFile } from "@/lib/client-image";
 
 export const ONBOARDING_STORAGE_KEY = "ai-builder:onboarding";
 
@@ -49,18 +50,21 @@ export function PromptComposer({ variant = "chat" }: PromptComposerProps) {
     setError(null);
   };
 
-  const handleLogoFile = (event: ChangeEvent<HTMLInputElement>) => {
+  const handleLogoFile = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-    if (file.size > 2 * 1024 * 1024) {
-      setLogoError("El logo no puede superar 2 MB.");
+    if (file.size > 8 * 1024 * 1024) {
+      setLogoError("El archivo original no puede superar 8 MB.");
       event.target.value = "";
       return;
     }
     setLogoError(null);
-    const reader = new FileReader();
-    reader.onload = (e) => setLogoDataUrl(e.target?.result as string);
-    reader.readAsDataURL(file);
+    try {
+      setLogoDataUrl(await compressImageFile(file, 512, 350_000));
+    } catch (reason) {
+      setLogoError(reason instanceof Error ? reason.message : "No se pudo procesar el logo.");
+      event.target.value = "";
+    }
   };
 
   const finish = (withLogo: boolean) => {
@@ -112,7 +116,7 @@ export function PromptComposer({ variant = "chat" }: PromptComposerProps) {
               <span className="text-sm font-medium text-[#f7f2fb]">
                 {logoDataUrl ? "Cambiar logo" : "Subir mi logo"}
               </span>
-              <span className="text-xs text-[#9b8ab4]">PNG, SVG o JPG · máx. 2 MB</span>
+              <span className="text-xs text-[#9b8ab4]">PNG, SVG, WebP o JPG · máx. 8 MB</span>
             </button>
             <input
               ref={logoInputRef}

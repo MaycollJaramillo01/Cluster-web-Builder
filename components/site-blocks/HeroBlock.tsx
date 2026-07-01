@@ -7,13 +7,14 @@ import { HeroVideo } from "./HeroVideo";
 
 export function HeroBlock({ section, theme, preset, site }: BlockProps) {
   const heroImg = (w: number, h: number, seed: string) =>
-    sectionImageUrl({
+    site.coverUrl || sectionImageUrl({
       prompt: section.imagePrompt,
       businessType: site.businessType,
       seed,
       width: w,
       height: h,
     });
+  const useVideo = preset.heroMedia === "video" && !site.coverUrl;
   const heroVideo = (seed: string) => sectionVideoUrl({
     prompt: section.imagePrompt,
     businessType: site.businessType,
@@ -91,7 +92,7 @@ export function HeroBlock({ section, theme, preset, site }: BlockProps) {
     return (
       <section className="px-6 py-16 sm:py-24" style={{ backgroundColor: theme.secondary }}>
         <div className="relative mx-auto min-h-[34rem] max-w-6xl overflow-hidden border" style={{ borderColor: `${theme.accent}80`, borderRadius: "var(--site-radius)" }}>
-          {preset.heroMedia === "video" ? (
+          {useVideo ? (
             <HeroVideo src={heroVideo("hero-framed")} poster={poster} className="absolute inset-0 opacity-60" style={{ filter: preset.imageStyle === "monochrome" ? "grayscale(1)" : undefined }} />
           ) : (
             <div className="absolute inset-0 bg-cover bg-center opacity-60" style={{ backgroundImage: `url("${poster}")`, filter: preset.imageStyle === "monochrome" ? "grayscale(1)" : undefined }} />
@@ -112,7 +113,7 @@ export function HeroBlock({ section, theme, preset, site }: BlockProps) {
     const poster = heroImg(1800, 1100, "hero-immersive");
     return (
       <section className="relative flex min-h-[78vh] items-end overflow-hidden">
-        {preset.heroMedia === "video" ? (
+        {useVideo ? (
           <HeroVideo src={heroVideo("hero-immersive")} poster={poster} className="absolute inset-0" />
         ) : (
           <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url("${poster}")` }} />
@@ -199,7 +200,7 @@ export function HeroBlock({ section, theme, preset, site }: BlockProps) {
       <section className="relative flex min-h-[88vh] flex-col overflow-hidden">
         {/* Full-bleed background image */}
         <div className="absolute inset-0">
-          {preset.heroMedia === "video" ? (
+          {useVideo ? (
             <HeroVideo src={heroVideo("hero-cinematic")} poster={poster} className="absolute inset-0" style={{ filter: preset.imageStyle === "monochrome" ? "grayscale(1)" : undefined }} />
           ) : (
             <div className="h-full w-full bg-cover bg-center" style={{ backgroundImage: `url("${poster}")`, filter: preset.imageStyle === "monochrome" ? "grayscale(1)" : undefined }} />
@@ -320,7 +321,7 @@ export function HeroBlock({ section, theme, preset, site }: BlockProps) {
   return (
     <section className="relative overflow-hidden">
       <div className="absolute inset-0 overflow-hidden">
-        {preset.heroMedia === "video" ? (
+        {useVideo ? (
           <HeroVideo src={heroVideo("hero-bg")} poster={defaultPoster} className="absolute inset-0" />
         ) : (
           <div aria-hidden className="h-full w-full bg-cover bg-center" style={{ backgroundImage: `url("${defaultPoster}")` }} />

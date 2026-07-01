@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { createSession, GUEST_COOKIE, hashGuestToken, SESSION_COOKIE, sessionCookie } from "@/lib/auth";
+import { claimGuestProjects, createSession, GUEST_COOKIE, SESSION_COOKIE, sessionCookie } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { verifyPassword } from "@/lib/password";
 import { clearRateLimit, consumeRateLimit } from "@/lib/rate-limit";
@@ -26,21 +26,17 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Demasiados intentos. Espera 15 minutos." }, { status: 429 });
   }
 
-  const user = await prisma.user.findFirst({
-    where: { username: { equals: username, mode: "insensitive" } },
-  });
+  const user = await prisma.user.findFirst({ where: { OR: [
+    { username: { equals: username, mode: "insensitive" } },
+    { email: { equals: username, mode: "insensitive" } },
+  ] } });
   if (!user || !verifyPassword(password, user.passwordHash)) {
     return NextResponse.json({ error: "Usuario o contraseña incorrectos." }, { status: 401 });
   }
 
   await clearRateLimit("login", rateIdentifier, 15 * 60 * 1000);
-  const guestTokenHash = hashGuestToken(req.cookies.get(GUEST_COOKIE)?.value);
-  if (guestTokenHash) {
-    await prisma.site.updateMany({
-      where: { userId: null, guestTokenHash, guestExpiresAt: { gt: new Date() } },
-      data: { userId: user.id, guestTokenHash: null, guestExpiresAt: null },
-    });
-  }
+  const guestToken = req.cookies.get(GUEST_COOKIE)?.value;
+  await claimGuestProjects(user.id, guestToken);
   await Promise.all([
     prisma.session.deleteMany({ where: { expiresAt: { lt: new Date() } } }),
     prisma.rateLimit.deleteMany({ where: { expiresAt: { lt: new Date() } } }),
@@ -48,6 +44,6 @@ export async function POST(req: NextRequest) {
   const session = await createSession(user.id);
   const response = NextResponse.json({ ok: true, role: user.role });
   response.cookies.set(SESSION_COOKIE, session.token, sessionCookie(session.expiresAt));
-  if (guestTokenHash) response.cookies.set(GUEST_COOKIE, "", { path: "/", maxAge: 0 });
+  if (guestToken) response.cookies.set(GUEST_COOKIE, "", { path: "/", maxAge: 0 });
   return response;
 }

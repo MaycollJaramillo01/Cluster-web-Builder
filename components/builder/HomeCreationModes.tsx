@@ -27,6 +27,7 @@ import {
   PromptComposer,
 } from "@/components/builder/OnboardingWizard";
 import { Button } from "@/components/ui/button";
+import { compressImageFile } from "@/lib/client-image";
 
 type CreationMode = "guided" | "advanced";
 type FieldErrors = Record<string, string>;
@@ -243,32 +244,38 @@ function GuidedHomeForm() {
     });
   };
 
-  const handleLogoFile = (event: ChangeEvent<HTMLInputElement>) => {
+  const handleLogoFile = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-    if (file.size > 2 * 1024 * 1024) {
-      setErrors((current) => ({ ...current, logo: "El logo no puede superar 2 MB." }));
+    if (file.size > 8 * 1024 * 1024) {
+      setErrors((current) => ({ ...current, logo: "El archivo original no puede superar 8 MB." }));
       event.target.value = "";
       return;
     }
     clearError("logo");
-    const reader = new FileReader();
-    reader.onload = (e) => setLogoDataUrl(e.target?.result as string);
-    reader.readAsDataURL(file);
+    try {
+      setLogoDataUrl(await compressImageFile(file, 512, 350_000));
+    } catch (reason) {
+      setErrors((current) => ({ ...current, logo: reason instanceof Error ? reason.message : "No se pudo procesar el logo." }));
+      event.target.value = "";
+    }
   };
 
-  const handleCoverFile = (event: ChangeEvent<HTMLInputElement>) => {
+  const handleCoverFile = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-    if (file.size > 5 * 1024 * 1024) {
-      setErrors((current) => ({ ...current, cover: "La imagen no puede superar 5 MB." }));
+    if (file.size > 12 * 1024 * 1024) {
+      setErrors((current) => ({ ...current, cover: "El archivo original no puede superar 12 MB." }));
       event.target.value = "";
       return;
     }
     clearError("cover");
-    const reader = new FileReader();
-    reader.onload = (e) => setCoverDataUrl(e.target?.result as string);
-    reader.readAsDataURL(file);
+    try {
+      setCoverDataUrl(await compressImageFile(file, 1600, 1_400_000));
+    } catch (reason) {
+      setErrors((current) => ({ ...current, cover: reason instanceof Error ? reason.message : "No se pudo procesar la portada." }));
+      event.target.value = "";
+    }
   };
 
   const submit = (event: FormEvent<HTMLFormElement>) => {
@@ -586,7 +593,7 @@ function GuidedHomeForm() {
               onRemove={() => { setLogoDataUrl(null); clearError("logo"); if (logoInputRef.current) logoInputRef.current.value = ""; }}
               inputRef={logoInputRef}
               accept="image/png,image/jpeg,image/webp,image/svg+xml"
-              maxSize="2 MB"
+              maxSize="8 MB"
             />
             <MediaUploadCard
               label="Imagen de portada"
@@ -599,7 +606,7 @@ function GuidedHomeForm() {
               onRemove={() => { setCoverDataUrl(null); clearError("cover"); if (coverInputRef.current) coverInputRef.current.value = ""; }}
               inputRef={coverInputRef}
               accept="image/png,image/jpeg,image/webp"
-              maxSize="5 MB"
+              maxSize="12 MB"
             />
           </div>
         </fieldset>

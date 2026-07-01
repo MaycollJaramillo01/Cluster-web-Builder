@@ -18,14 +18,18 @@ export default async function LeadsPage({ params }: { params: Promise<{ siteId: 
     select: { businessName: true, leads: { orderBy: { createdAt: "desc" } } },
   });
   if (!site) notFound();
+  await prisma.lead.updateMany({ where: { siteId, readAt: null }, data: { readAt: new Date() } });
 
   return (
     <main className="min-h-dvh bg-background px-5 py-10 text-foreground sm:px-8">
       <div className="mx-auto max-w-5xl">
         <Button asChild variant="ghost"><Link href={`/builder/${siteId}`}><ArrowLeft /> Volver al editor</Link></Button>
-        <div className="mt-8 flex items-center gap-3">
+        <div className="mt-8 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
           <Inbox className="h-7 w-7 text-[#a078ff]" />
           <div><h1 className="text-3xl font-semibold">Contactos</h1><p className="text-sm text-muted-foreground">{site.businessName}</p></div>
+          </div>
+          <Button asChild variant="outline"><a href={`/api/sites/${siteId}/leads/export`}>Exportar CSV</a></Button>
         </div>
         {site.leads.length === 0 ? (
           <div className="mt-8 rounded-lg border border-dashed border-border p-12 text-center text-muted-foreground">Aún no hay mensajes.</div>

@@ -4,16 +4,19 @@ import { redirect } from "next/navigation";
 
 import { getCurrentUser } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
+import { hasProAccess } from "@/lib/entitlements";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Plan | Cluster Web Builder" };
 
-export default async function BillingPage({ searchParams }: { searchParams: Promise<{ success?: string }> }) {
+export default async function BillingPage({ searchParams }: { searchParams: Promise<{ success?: string; from?: string }> }) {
   const user = await getCurrentUser();
   if (!user) redirect("/login?from=/billing");
-  const active = user.planStatus === "ACTIVE";
-  const configured = Boolean(process.env.STRIPE_SECRET_KEY && process.env.STRIPE_PRICE_ID);
-  const success = (await searchParams).success === "1";
+  const active = hasProAccess(user);
+  const configured = Boolean(process.env.STRIPE_SECRET_KEY && process.env.STRIPE_PRICE_ID && process.env.STRIPE_WEBHOOK_SECRET);
+  const query = await searchParams;
+  const success = query.success === "1";
+  const returnTo = query.from?.startsWith("/") && !query.from.startsWith("//") ? query.from : "/dashboard";
 
   return <main className="min-h-dvh bg-background px-5 py-12 text-foreground">
     <div className="mx-auto max-w-3xl">
@@ -22,11 +25,11 @@ export default async function BillingPage({ searchParams }: { searchParams: Prom
         <div className="flex items-center gap-3"><CreditCard className="text-[#a078ff]" /><p className="text-sm font-bold uppercase tracking-widest text-[#a078ff]">Un solo plan</p></div>
         <h1 className="mt-4 text-4xl font-semibold">Cluster Pro</h1>
         <p className="mt-3 text-muted-foreground">Todo lo necesario para operar el sitio de tu negocio.</p>
-        <ul className="mt-8 grid gap-4 sm:grid-cols-2">{["Dominio personalizado y SSL", "Hosting administrado", "100 generaciones con IA por hora", "Sin marca Cluster"].map((item) => <li key={item} className="flex gap-2"><Check className="h-5 w-5 text-emerald-400" />{item}</li>)}</ul>
+        <ul className="mt-8 grid gap-4 sm:grid-cols-2">{["Publicación y hosting administrado", "Dominio personalizado y SSL", "Descarga ZIP", "Contactos y avisos por email", "100 generaciones con IA por hora", "Sin marca Cluster"].map((item) => <li key={item} className="flex gap-2"><Check className="h-5 w-5 text-emerald-400" />{item}</li>)}</ul>
         {success && <p className="mt-6 rounded bg-emerald-950 p-3 text-emerald-200">Pago recibido. La activación se confirma automáticamente.</p>}
         <div className="mt-8">
           {active ? <form action="/api/billing/portal" method="post"><Button type="submit">Administrar suscripción</Button></form>
-            : <form action="/api/billing/checkout" method="post"><Button type="submit" disabled={!configured}>{configured ? "Activar Cluster Pro" : "Configura Stripe para cobrar"}</Button></form>}
+            : <form action={`/api/billing/checkout?from=${encodeURIComponent(returnTo)}`} method="post"><Button type="submit" disabled={!configured}>{configured ? "Activar Cluster Pro" : "Configura Stripe para cobrar"}</Button></form>}
           <p className="mt-3 text-xs text-muted-foreground">Estado: {user.planStatus}</p>
         </div>
       </div>

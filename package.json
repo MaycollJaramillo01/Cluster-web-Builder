@@ -18,6 +18,8 @@
     "test:fast-prompt": "node scripts/test-fast-prompt.mjs",
     "test:marketing": "node scripts/test-marketing.mjs",
     "test:unit": "node --import tsx --test \"tests/**/*.test.ts\"",
+    "test:m5-commercial": "node --import tsx --test tests/m5-commercial.test.ts",
+    "test:m5-http": "node scripts/test-m5-http.mjs",
     "postinstall": "prisma generate",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",

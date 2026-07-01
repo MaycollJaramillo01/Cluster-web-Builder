@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ArrowLeft, CreditCard, LayoutGrid, Plus, Search, Users } from "lucide-react";
+import { ArrowLeft, BarChart3, CreditCard, LayoutGrid, Plus, Search, Users } from "lucide-react";
 
 import { BrandMark } from "@/components/brand/BrandMark";
 import { getCurrentUser } from "@/lib/auth";
@@ -64,6 +64,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
             <Button asChild variant="outline" size="sm" className="w-11 px-0 sm:w-auto sm:px-3"><Link href="/billing"><CreditCard /><span className="hidden sm:inline">Plan</span></Link></Button>
             {user.role === "ADMIN" && <Button asChild variant="outline" size="sm" className="w-11 px-0 sm:w-auto sm:px-3"><Link href="/admin/sites"><LayoutGrid /><span className="hidden sm:inline">Sitios</span></Link></Button>}
             {user.role === "ADMIN" && <Button asChild variant="outline" size="sm" className="w-11 px-0 sm:w-auto sm:px-3"><Link href="/admin/users"><Users /><span className="hidden sm:inline">Usuarios</span></Link></Button>}
+            {user.role === "ADMIN" && <Button asChild variant="outline" size="sm" className="w-11 px-0 sm:w-auto sm:px-3"><Link href="/admin/metrics"><BarChart3 /><span className="hidden sm:inline">Métricas</span></Link></Button>}
             <LogoutButton />
           </div>
         </div>

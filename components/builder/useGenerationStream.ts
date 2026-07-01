@@ -53,6 +53,8 @@ export function useGenerationStream() {
     }
     if (event === "saved" && typeof payload.siteId === "string") {
       sessionStorage.removeItem(ONBOARDING_STORAGE_KEY);
+      sessionStorage.removeItem("cluster_logo");
+      sessionStorage.removeItem("cluster_cover");
       router.push(`/builder/${payload.siteId}/templates`);
       return;
     }
@@ -75,10 +77,13 @@ export function useGenerationStream() {
     }
 
     try {
+      const request = JSON.parse(stored) as Record<string, unknown>;
+      const logoDataUrl = sessionStorage.getItem("cluster_logo") || undefined;
+      const coverDataUrl = sessionStorage.getItem("cluster_cover") || undefined;
       const response = await fetch("/api/ai/generate-site", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: stored,
+        body: JSON.stringify({ ...request, assets: { logoDataUrl, coverDataUrl } }),
       });
       if (!response.ok && response.headers.get("content-type")?.includes("json")) {
         const data = await response.json().catch(() => null);

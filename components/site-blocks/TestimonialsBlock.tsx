@@ -1,3 +1,4 @@
+/* eslint-disable react/no-unescaped-entities */
 import { getItems } from "@/lib/site/section";
 import { getThemeSurface } from "@/lib/site/theme-surface";
 import { SectionHeading } from "./shared";

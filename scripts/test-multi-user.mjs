@@ -14,7 +14,7 @@ const createdUsername = `created-${suffix}`;
 
 try {
   const [userA, userB, admin] = await Promise.all(usernames.map((username, index) => prisma.user.create({
-    data: { username, passwordHash: "qa:not-used", role: index === 2 ? "ADMIN" : "EDITOR" },
+    data: { username, passwordHash: "qa:not-used", role: index === 2 ? "ADMIN" : "EDITOR", planStatus: index === 0 ? "ACTIVE" : "FREE" },
   })));
   const [siteA, , guestSite] = await Promise.all([
     prisma.site.create({ data: { userId: userA.id, businessName: siteNames[0], businessType: "QA", publicSlug: `qa-a-${suffix}`, status: "DRAFT" } }),

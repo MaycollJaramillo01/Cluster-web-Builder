@@ -2,6 +2,7 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useRef, useState } from "react";
+import Link from "next/link";
 
 import { BrandMark } from "@/components/brand/BrandMark";
 
@@ -95,7 +96,7 @@ function LoginForm() {
                 htmlFor="username"
                 className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-[#9d8fb5]"
               >
-                Usuario
+                Correo o usuario
               </label>
               <input
                 id="username"
@@ -105,7 +106,7 @@ function LoginForm() {
                 autoComplete="username"
                 autoFocus
                 required
-                placeholder="tu usuario"
+                placeholder="tu@email.com"
                 className="w-full rounded-lg border border-[#2d243d] bg-[#1d1a23] px-4 py-3 text-sm text-white placeholder:text-[#4a3f5a] focus:border-[#8b5cf6] focus:outline-none transition-colors"
               />
             </div>
@@ -146,6 +147,10 @@ function LoginForm() {
               {loading ? "Verificando…" : "Entrar"}
             </button>
           </form>
+          <div className="mt-5 flex items-center justify-between gap-3 text-sm">
+            <Link href="/forgot-password" className="text-[#bda6e8] hover:text-white">Olvidé mi contraseña</Link>
+            <Link href={from ? `/register?from=${encodeURIComponent(from)}` : "/register"} className="font-semibold text-[#a078ff] hover:text-white">Crear cuenta</Link>
+          </div>
         </div>
 
         <p className="mt-6 text-center text-xs text-[#4a3f5a]">

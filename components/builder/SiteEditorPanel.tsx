@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   ArrowLeft,
+  BarChart3,
   Briefcase,
   CircleCheck,
   CheckSquare,
@@ -53,6 +54,8 @@ export type EditorSite = {
   status: string;
   publicSlug: string;
   publicUrl: string;
+  logoUrl: string | null;
+  coverUrl: string | null;
   theme: SiteTheme;
   socialLinks?: SocialLinks;
 };
@@ -628,6 +631,10 @@ export function SiteEditorPanel({
       }
 
       const data = await response.json().catch(() => null);
+      if (response.status === 402 || data?.upgradeRequired) {
+        router.push(`/billing?from=${encodeURIComponent(`/builder/${initialSite.id}`)}`);
+        return;
+      }
       if (!response.ok) {
         throw new Error(data?.error ?? "No se pudo publicar el sitio.");
       }
@@ -655,6 +662,10 @@ export function SiteEditorPanel({
       const response = await fetch(`/api/sites/${initialSite.id}/download`);
       if (response.status === 401) {
         router.push(`/login?from=${encodeURIComponent(`/builder/${initialSite.id}?download=1`)}`);
+        return;
+      }
+      if (response.status === 402) {
+        router.push(`/billing?from=${encodeURIComponent(`/builder/${initialSite.id}`)}`);
         return;
       }
       if (!response.ok) throw new Error((await response.json().catch(() => null))?.error ?? "No se pudo descargar el sitio.");
@@ -712,6 +723,11 @@ export function SiteEditorPanel({
             {isAuthenticated && (
               <Button asChild variant="outline" size="sm" className="hidden min-h-11 md:inline-flex">
                 <Link href={`/builder/${initialSite.id}/leads`}><Inbox className="h-4 w-4" /> Contactos</Link>
+              </Button>
+            )}
+            {isAuthenticated && (
+              <Button asChild variant="outline" size="sm" className="hidden min-h-11 md:inline-flex">
+                <Link href={`/builder/${initialSite.id}/analytics`}><BarChart3 className="h-4 w-4" /> Analytics</Link>
               </Button>
             )}
             {isAuthenticated && (
@@ -916,6 +932,8 @@ export function SiteEditorPanel({
                 phone={phone}
                 email={email}
                 location={location}
+                logoUrl={initialSite.logoUrl}
+                coverUrl={initialSite.coverUrl}
                 theme={previewTheme}
                 visualStyle={initialSite.visualStyle}
                 sections={sections}

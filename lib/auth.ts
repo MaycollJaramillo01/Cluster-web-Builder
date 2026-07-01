@@ -16,6 +16,16 @@ export async function createSession(userId: string) {
   return { token, expiresAt };
 }
 
+export async function claimGuestProjects(userId: string, guestToken?: string) {
+  const guestTokenHash = hashGuestToken(guestToken);
+  if (!guestTokenHash) return 0;
+  const result = await prisma.site.updateMany({
+    where: { userId: null, guestTokenHash, guestExpiresAt: { gt: new Date() } },
+    data: { userId, guestTokenHash: null, guestExpiresAt: null },
+  });
+  return result.count;
+}
+
 export async function getCurrentUser() {
   const store = await cookies();
   return getUserBySessionToken(store.get(SESSION_COOKIE)?.value);
@@ -57,6 +67,6 @@ export function guestCookie(expiresAt: Date) {
   return { ...sessionCookie(expiresAt), expires: expiresAt };
 }
 
-function hashToken(token: string) {
+export function hashToken(token: string) {
   return createHash("sha256").update(token).digest("hex");
 }

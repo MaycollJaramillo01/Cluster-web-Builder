@@ -3,6 +3,7 @@ import type Stripe from "stripe";
 
 import { prisma } from "@/lib/db";
 import { stripeClient } from "@/lib/stripe";
+import { trackProductEvent } from "@/lib/product-events";
 
 export const runtime = "nodejs";
 
@@ -21,11 +22,14 @@ export async function POST(request: NextRequest) {
 
   if (event.type === "checkout.session.completed") {
     const session = event.data.object;
-    if (session.client_reference_id) await prisma.user.update({ where: { id: session.client_reference_id }, data: {
-      planStatus: "ACTIVE",
-      stripeCustomerId: typeof session.customer === "string" ? session.customer : null,
-      stripeSubscriptionId: typeof session.subscription === "string" ? session.subscription : null,
-    } });
+    if (session.client_reference_id) {
+      await prisma.user.update({ where: { id: session.client_reference_id }, data: {
+        planStatus: "ACTIVE",
+        stripeCustomerId: typeof session.customer === "string" ? session.customer : null,
+        stripeSubscriptionId: typeof session.subscription === "string" ? session.subscription : null,
+      } });
+      await trackProductEvent("subscription_activated", { userId: session.client_reference_id });
+    }
   }
   if (event.type === "customer.subscription.updated" || event.type === "customer.subscription.deleted") {
     const subscription = event.data.object;
@@ -35,10 +39,13 @@ export async function POST(request: NextRequest) {
       { stripeSubscriptionId: subscription.id },
       { stripeCustomerId: typeof subscription.customer === "string" ? subscription.customer : "" },
     ] }, select: { id: true } });
-    if (user) await prisma.$transaction([
-      prisma.user.update({ where: { id: user.id }, data: { planStatus, stripeSubscriptionId: subscription.id } }),
-      ...(planStatus === "ACTIVE" ? [] : [prisma.site.updateMany({ where: { userId: user.id }, data: { domainVerifiedAt: null } })]),
-    ]);
+    if (user) {
+      await prisma.$transaction([
+        prisma.user.update({ where: { id: user.id }, data: { planStatus, stripeSubscriptionId: subscription.id } }),
+        ...(planStatus === "ACTIVE" ? [] : [prisma.site.updateMany({ where: { userId: user.id }, data: { status: "GENERATED", publishedAt: null, domainVerifiedAt: null } })]),
+      ]);
+      await trackProductEvent("subscription_changed", { userId: user.id, metadata: { planStatus } });
+    }
   }
   return NextResponse.json({ received: true });
 }

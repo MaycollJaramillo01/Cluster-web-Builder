@@ -52,6 +52,8 @@ export default async function SiteEditorPage({
         status: site.status,
         publicSlug: site.publicSlug,
         publicUrl: site.domainVerifiedAt && site.customDomain ? `https://${site.customDomain}` : publicSiteUrl(site.publicSlug),
+        logoUrl: site.logoUrl,
+        coverUrl: site.coverUrl,
         theme,
         socialLinks: socialLinksFromBlueprint(site.blueprintJson),
       }}

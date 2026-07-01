@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable @next/next/no-img-element */
 
 import type { SiteTheme } from "@/lib/site/blueprint";
 import type { DesignPreset } from "@/lib/site/design";
@@ -6,6 +7,7 @@ import { getContrastText } from "@/lib/site/theme-surface";
 
 export function SiteNav({
   businessName,
+  logoUrl,
   navItems,
   theme,
   preset,
@@ -13,6 +15,7 @@ export function SiteNav({
   ctaHref,
 }: {
   businessName: string;
+  logoUrl?: string | null;
   navItems: Array<{ slug: string; name: string }>;
   theme: SiteTheme;
   preset: DesignPreset;
@@ -64,10 +67,11 @@ export function SiteNav({
       >
         <a
           href="#top"
-          className="min-w-0 max-w-[calc(100vw-8rem)] truncate text-lg font-bold"
+          className="flex min-w-0 max-w-[calc(100vw-8rem)] items-center gap-3 truncate text-lg font-bold"
           style={{ color: navText, fontFamily: "var(--site-heading)", textTransform: preset.uppercaseHeadings ? "uppercase" : "none" }}
         >
-          {businessName}
+          {logoUrl ? <img src={logoUrl} alt="" className="h-9 w-9 shrink-0 object-contain" /> : null}
+          <span className="truncate">{businessName}</span>
         </a>
 
         <div className="hidden items-center gap-3 md:flex">

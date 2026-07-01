@@ -15,5 +15,18 @@ export function publicSiteUrl(slug: string) {
 export function absolutePublicSiteUrl(slug: string, origin?: string) {
   const url = publicSiteUrl(slug);
   if (url.startsWith("http")) return url;
-  return `${(origin || process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000").replace(/\/$/, "")}${url}`;
+  return `${appOrigin(origin)}${url}`;
+}
+
+export function appOrigin(fallback = "http://localhost:3000") {
+  const configured = process.env.NEXT_PUBLIC_APP_URL;
+  for (const candidate of [configured, fallback]) {
+    try {
+      const url = new URL(candidate || "");
+      if (url.protocol === "http:" || url.protocol === "https:") return url.origin;
+    } catch {
+      // Try the next candidate.
+    }
+  }
+  return "http://localhost:3000";
 }

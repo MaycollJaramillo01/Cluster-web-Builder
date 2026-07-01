@@ -8,6 +8,8 @@ import { absolutePublicSiteUrl } from "@/lib/site/public-url";
 import { toRenderSection } from "@/lib/site/section";
 import { themeFromSite } from "@/lib/site/theme";
 import { socialLinksFromBlueprint } from "@/lib/site/social-links";
+import { hasProAccess } from "@/lib/entitlements";
+import { trackSiteView } from "@/lib/site/track-view";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -40,9 +42,11 @@ export default async function PublicSitePage({ params }: { params: Promise<{ slu
   const { slug } = await params;
   const site = await prisma.site.findFirst({
     where: { publicSlug: slug, status: "PUBLISHED" },
-    include: { sections: { orderBy: { order: "asc" } }, user: { select: { planStatus: true } } },
+    include: { sections: { orderBy: { order: "asc" } }, user: { select: { planStatus: true, role: true } } },
   });
   if (!site) notFound();
+
+  void trackSiteView(site.id);
 
   const structuredData = {
     "@context": "https://schema.org",
@@ -64,7 +68,9 @@ export default async function PublicSitePage({ params }: { params: Promise<{ slu
         email={site.email}
         location={site.location}
         publicSlug={site.publicSlug}
-        showBranding={site.user?.planStatus !== "ACTIVE"}
+        showBranding={!hasProAccess(site.user)}
+        logoUrl={site.logoUrl}
+        coverUrl={site.coverUrl}
         socialLinks={socialLinksFromBlueprint(site.blueprintJson)}
         theme={themeFromSite(site)}
         visualStyle={site.visualStyle}

@@ -22,6 +22,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
       primaryColor: true,
       secondaryColor: true,
       accentColor: true,
+      coverUrl: true,
       blueprintJson: true,
       sections: {
         where: { type: "hero", isVisible: true },
@@ -42,9 +43,9 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
   const body = asString(hero.body);
   const prompt = asString(hero.imagePrompt) || `${site.businessType} professional business`;
   const photo = heroPhoto(preset.heroStyle);
-  const photoUrl = photo
+  const photoUrl = site.coverUrl || (photo
     ? `${new URL(sectionImageUrl({ prompt, businessType: site.businessType, ...photo }), request.url).toString()}&format=jpeg`
-    : null;
+    : null);
 
   return new ImageResponse(
     h("div", { style: { width: "100%", height: "100%", display: "flex", flexDirection: "column", overflow: "hidden", background: theme.background, color: theme.text, fontFamily: "Arial, sans-serif" } },

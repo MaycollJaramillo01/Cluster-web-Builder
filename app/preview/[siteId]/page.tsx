@@ -88,6 +88,8 @@ export default async function PreviewPage({
         email={site.email}
         location={site.location}
         publicSlug={site.status === "PUBLISHED" ? site.publicSlug : undefined}
+        logoUrl={site.logoUrl}
+        coverUrl={site.coverUrl}
         socialLinks={socialLinksFromBlueprint(site.blueprintJson)}
         theme={theme}
         visualStyle={visualStyle}

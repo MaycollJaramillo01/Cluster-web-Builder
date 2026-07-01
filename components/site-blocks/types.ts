@@ -11,6 +11,8 @@ export type BlockSiteInfo = {
   location?: string | null;
   publicSlug?: string | null;
   showBranding?: boolean;
+  logoUrl?: string | null;
+  coverUrl?: string | null;
   socialLinks?: SocialLinks;
 };
 

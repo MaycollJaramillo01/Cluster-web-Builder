@@ -19,6 +19,7 @@ export const LANGUAGES = ["es", "en", "bilingual"] as const;
 
 const paletteColor = z.string().regex(/^#[0-9a-fA-F]{6}$/, "Color de paleta inválido.");
 const socialHandle = z.string().trim().max(200).optional().or(z.literal(""));
+const imageDataUrl = z.string().max(1_800_000).regex(/^data:image\/(?:png|jpe?g|webp);base64,/i);
 
 export const onboardingSchema = z
   .object({
@@ -50,6 +51,10 @@ export const onboardingSchema = z
       tiktok: socialHandle,
       linkedin: socialHandle,
       youtube: socialHandle,
+    }).optional(),
+    assets: z.object({
+      logoDataUrl: imageDataUrl.optional(),
+      coverDataUrl: imageDataUrl.optional(),
     }).optional(),
   })
   .superRefine((input, ctx) => {
