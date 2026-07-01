@@ -1,60 +1,45 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ZodError } from "zod";
 
-import { createGuestAccess, GUEST_COOKIE, GUEST_MS, guestCookie, hashGuestToken, getUserBySessionToken, SESSION_COOKIE } from "@/lib/auth";
-import { prisma } from "@/lib/db";
+import {
+  createGuestAccess,
+  GUEST_COOKIE,
+  GUEST_MS,
+  guestCookie,
+  hashGuestToken,
+  getUserBySessionToken,
+  SESSION_COOKIE,
+} from "@/lib/auth";
 import { consumeRateLimit } from "@/lib/rate-limit";
-import { openrouterChatStream, parseChatStream, OpenRouterError } from "@/lib/openrouter";
-import { buildSiteGenerationPrompt } from "@/lib/prompts/site-generator";
-import { extractJsonFromModelResponse } from "@/lib/json/extract-json";
-import { buildFallbackSiteBlueprint } from "@/lib/site/fallback-site-blueprint";
-import { normalizeSiteBlueprint } from "@/lib/site/normalize-site-blueprint";
-import { auditBlueprintCopy, enforceBlueprintCopyQuality } from "@/lib/site/copy-quality";
-import { applyPageStructure } from "@/lib/site/structure";
-import { getDesignPreset, resolvePalette } from "@/lib/site/design";
-import { createPublicSlug } from "@/lib/site/public-url";
-import { normalizeSocialLinks } from "@/lib/site/social-links";
-import type { SectionType } from "@/lib/site/blueprint";
 import {
-  buildLandingDesignBrief,
-  getStyleCopyVoice,
-  selectLandingTemplate,
-  type LandingDesignStyle,
-} from "@/lib/site/landing-design-brief";
-import {
-  onboardingSchema,
-  promptToOnboardingInput,
-  resolveBusinessTypeLabel,
-  sitePromptSchema,
-  type OnboardingInput,
-} from "@/lib/validators/site-onboarding";
+  buildGenerationPlan,
+  generateNormalizedSite,
+  generationStatusStages,
+  humanizeGenerationError,
+  parseGenerationInput,
+} from "@/lib/site/generation-pipeline";
+import { persistGeneratedSite } from "@/lib/site/persist-generated-site";
 
-// Prisma + streaming require the Node.js runtime (not Edge).
 export const runtime = "nodejs";
 export const maxDuration = 60;
 export const dynamic = "force-dynamic";
 
 const encoder = new TextEncoder();
 
-/** Serializes a named SSE event with a JSON data payload. */
-function sse(event: string, data: unknown): Uint8Array {
-  return encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
-}
+export async function POST(request: NextRequest) {
+  if (!process.env.DATABASE_URL) return jsonError("Falta DATABASE_URL en el servidor.", 500);
 
-export async function POST(req: NextRequest) {
-  // The database is the only hard requirement. NVIDIA can fail or be
-  // missing and the local generator will still create a complete site.
-  if (!process.env.DATABASE_URL) {
-    return jsonError("Falta DATABASE_URL en el servidor.", 500);
-  }
-  const authUser = await getUserBySessionToken(req.cookies.get(SESSION_COOKIE)?.value);
-  const existingGuestToken = req.cookies.get(GUEST_COOKIE)?.value;
+  const authUser = await getUserBySessionToken(request.cookies.get(SESSION_COOKIE)?.value);
+  const existingGuestToken = request.cookies.get(GUEST_COOKIE)?.value;
   const existingGuestHash = hashGuestToken(existingGuestToken);
-  const guestAccess = authUser ? null : existingGuestToken && existingGuestHash
-    ? { token: existingGuestToken, tokenHash: existingGuestHash, expiresAt: new Date(Date.now() + GUEST_MS) }
-    : createGuestAccess();
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
-    || req.headers.get("x-real-ip")
+  const guestAccess = authUser
+    ? null
+    : existingGuestToken && existingGuestHash
+      ? { token: existingGuestToken, tokenHash: existingGuestHash, expiresAt: new Date(Date.now() + GUEST_MS) }
+      : createGuestAccess();
+
+  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
+    || request.headers.get("x-real-ip")
     || "local";
   const rateId = authUser?.id ?? ip;
   const generationLimit = authUser?.planStatus === "ACTIVE" ? 100 : authUser ? 10 : 3;
@@ -62,193 +47,23 @@ export async function POST(req: NextRequest) {
     return jsonError(`Alcanzaste el límite de ${generationLimit} generaciones por hora.`, 429);
   }
 
-  // Parse + validate onboarding input.
-  let input: OnboardingInput;
-  let originalRequest: string | undefined;
+  let generationRequest: ReturnType<typeof parseGenerationInput>;
   try {
-    const body = await req.json();
-    if (typeof body === "object" && body !== null && "prompt" in body) {
-      const request = sitePromptSchema.parse(body);
-      originalRequest = request.prompt;
-      input = promptToOnboardingInput(request.prompt);
-    } else {
-      input = onboardingSchema.parse(body);
-    }
-  } catch (err) {
-    if (err instanceof ZodError) {
-      const first = err.errors[0];
-      return jsonError(
-        `Solicitud invalida: ${
-          first?.message ?? "revisa los campos."
-        }`,
-        400
-      );
+    generationRequest = parseGenerationInput(await request.json());
+  } catch (error) {
+    if (error instanceof ZodError) {
+      return jsonError(`Solicitud inválida: ${error.errors[0]?.message ?? "revisa los campos."}`, 400);
     }
     return jsonError("No se pudo leer la solicitud.", 400);
   }
 
-  const designRequest = originalRequest ?? buildGuidedDesignRequest(input);
-  const selectedDesignStyle: LandingDesignStyle = selectLandingTemplate(input, designRequest);
-  const designBrief = buildLandingDesignBrief(
-    selectedDesignStyle,
-    designRequest
-  );
-  const designPreset = getDesignPreset(selectedDesignStyle);
-  const sectionPlan = [...designPreset.sectionPlan] as SectionType[];
-  const { system, user } = buildSiteGenerationPrompt(
+  const { input, originalRequest } = generationRequest;
+  const plan = buildGenerationPlan(input, originalRequest);
+  const stream = createGenerationStream({
     input,
-    originalRequest,
-    designBrief,
-    sectionPlan,
-    getStyleCopyVoice(selectedDesignStyle),
-  );
-
-  const stream = new ReadableStream<Uint8Array>({
-    async start(controller) {
-      const send = (event: string, data: unknown) => {
-        controller.enqueue(sse(event, data));
-      };
-
-      const statusStages = [
-        "Analizando negocio...",
-        "Definiendo estructura del sitio...",
-        `Explorando estilo ${selectedDesignStyle}...`,
-        "Generando copy comercial...",
-        "Preparando SEO local...",
-        "Construyendo secciones...",
-      ];
-      let stageIndex = 0;
-      const advanceStage = () => {
-        if (stageIndex < statusStages.length) {
-          send("status", { message: statusStages[stageIndex++] });
-        }
-      };
-
-      try {
-        advanceStage();
-
-        let normalizedSite: ReturnType<typeof normalizeSiteBlueprint>;
-
-        try {
-          const abort = new AbortController();
-          const timeout = setTimeout(() => abort.abort(), 55_000);
-          try {
-          const aiResponse = await openrouterChatStream(
-            [
-              { role: "system", content: system },
-              { role: "user", content: user },
-            ],
-            { temperature: 0.4, signal: abort.signal }
-          );
-
-          advanceStage();
-
-          let full = "";
-          let charsSinceStage = 0;
-          for await (const delta of parseChatStream(aiResponse.body!)) {
-            full += delta;
-            send("token", { content: delta });
-
-            // Advance status messages progressively as real content arrives.
-            charsSinceStage += delta.length;
-            if (charsSinceStage > 400) {
-              charsSinceStage = 0;
-              advanceStage();
-            }
-          }
-
-          if (!full.trim()) {
-            throw new Error("La IA no devolvio contenido.");
-          }
-
-          const rawJson = extractJsonFromModelResponse(full);
-          normalizedSite = normalizeSiteBlueprint(rawJson);
-          if (!auditBlueprintCopy(normalizedSite.blueprint).passed) {
-            normalizedSite = normalizeSiteBlueprint(enforceBlueprintCopyQuality(normalizedSite.blueprint, input));
-          }
-          } finally {
-            clearTimeout(timeout);
-          }
-        } catch (err) {
-          if (!canUseLocalGenerator(err)) throw err;
-          send("status", { message: localGeneratorMessage(err) });
-          const fallbackBlueprint = buildFallbackSiteBlueprint(input, sectionPlan);
-          normalizedSite = normalizeSiteBlueprint(
-            auditBlueprintCopy(fallbackBlueprint).passed
-              ? fallbackBlueprint
-              : enforceBlueprintCopyQuality(fallbackBlueprint, input)
-          );
-        }
-
-        // Flush remaining status stages before persisting.
-        while (stageIndex < statusStages.length) advanceStage();
-        send("status", { message: "Guardando proyecto..." });
-
-        const { blueprint, sections: aiSections } = normalizedSite;
-
-        const sections = applyPageStructure(aiSections, { businessName: input.businessName });
-
-        // Colors come from curated palettes (not the LLM, which often returns
-        // the same colors). Varies by style and business name.
-        const theme = resolvePalette(
-          input.palette,
-          designPreset.paletteId,
-          input.businessName
-        );
-        blueprint.site.visualStyle = {
-          ...(blueprint.site.visualStyle ?? {}),
-          name: selectedDesignStyle,
-          designNotes:
-            designBrief ?? blueprint.site.visualStyle?.designNotes ?? "",
-          colors: { ...theme },
-        };
-        blueprint.site.socialLinks = normalizeSocialLinks(input.socialLinks);
-
-        // Persist Site + SiteSections.
-        await prisma.site.deleteMany({ where: { userId: null, guestExpiresAt: { lt: new Date() } } });
-        const site = await prisma.site.create({
-          data: {
-            userId: authUser?.id ?? null,
-            guestTokenHash: guestAccess?.tokenHash ?? null,
-            guestExpiresAt: guestAccess?.expiresAt ?? null,
-            businessName: input.businessName,
-            businessType: resolveBusinessTypeLabel(input),
-            goal: input.goal,
-            visualStyle: selectedDesignStyle,
-            location: input.location === "Zona por definir" ? null : input.location || null,
-            phone: input.phone || null,
-            email: input.email || null,
-            domain: input.domain || null,
-            publicSlug: createPublicSlug(input.domain || input.businessName),
-            language: input.language,
-            status: "GENERATED",
-            primaryColor: theme.primary,
-            secondaryColor: theme.secondary,
-            accentColor: theme.accent,
-            blueprintJson: blueprint as object,
-            sections: {
-              create: sections.map((section) => ({
-                type: section.type,
-                title: section.title,
-                order: section.order,
-                isVisible: section.isVisible,
-                content: section.content as object,
-                settingsJson: section.settings as object,
-              })),
-            },
-          },
-        });
-
-        send("status", { message: "Preparando vista previa..." });
-        send("saved", { siteId: site.id });
-        send("done", { ok: true });
-        controller.close();
-      } catch (err) {
-        send("error", { message: humanizeError(err) });
-        send("done", { ok: false });
-        controller.close();
-      }
-    },
+    plan,
+    userId: authUser?.id ?? null,
+    guestAccess,
   });
 
   const response = new NextResponse(stream, {
@@ -263,66 +78,54 @@ export async function POST(req: NextRequest) {
   return response;
 }
 
+function createGenerationStream({ input, plan, userId, guestAccess }: {
+  input: ReturnType<typeof parseGenerationInput>["input"];
+  plan: ReturnType<typeof buildGenerationPlan>;
+  userId: string | null;
+  guestAccess: ReturnType<typeof createGuestAccess> | null;
+}) {
+  return new ReadableStream<Uint8Array>({
+    async start(controller) {
+      const send = (event: string, data: unknown) => controller.enqueue(sse(event, data));
+      const stages = generationStatusStages(plan.selectedDesignStyle);
+      let stageIndex = 0;
+      const advanceStage = () => {
+        if (stageIndex < stages.length) send("status", { message: stages[stageIndex++] });
+      };
+
+      try {
+        advanceStage();
+        const normalizedSite = await generateNormalizedSite({
+          input,
+          plan,
+          onToken: (content) => send("token", { content }),
+          onProgress: advanceStage,
+          onFallback: (message) => send("status", { message }),
+        });
+
+        while (stageIndex < stages.length) advanceStage();
+        send("status", { message: "Guardando proyecto..." });
+        const site = await persistGeneratedSite({ input, normalizedSite, plan, userId, guestAccess });
+        send("status", { message: "Preparando vista previa..." });
+        send("saved", { siteId: site.id });
+        send("done", { ok: true });
+      } catch (error) {
+        send("error", { message: humanizeGenerationError(error) });
+        send("done", { ok: false });
+      } finally {
+        controller.close();
+      }
+    },
+  });
+}
+
+function sse(event: string, data: unknown): Uint8Array {
+  return encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
+}
+
 function jsonError(message: string, status: number) {
   return new Response(JSON.stringify({ error: message }), {
     status,
     headers: { "Content-Type": "application/json" },
   });
-}
-
-function buildGuidedDesignRequest(input: OnboardingInput): string {
-  return [
-    `Sitio web para ${input.businessName}`,
-    `negocio de ${resolveBusinessTypeLabel(input)}`,
-    `ubicado en ${input.location}`,
-    `dirigido a ${input.targetCustomer}`,
-    `con estos servicios: ${input.services}`,
-  ].join(", ");
-}
-
-function canUseLocalGenerator(err: unknown): boolean {
-  if (err instanceof OpenRouterError) return true;
-  if (err instanceof ZodError) return true;
-  if (err instanceof Error) {
-    const message = err.message.toLowerCase();
-    return (
-      message.includes("ia") ||
-      message.includes("json") ||
-      message.includes("pagina") ||
-      message.includes("página") ||
-      message.includes("seccion") ||
-      message.includes("blueprint") ||
-      message.includes("abort")
-    );
-  }
-  return false;
-}
-
-function localGeneratorMessage(err: unknown): string {
-  if (err instanceof OpenRouterError && err.status === 429) {
-    return "Los modelos de IA están ocupados; generando el sitio con el motor local...";
-  }
-  if (err instanceof OpenRouterError) {
-    return "La IA no respondió; generando el sitio con el motor local...";
-  }
-  return "La respuesta de IA no fue usable; generando el sitio con el motor local...";
-}
-
-/** Converts internal errors into user-friendly Spanish messages (no stack traces). */
-function humanizeError(err: unknown): string {
-  if (err instanceof OpenRouterError) return err.message;
-  if (err instanceof ZodError) {
-    return "La estructura generada por la IA no es valida. Intenta nuevamente.";
-  }
-  if (err instanceof Error) {
-    if (err.message.includes("JSON")) return err.message;
-    if (
-      err.message.toLowerCase().includes("connect") ||
-      err.message.toLowerCase().includes("database")
-    ) {
-      return "No se pudo guardar el sitio en la base de datos. Verifica la conexion.";
-    }
-    return err.message;
-  }
-  return "Ocurrio un error inesperado al generar el sitio.";
 }

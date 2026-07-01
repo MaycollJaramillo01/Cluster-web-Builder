@@ -8,20 +8,15 @@ import {
   Briefcase,
   CircleCheck,
   CheckSquare,
-  ChevronDown,
-  ChevronUp,
   ExternalLink,
   Download,
   Inbox,
-  Eye,
-  EyeOff,
   GitBranch,
   Globe,
   HelpCircle,
   Image,
   Layout,
   Layers3,
-  Link2,
   Loader2,
   Mail,
   MapPin,
@@ -37,10 +32,9 @@ import {
 } from "lucide-react";
 
 import { SitePreview } from "@/components/builder/SitePreview";
+import { EditorContentPanel, type EditorSectionMeta } from "@/components/builder/EditorContentPanel";
+import { EditorDesignPanel } from "@/components/builder/EditorDesignPanel";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import type { SiteTheme } from "@/lib/site/blueprint";
 import type { RenderSection } from "@/lib/site/section";
 import type { SocialLinks } from "@/lib/site/social-links";
@@ -80,24 +74,7 @@ type SavePayload = {
 /* Section field configuration                                          */
 /* ------------------------------------------------------------------ */
 
-type EditableKey = "title" | "subtitle" | "body" | "ctaText" | "ctaLink";
-
-type FieldDef = {
-  key: EditableKey;
-  label: string;
-  type: "input" | "textarea";
-  placeholder?: string;
-  hint?: string;
-  rows?: number;
-};
-
-type SectionMeta = {
-  icon: React.ElementType;
-  label: string;
-  fields: FieldDef[];
-};
-
-const SECTION_META: Record<string, SectionMeta> = {
+const SECTION_META: Record<string, EditorSectionMeta> = {
   hero: {
     icon: Sparkles,
     label: "Hero",
@@ -462,7 +439,7 @@ const SECTION_META: Record<string, SectionMeta> = {
   },
 };
 
-const DEFAULT_SECTION_META: SectionMeta = {
+const DEFAULT_SECTION_META: EditorSectionMeta = {
   icon: Layers3,
   label: "Sección",
   fields: [
@@ -518,11 +495,6 @@ export function SiteEditorPanel({
   );
 
   const visibleSections = [...sections].sort((a, b) => a.order - b.order);
-
-  const movableSections = visibleSections.filter((s) => s.type !== "footer");
-
-  const fieldClass =
-    "border-border bg-[#120c1d] text-foreground placeholder:text-muted-foreground focus:border-[#8b5cf6] focus:ring-0 transition-colors";
 
   const updateSection = (id: string, patch: Partial<RenderSection>) => {
     setDirty(true);
@@ -880,222 +852,33 @@ export function SiteEditorPanel({
           {/* Panel body */}
           <div className="p-4 lg:max-h-[calc(100dvh-121px)] lg:overflow-y-auto">
             {panel === "content" ? (
-              <>
-                {/* Section count header */}
-                <div className="mb-3 flex items-center justify-between">
-                  <h2 className="text-xs font-bold uppercase tracking-[0.14em] text-[#a078ff]">
-                    Secciones
-                  </h2>
-                  <span className="text-xs text-muted-foreground">
-                    {visibleSections.filter((s) => s.isVisible).length} de{" "}
-                    {visibleSections.length} visibles
-                  </span>
-                </div>
-
-                {/* Section list */}
-                <div className="space-y-2">
-                  {visibleSections.map((section) => {
-                    const open = openId === section.id;
-                    const meta =
-                      SECTION_META[section.type] ?? DEFAULT_SECTION_META;
-                    const SectionIcon = meta.icon;
-                    const movableIndex = movableSections.findIndex(
-                      (s) => s.id === section.id
-                    );
-                    const isFooter = section.type === "footer";
-
-                    return (
-                      <div
-                        key={section.id}
-                        className={cn(
-                          "overflow-hidden rounded-lg border transition-colors",
-                          open
-                            ? "border-[#8b5cf6] bg-[#1d1a23]"
-                            : "border-border bg-[#1d1a23] hover:border-[#8b5cf6]/40"
-                        )}
-                      >
-                        {/* Section header row */}
-                        <div className="flex min-h-[3.25rem] items-center gap-1 px-2">
-                          <button
-                            type="button"
-                            aria-expanded={open}
-                            onClick={() =>
-                              setOpenId(open ? null : section.id)
-                            }
-                            className="flex min-h-11 min-w-0 flex-1 items-center gap-3 px-2 text-left"
-                          >
-                            {/* Icon */}
-                            <span
-                              className={cn(
-                                "flex h-7 w-7 shrink-0 items-center justify-center rounded-md transition-colors",
-                                open
-                                  ? "bg-[#2c2141] text-[#c4b5fd]"
-                                  : "bg-[#2c2832] text-[#7a6d87]"
-                              )}
-                            >
-                              <SectionIcon className="h-3.5 w-3.5" />
-                            </span>
-                            {/* Label */}
-                            <span
-                              className={cn(
-                                "min-w-0 truncate text-sm font-medium",
-                                !section.isVisible
-                                  ? "text-muted-foreground line-through"
-                                  : open
-                                  ? "text-[#e9ddff]"
-                                  : "text-foreground"
-                              )}
-                            >
-                              {meta.label}
-                            </span>
-                            {/* Hidden badge */}
-                            {!section.isVisible && (
-                              <span className="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#6b6079]">
-                                Oculta
-                              </span>
-                            )}
-                          </button>
-
-                          {/* Move buttons */}
-                          {!isFooter && (
-                            <>
-                              <IconBtn
-                                title="Mover arriba"
-                                disabled={movableIndex === 0}
-                                onClick={() => move(section.id, -1)}
-                              >
-                                <ChevronUp className="h-4 w-4" />
-                              </IconBtn>
-                              <IconBtn
-                                title="Mover abajo"
-                                disabled={
-                                  movableIndex === movableSections.length - 1
-                                }
-                                onClick={() => move(section.id, 1)}
-                              >
-                                <ChevronDown className="h-4 w-4" />
-                              </IconBtn>
-                            </>
-                          )}
-
-                          {/* Visibility toggle */}
-                          <IconBtn
-                            title={
-                              section.isVisible
-                                ? "Ocultar sección"
-                                : "Mostrar sección"
-                            }
-                            onClick={() =>
-                              updateSection(section.id, {
-                                isVisible: !section.isVisible,
-                              })
-                            }
-                          >
-                            {section.isVisible ? (
-                              <Eye className="h-4 w-4" />
-                            ) : (
-                              <EyeOff className="h-4 w-4" />
-                            )}
-                          </IconBtn>
-                        </div>
-
-                        {/* Expanded field form */}
-                        {open && (
-                          <div className="space-y-5 border-t border-[#2c2832] bg-[#120c1d] px-4 py-5">
-                            {meta.fields.map((field) => (
-                              <SectionField
-                                key={field.key}
-                                id={`section-${section.id}-${field.key}`}
-                                field={field}
-                                value={
-                                  (section[field.key] as string | undefined) ??
-                                  ""
-                                }
-                                onChange={(value) =>
-                                  updateSection(section.id, {
-                                    [field.key]: value,
-                                  })
-                                }
-                                fieldClass={fieldClass}
-                              />
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </>
+              <EditorContentPanel
+                sections={visibleSections}
+                openId={openId}
+                sectionMeta={SECTION_META}
+                defaultSectionMeta={DEFAULT_SECTION_META}
+                onOpenChange={setOpenId}
+                onMove={move}
+                onUpdate={updateSection}
+              />
             ) : (
-              /* ── Design tab ── */
-              <div className="space-y-8">
-                <SettingsGroup title="Negocio">
-                  <Field label="Nombre del negocio">
-                    <Input
-                      value={businessName}
-                      className={fieldClass}
-                      onChange={(e) => change(setBusinessName)(e.target.value)}
-                    />
-                  </Field>
-                  <Field label="Teléfono">
-                    <Input
-                      value={phone}
-                      className={fieldClass}
-                      placeholder="+52 55 1234 5678"
-                      onChange={(e) => change(setPhone)(e.target.value)}
-                    />
-                  </Field>
-                  <Field label="Email">
-                    <Input
-                      value={email}
-                      className={fieldClass}
-                      placeholder="hola@negocio.com"
-                      onChange={(e) => change(setEmail)(e.target.value)}
-                    />
-                  </Field>
-                  <Field label="Ubicación">
-                    <Input
-                      value={location}
-                      className={fieldClass}
-                      placeholder="Ciudad, País"
-                      onChange={(e) => change(setLocation)(e.target.value)}
-                    />
-                  </Field>
-                </SettingsGroup>
-
-                <SettingsGroup title="Paleta de colores">
-                  <p className="mb-4 text-xs text-muted-foreground">
-                    Los colores se aplican automáticamente a todo el sitio.
-                  </p>
-                  <ColorField
-                    label="Color primario"
-                    hint="Textos de acento y headings"
-                    value={primary}
-                    onChange={change(setPrimary)}
-                  />
-                  <ColorField
-                    label="Color secundario"
-                    hint="Fondos oscuros y nav"
-                    value={secondary}
-                    onChange={change(setSecondary)}
-                  />
-                  <ColorField
-                    label="Color de acento"
-                    hint="Botones y elementos destacados"
-                    value={accent}
-                    onChange={change(setAccent)}
-                  />
-                </SettingsGroup>
-
-                <SettingsGroup title="Plantilla">
-                  <p className="mb-4 text-xs leading-5 text-muted-foreground">
-                    Cambia la composición sin perder tus textos ni colores.
-                  </p>
-                  <Button asChild variant="outline" className="w-full">
-                    <Link href={`/builder/${initialSite.id}/templates`}><Layout /> Cambiar plantilla</Link>
-                  </Button>
-                </SettingsGroup>
-              </div>
+              <EditorDesignPanel
+                siteId={initialSite.id}
+                businessName={businessName}
+                phone={phone}
+                email={email}
+                location={location}
+                primary={primary}
+                secondary={secondary}
+                accent={accent}
+                onBusinessNameChange={change(setBusinessName)}
+                onPhoneChange={change(setPhone)}
+                onEmailChange={change(setEmail)}
+                onLocationChange={change(setLocation)}
+                onPrimaryChange={change(setPrimary)}
+                onSecondaryChange={change(setSecondary)}
+                onAccentChange={change(setAccent)}
+              />
             )}
           </div>
         </aside>
@@ -1151,56 +934,6 @@ export function SiteEditorPanel({
 /* Sub-components                                                        */
 /* ------------------------------------------------------------------ */
 
-function SectionField({
-  id,
-  field,
-  value,
-  onChange,
-  fieldClass,
-}: {
-  id: string;
-  field: FieldDef;
-  value: string;
-  onChange: (value: string) => void;
-  fieldClass: string;
-}) {
-  return (
-    <div className="space-y-1.5">
-      <div>
-        <label htmlFor={id} className="block text-xs font-medium text-[#cbc3d7]">
-          {field.label}
-        </label>
-        {field.hint && (
-          <p className="mt-0.5 flex items-center gap-1 text-[11px] text-[#5e546b]">
-            {field.key === "ctaLink" && (
-              <Link2 className="h-3 w-3 shrink-0" />
-            )}
-            {field.hint}
-          </p>
-        )}
-      </div>
-      {field.type === "textarea" ? (
-        <Textarea
-          id={id}
-          value={value}
-          rows={field.rows ?? 3}
-          placeholder={field.placeholder}
-          className={fieldClass}
-          onChange={(e) => onChange(e.target.value)}
-        />
-      ) : (
-        <Input
-          id={id}
-          value={value}
-          placeholder={field.placeholder}
-          className={fieldClass}
-          onChange={(e) => onChange(e.target.value)}
-        />
-      )}
-    </div>
-  );
-}
-
 function PanelTab({
   active,
   onClick,
@@ -1222,99 +955,6 @@ function PanelTab({
           ? "bg-[#2c2141] text-[#e9ddff]"
           : "text-muted-foreground hover:text-foreground"
       )}
-    >
-      {children}
-    </button>
-  );
-}
-
-function SettingsGroup({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <section>
-      <h2 className="mb-4 text-xs font-bold uppercase tracking-[0.14em] text-[#a078ff]">
-        {title}
-      </h2>
-      <div className="space-y-4">{children}</div>
-    </section>
-  );
-}
-
-function Field({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <Label className="block space-y-1.5 text-xs text-muted-foreground">
-      <span>{label}</span>
-      {children}
-    </Label>
-  );
-}
-
-function ColorField({
-  label,
-  hint,
-  value,
-  onChange,
-}: {
-  label: string;
-  hint?: string;
-  value: string;
-  onChange: (value: string) => void;
-}) {
-  return (
-    <div className="space-y-1.5">
-      <div>
-        <Label className="text-xs text-muted-foreground">{label}</Label>
-        {hint && <p className="mt-0.5 text-[11px] text-[#5e546b]">{hint}</p>}
-      </div>
-      <div className="flex items-center gap-2">
-        <input
-          type="color"
-          aria-label={`${label} — selector visual`}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          className="h-11 w-11 cursor-pointer rounded border border-border bg-[#1d1a23] p-1"
-        />
-        <Input
-          value={value}
-          aria-label={`${label} — valor hexadecimal`}
-          onChange={(e) => onChange(e.target.value)}
-          className="h-11 font-mono text-xs"
-        />
-      </div>
-    </div>
-  );
-}
-
-function IconBtn({
-  children,
-  onClick,
-  disabled,
-  title,
-}: {
-  children: React.ReactNode;
-  onClick: () => void;
-  disabled?: boolean;
-  title: string;
-}) {
-  return (
-    <button
-      type="button"
-      title={title}
-      aria-label={title}
-      onClick={onClick}
-      disabled={disabled}
-      className="flex h-11 w-11 shrink-0 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-[#2c2832] hover:text-foreground disabled:pointer-events-none disabled:opacity-25"
     >
       {children}
     </button>
