@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Check, Eye, Loader2, Shuffle, Sparkles } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import type { TemplateCandidate } from "@/lib/site/template-selection";
+import { getAllTemplateCandidates, type TemplateCandidate } from "@/lib/site/template-selection";
 import { cn } from "@/lib/utils";
 
 export function TemplatePicker({ siteId, candidates, initialStyle }: { siteId: string; candidates: TemplateCandidate[]; initialStyle: string | null }) {
@@ -33,7 +33,8 @@ export function TemplatePicker({ siteId, candidates, initialStyle }: { siteId: s
   }
 
   function surprise() {
-    const alternatives = candidates.filter((item) => item.style !== selected);
+    // Sorprende de verdad: sortea entre todas las composiciones del catálogo, no solo las 6 propuestas.
+    const alternatives = getAllTemplateCandidates().filter((item) => item.style !== selected);
     const style = alternatives[Math.floor(Math.random() * alternatives.length)]?.style ?? candidates[0].style;
     setSelected(style);
     void choose(style);

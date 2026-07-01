@@ -1,4 +1,5 @@
-import { DESIGN_STYLE_IDS, getDesignPreset, type DesignStyleId, type TemplateFamily } from "@/lib/site/design";
+import { DESIGN_STYLE_IDS, getDesignPreset, resolveDesignStyleId, type DesignStyleId, type TemplateFamily } from "@/lib/site/design";
+import { getFamilyAffinity } from "@/lib/site/template-intent";
 
 export type TemplateCandidate = {
   style: DesignStyleId;
@@ -34,6 +35,26 @@ const TEMPLATES: TemplateCandidate[] = [
   template("BigType", "Tipografía gigante", "Titulares de escala extrema y fotografía monocromática."),
   template("SplitStats", "Datos divididos", "Estadísticas, servicios e imágenes en una retícula dinámica."),
   template("Badges", "Confianza cercana", "Pruebas, beneficios y ubicación para negocios comunitarios."),
+  template("Folio", "Folio impreso", "Galería primero, serif clásica y lectura de portafolio editorial."),
+  template("Journal", "Diario personal", "Narrativa cálida, fotografía en arco y ritmo de publicación íntima."),
+  template("Atelier", "Taller de autor", "Servicios como piezas de exposición y retícula de estudio creativo."),
+  template("Noir", "Nocturno", "Fondo oscuro, dorados sutiles y una atmósfera de lujo contenida."),
+  template("Velocity", "Velocidad", "Diagonales enérgicas, datos duros y un recorrido directo a la acción."),
+  template("Pulse", "Pulso", "Ritmo deportivo, bloques contundentes y contraste de alta energía."),
+  template("Horizon", "Horizonte", "Apertura panorámica serena, naturaleza y recorrido pausado."),
+  template("Market", "Mercado", "Oferta gastronómica en retícula con ubicación y contacto a mano."),
+  template("Showcase", "Vitrina moderna", "Producto al frente, módulos bento y acabado de startup."),
+  template("Boutique", "Boutique", "Colección en galería, elegancia de moda y detalle artesanal."),
+  template("Stack", "Módulos apilados", "Bloques técnicos ordenados para explicar una oferta compleja."),
+  template("Corner", "Esquina del barrio", "Calidez de cafetería, historia cercana y visita fácil."),
+  template("Neighbor", "Vecinal", "Beneficios claros, comunidad y confianza de puerta a puerta."),
+  template("Homestead", "Campo y oficio", "Verdes naturales, trabajo artesanal y presencia de campo."),
+  template("Storefront", "Fachada comercial", "Oficio directo, ubicación visible y presupuesto sin vueltas."),
+  template("Ledger", "Libro mayor", "Sobriedad financiera, jerarquía estricta y cero decoración."),
+  template("Blank", "Lienzo blanco", "Lo mínimo indispensable: una idea, una acción, nada más."),
+  template("Serif", "Serif esencial", "Elegancia tipográfica silenciosa para marcas personales."),
+  template("Mono", "Monoespaciado", "Precisión técnica, retícula estricta y detalle de terminal."),
+  template("Blueprint", "Plano de obra", "Proceso constructivo por etapas con evidencia y presupuesto."),
 ];
 
 function template(style: DesignStyleId, label: string, description: string): TemplateCandidate {
@@ -48,19 +69,44 @@ export function getAllTemplateCandidates(): TemplateCandidate[] {
   return [...TEMPLATES];
 }
 
-/** Six contrasting options: the selected design plus one from every other family. */
-export function getTemplateCandidates(currentStyle: string | null | undefined): TemplateCandidate[] {
-  const current = currentStyle && isDesignStyle(currentStyle) ? currentStyle : null;
-  if (!current) return TEMPLATES.slice(0, 6);
+export type TemplateContext = {
+  /** Entropía por proyecto: dos sitios con el mismo estilo ven representantes distintos. */
+  siteId?: string | null;
+  /** Enum del onboarding ("restaurant") o etiqueta guardada en la base ("Restaurante"). */
+  businessType?: string | null;
+};
 
-  const selected = TEMPLATES.find((item) => item.style === current)!;
-  const candidates = [selected];
-  const seed = DESIGN_STYLE_IDS.indexOf(current);
-  const families: TemplateFamily[] = ["service", "editorial", "immersive", "catalog", "local", "minimal"];
-  for (const family of families) {
-    if (family === selected.family) continue;
+const ALL_FAMILIES: TemplateFamily[] = ["service", "editorial", "immersive", "catalog", "local", "minimal"];
+
+/**
+ * Six contrasting options: the selected design first, then one representative per family.
+ * Industry-affine families lead the list (they fill the first visible row) and each
+ * representative is seeded per site, so proposals vary between projects.
+ */
+export function getTemplateCandidates(currentStyle: string | null | undefined, context: TemplateContext = {}): TemplateCandidate[] {
+  const current = resolveDesignStyleId(currentStyle);
+  const selected = current ? TEMPLATES.find((item) => item.style === current) ?? null : null;
+  const affinity = getFamilyAffinity(context.businessType);
+  const seedBase = context.siteId?.trim() || current || affinity.join("-");
+
+  const orderedFamilies = [...affinity, ...ALL_FAMILIES.filter((family) => !affinity.includes(family))]
+    .filter((family) => family !== selected?.family);
+
+  const candidates: TemplateCandidate[] = selected ? [selected] : [];
+  for (const family of orderedFamilies) {
     const familyTemplates = TEMPLATES.filter((item) => item.family === family);
-    candidates.push(familyTemplates[seed % familyTemplates.length]);
+    candidates.push(familyTemplates[stableHash(`${seedBase}:${family}`) % familyTemplates.length]);
   }
-  return candidates;
+  return candidates.slice(0, 6);
+}
+
+// FNV-1a con mezcla final: distribuye bien incluso módulo 3 o 4 con ids muy parecidos.
+function stableHash(seed: string): number {
+  let hash = 2166136261;
+  for (let index = 0; index < seed.length; index++) {
+    hash ^= seed.charCodeAt(index);
+    hash = Math.imul(hash, 16777619) >>> 0;
+  }
+  hash ^= hash >>> 15;
+  return hash >>> 0;
 }

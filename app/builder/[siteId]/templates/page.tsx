@@ -27,11 +27,11 @@ export default async function TemplatesPage({ params }: { params: Promise<{ site
         ...(guestTokenHash ? [{ userId: null, guestTokenHash, guestExpiresAt: { gt: new Date() } }] : []),
       ],
     },
-    select: { id: true, businessName: true, visualStyle: true },
+    select: { id: true, businessName: true, businessType: true, visualStyle: true },
   });
   if (!site) notFound();
 
-  const candidates = getTemplateCandidates(site.visualStyle);
+  const candidates = getTemplateCandidates(site.visualStyle, { siteId: site.id, businessType: site.businessType });
   return (
     <main className="min-h-dvh bg-background text-foreground">
       <header className="border-b border-border bg-[#0f0d15]">
