@@ -32,6 +32,7 @@ import { compressImageFile } from "@/lib/client-image";
 type CreationMode = "guided" | "advanced";
 type FieldErrors = Record<string, string>;
 type ServiceRow = { id: number; name: string; price: string; description: string };
+type ScheduleRow = { id: number; days: string; opensAt: string; closesAt: string };
 type MediaMode = "ai" | "upload";
 
 const BUSINESS_TYPES = [
@@ -75,6 +76,17 @@ const PALETTES = [
   { id: "coral", label: "Coral", style: "creative", colors: ["#e11d48", "#9f1239", "#fb7185", "#fff1f2", "#4c0519"] },
   { id: "night", label: "Noche", style: "bold", colors: ["#38bdf8", "#0f172a", "#a3e635", "#020617", "#f8fafc"] },
 ] as const;
+
+const CURRENCIES = [
+  { code: "USD", symbol: "$" },
+  { code: "NIO", symbol: "C$" },
+  { code: "EUR", symbol: "€" },
+  { code: "MXN", symbol: "MX$" },
+  { code: "COP", symbol: "COP$" },
+  { code: "GTQ", symbol: "Q" },
+] as const;
+
+const SCHEDULE_PRESETS = ["Lun–Vie", "Lun–Sáb", "Todos los días", "Fin de semana"];
 
 export function HomeCreationModes() {
   const [mode, setMode] = useState<CreationMode>("guided");
@@ -209,6 +221,11 @@ function GuidedHomeForm() {
   const [coverDataUrl, setCoverDataUrl] = useState<string | null>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
+  const [scheduleRows, setScheduleRows] = useState<ScheduleRow[]>([
+    { id: 1, days: "", opensAt: "", closesAt: "" },
+  ]);
+  const nextScheduleId = useRef(2);
+  const [currency, setCurrency] = useState<string>("USD");
   const [errors, setErrors] = useState<FieldErrors>({});
   const [submitting, setSubmitting] = useState(false);
 
@@ -233,6 +250,19 @@ function GuidedHomeForm() {
 
   const removeService = (id: number) => {
     setServices((current) => current.filter((service) => service.id !== id));
+  };
+
+  const addScheduleRow = () => {
+    if (scheduleRows.length >= 3) return;
+    setScheduleRows((r) => [...r, { id: nextScheduleId.current++, days: "", opensAt: "", closesAt: "" }]);
+  };
+
+  const removeScheduleRow = (id: number) => {
+    setScheduleRows((r) => r.filter((row) => row.id !== id));
+  };
+
+  const updateScheduleRow = (id: number, field: keyof Omit<ScheduleRow, "id">, value: string) => {
+    setScheduleRows((r) => r.map((row) => (row.id === id ? { ...row, [field]: value } : row)));
   };
 
   const clearError = (field: string) => {
@@ -311,18 +341,21 @@ function GuidedHomeForm() {
 
     const palette = PALETTES.find((item) => item.id === paletteId) ?? PALETTES[0];
     const street = read(form, "street");
-    const opensAt = read(form, "opensAt");
-    const closesAt = read(form, "closesAt");
-    const hours = opensAt && closesAt
-      ? `${read(form, "hoursDays") || "Lun–Vie"} ${opensAt}–${closesAt}`
-      : "";
+    const hours = scheduleRows
+      .filter((r) => r.days.trim() && r.opensAt && r.closesAt)
+      .map((r) => `${r.days.trim()} ${r.opensAt}–${r.closesAt}`)
+      .join("; ");
     const instagram = read(form, "instagram");
     const facebook = read(form, "facebook");
     const targetCustomer = read(form, "targetCustomer") || `Clientes potenciales en ${city}`;
+    const currencySym = CURRENCIES.find((c) => c.code === currency)?.symbol ?? "";
     const serviceFacts = services
       .filter((service) => service.name.trim())
       .map((service) => {
-        const details = [service.description.trim(), service.price.trim() && `Precio: ${service.price.trim()}`].filter(Boolean).join(". ");
+        const price = service.price.trim();
+        const formattedPrice =
+          price && !/^[$€£¥Q]|^C\$|^COP\$|^MX\$/.test(price) ? `${currencySym}${price}` : price;
+        const details = [service.description.trim(), formattedPrice && `Precio: ${formattedPrice}`].filter(Boolean).join(". ");
         return `${service.name.trim()}: ${details || "Consultar detalles"}`;
       })
       .join("\n")
@@ -456,24 +489,78 @@ function GuidedHomeForm() {
                 Horario de atención
                 <span className="ml-auto text-xs font-normal text-[#958ea0]">Opcional</span>
               </legend>
-              <div className="mt-2 grid gap-3 rounded-lg border border-[#3d3549] bg-[#15121b] p-4 sm:grid-cols-[1.35fr_1fr_1fr]">
-                <label className="space-y-1.5">
-                  <span className="block text-xs font-medium text-[#aaa1b5]">Días</span>
-                  <select id={`${formId}-hours-days`} name="hoursDays" defaultValue="Lun–Vie" className={fieldClass(false)}>
-                    <option>Lun–Vie</option>
-                    <option>Lun–Sáb</option>
-                    <option>Todos los días</option>
-                    <option>Fin de semana</option>
-                  </select>
-                </label>
-                <label className="space-y-1.5">
-                  <span className="block text-xs font-medium text-[#aaa1b5]">Abre</span>
-                  <input id={`${formId}-opens-at`} name="opensAt" type="time" className={fieldClass(false)} />
-                </label>
-                <label className="space-y-1.5">
-                  <span className="block text-xs font-medium text-[#aaa1b5]">Cierra</span>
-                  <input id={`${formId}-closes-at`} name="closesAt" type="time" className={fieldClass(false)} />
-                </label>
+              <div className="mt-2 space-y-2">
+                {scheduleRows.map((row, index) => (
+                  <div key={row.id} className="rounded-lg border border-[#3d3549] bg-[#15121b] p-4">
+                    <div className="grid gap-3 sm:grid-cols-[1.4fr_1fr_1fr]">
+                      <div className="space-y-1.5">
+                        <span className="block text-xs font-medium text-[#aaa1b5]">Días</span>
+                        <input
+                          value={row.days}
+                          onChange={(e) => updateScheduleRow(row.id, "days", e.target.value)}
+                          className={fieldClass(false)}
+                          placeholder="Ej. Lun–Vie"
+                          maxLength={60}
+                        />
+                        <div className="flex flex-wrap gap-1 pt-0.5">
+                          {SCHEDULE_PRESETS.map((preset) => (
+                            <button
+                              key={preset}
+                              type="button"
+                              onClick={() => updateScheduleRow(row.id, "days", preset)}
+                              className={`rounded-full border px-2.5 py-0.5 text-[11px] transition-colors ${
+                                row.days === preset
+                                  ? "border-[#8b5cf6] bg-[#2c2141] text-[#c4b5fd]"
+                                  : "border-[#3d3549] bg-[#1d1a23] text-[#958ea0] hover:border-[#6f647d] hover:text-[#cbc3d7]"
+                              }`}
+                            >
+                              {preset}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <label className="space-y-1.5">
+                        <span className="block text-xs font-medium text-[#aaa1b5]">Abre</span>
+                        <input
+                          type="time"
+                          value={row.opensAt}
+                          onChange={(e) => updateScheduleRow(row.id, "opensAt", e.target.value)}
+                          className={fieldClass(false)}
+                        />
+                      </label>
+                      <div className="space-y-1.5">
+                        <span className="block text-xs font-medium text-[#aaa1b5]">Cierra</span>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="time"
+                            value={row.closesAt}
+                            onChange={(e) => updateScheduleRow(row.id, "closesAt", e.target.value)}
+                            className={`${fieldClass(false)} flex-1`}
+                          />
+                          {index > 0 && (
+                            <button
+                              type="button"
+                              onClick={() => removeScheduleRow(row.id)}
+                              aria-label="Eliminar este horario"
+                              className="flex h-12 w-11 shrink-0 items-center justify-center rounded-md border border-[#3d3549] text-[#958ea0] hover:border-red-900 hover:bg-red-950/60 hover:text-[#ffb4ab]"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                {scheduleRows.length < 3 && (
+                  <button
+                    type="button"
+                    onClick={addScheduleRow}
+                    className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-[#3d3549] py-2.5 text-xs text-[#958ea0] transition-colors hover:border-[#5b5068] hover:text-[#cbc3d7]"
+                  >
+                    <Plus className="h-3.5 w-3.5" /> Agregar otro tramo horario
+                  </button>
+                )}
               </div>
               <p className="mt-2 text-xs leading-5 text-[#958ea0]">Déjalo vacío si no quieres mostrar un horario.</p>
             </fieldset>
@@ -500,7 +587,26 @@ function GuidedHomeForm() {
         </fieldset>
 
         <fieldset className="rounded-lg border border-[#3d3549] bg-[#1d1a23] p-5 sm:p-6">
-          <legend className="flex items-center gap-2 px-2 text-base font-bold"><PackagePlus className="h-5 w-5 text-[#a078ff]" /> Productos o servicios</legend>
+          <legend className="flex w-full items-center gap-2 px-2 text-base font-bold">
+            <PackagePlus className="h-5 w-5 text-[#a078ff]" /> Productos o servicios
+            <div className="ml-auto flex items-center gap-1" role="group" aria-label="Moneda">
+              {CURRENCIES.map((c) => (
+                <button
+                  key={c.code}
+                  type="button"
+                  onClick={() => setCurrency(c.code)}
+                  aria-pressed={currency === c.code}
+                  className={`rounded-md border px-2 py-0.5 text-xs font-semibold transition-colors ${
+                    currency === c.code
+                      ? "border-[#8b5cf6] bg-[#2c2141] text-[#c4b5fd]"
+                      : "border-[#3d3549] bg-[#15121b] text-[#958ea0] hover:border-[#6f647d] hover:text-[#cbc3d7]"
+                  }`}
+                >
+                  {c.symbol} {c.code}
+                </button>
+              ))}
+            </div>
+          </legend>
           <p className="mb-5 text-sm text-[#aaa1b5]">Agrega al menos uno. Puedes incluir hasta cinco.</p>
           <div className="space-y-4">
             {services.map((service, index) => (
@@ -518,7 +624,15 @@ function GuidedHomeForm() {
                     <input name={`service-${service.id}-name`} value={service.name} maxLength={100} onChange={(event) => updateService(service.id, "name", event.target.value)} aria-invalid={Boolean(errors[`service-${service.id}-name`])} className={fieldClass(Boolean(errors[`service-${service.id}-name`]))} placeholder="Ej. Corte de cabello" />
                   </Field>
                   <Field label="Precio" required={index === 0} error={errors[`service-${service.id}-price`]}>
-                    <input name={`service-${service.id}-price`} value={service.price} maxLength={80} onChange={(event) => updateService(service.id, "price", event.target.value)} aria-invalid={Boolean(errors[`service-${service.id}-price`])} className={fieldClass(Boolean(errors[`service-${service.id}-price`]))} placeholder="$25 o Cotización" />
+                    <input
+                      name={`service-${service.id}-price`}
+                      value={service.price}
+                      maxLength={80}
+                      onChange={(event) => updateService(service.id, "price", event.target.value)}
+                      aria-invalid={Boolean(errors[`service-${service.id}-price`])}
+                      className={fieldClass(Boolean(errors[`service-${service.id}-price`]))}
+                      placeholder={`${CURRENCIES.find((c) => c.code === currency)?.symbol ?? "$"}25 o Cotización`}
+                    />
                   </Field>
                   <Field label="Descripción breve" hint="Opcional" className="sm:col-span-2">
                     <input name={`service-${service.id}-description`} value={service.description} maxLength={220} onChange={(event) => updateService(service.id, "description", event.target.value)} className={fieldClass(false)} placeholder="Qué incluye o por qué deberían elegirlo" />

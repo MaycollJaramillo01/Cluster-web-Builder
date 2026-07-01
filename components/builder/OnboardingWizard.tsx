@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useRef, useState, type ChangeEvent } from "react";
+import { useId, useRef, useState, type ChangeEvent, type DragEvent } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, ArrowUp, ImageIcon, Loader2, Sparkles, Upload } from "lucide-react";
 
@@ -32,6 +32,8 @@ export function PromptComposer({ variant = "chat" }: PromptComposerProps) {
   const [submitting, setSubmitting] = useState(false);
   const [logoDataUrl, setLogoDataUrl] = useState<string | null>(null);
   const [logoError, setLogoError] = useState<string | null>(null);
+  const [generatingLogo, setGeneratingLogo] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
 
   const choosePreset = (value: string) => {
     setPrompt(value);
@@ -50,12 +52,9 @@ export function PromptComposer({ variant = "chat" }: PromptComposerProps) {
     setError(null);
   };
 
-  const handleLogoFile = async (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+  const processFile = async (file: File) => {
     if (file.size > 8 * 1024 * 1024) {
       setLogoError("El archivo original no puede superar 8 MB.");
-      event.target.value = "";
       return;
     }
     setLogoError(null);
@@ -63,7 +62,44 @@ export function PromptComposer({ variant = "chat" }: PromptComposerProps) {
       setLogoDataUrl(await compressImageFile(file, 512, 350_000));
     } catch (reason) {
       setLogoError(reason instanceof Error ? reason.message : "No se pudo procesar el logo.");
-      event.target.value = "";
+    }
+  };
+
+  const handleLogoFile = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    await processFile(file);
+    event.target.value = "";
+  };
+
+  const handleLogoDrop = async (event: DragEvent<HTMLButtonElement>) => {
+    event.preventDefault();
+    setIsDragging(false);
+    const file = event.dataTransfer.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setLogoError("Solo se aceptan archivos de imagen.");
+      return;
+    }
+    await processFile(file);
+  };
+
+  const generateAiLogo = async () => {
+    setGeneratingLogo(true);
+    setLogoError(null);
+    try {
+      const res = await fetch("/api/generate-logo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt }),
+      });
+      const data = await res.json() as { dataUrl?: string; error?: string };
+      if (!res.ok || !data.dataUrl) throw new Error(data.error ?? "Error al generar logo.");
+      setLogoDataUrl(data.dataUrl);
+    } catch (reason) {
+      setLogoError(reason instanceof Error ? reason.message : "No se pudo generar el logo.");
+    } finally {
+      setGeneratingLogo(false);
     }
   };
 
@@ -93,30 +129,41 @@ export function PromptComposer({ variant = "chat" }: PromptComposerProps) {
 
           <p className="mb-1 text-lg font-semibold text-[#f7f2fb]">¿Tienes un logo?</p>
           <p className="mb-6 text-sm text-[#9b8ab4]">
-            Súbelo para incluirlo en tu sitio, o deja que la IA lo cree automáticamente.
+            Súbelo o arrástralo al área, o deja que la IA lo cree automáticamente.
           </p>
 
           <div className="grid gap-3 sm:grid-cols-2">
-            {/* Upload option */}
+            {/* Upload — click o drag-and-drop */}
             <button
               type="button"
               onClick={() => logoInputRef.current?.click()}
+              onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+              onDragEnter={(e) => { e.preventDefault(); setIsDragging(true); }}
+              onDragLeave={() => setIsDragging(false)}
+              onDrop={handleLogoDrop}
               disabled={submitting}
-              className="flex flex-col items-center gap-3 rounded-lg border border-[#494454] bg-[#1d1a23] px-5 py-6 text-center transition-colors hover:border-[#8b5cf6] hover:bg-[#2c2141] disabled:cursor-not-allowed disabled:opacity-50"
+              className={[
+                "flex flex-col items-center gap-3 rounded-lg border px-5 py-6 text-center transition-colors disabled:cursor-not-allowed disabled:opacity-50",
+                isDragging
+                  ? "border-[#8b5cf6] bg-[#2c2141] ring-2 ring-[#8b5cf6]/30"
+                  : "border-[#494454] bg-[#1d1a23] hover:border-[#8b5cf6] hover:bg-[#2c2141]",
+              ].join(" ")}
             >
               {logoDataUrl ? (
                 <img
                   src={logoDataUrl}
-                  alt="Logo subido"
+                  alt="Logo cargado"
                   className="h-14 w-auto max-w-[120px] rounded object-contain"
                 />
               ) : (
-                <Upload className="h-7 w-7 text-[#8b5cf6]" />
+                <Upload className={`h-7 w-7 ${isDragging ? "text-[#c4b5fd]" : "text-[#8b5cf6]"}`} />
               )}
               <span className="text-sm font-medium text-[#f7f2fb]">
-                {logoDataUrl ? "Cambiar logo" : "Subir mi logo"}
+                {logoDataUrl ? "Cambiar logo" : isDragging ? "Suelta aquí" : "Subir mi logo"}
               </span>
-              <span className="text-xs text-[#9b8ab4]">PNG, SVG, WebP o JPG · máx. 8 MB</span>
+              <span className="text-xs text-[#9b8ab4]">
+                {isDragging ? "Suelta el archivo para subirlo" : "PNG, SVG, WebP o JPG · máx. 8 MB · o arrastra aquí"}
+              </span>
             </button>
             <input
               ref={logoInputRef}
@@ -127,16 +174,24 @@ export function PromptComposer({ variant = "chat" }: PromptComposerProps) {
               onChange={handleLogoFile}
             />
 
-            {/* AI option */}
+            {/* Generar con IA */}
             <button
               type="button"
-              onClick={() => finish(false)}
-              disabled={submitting}
+              onClick={generateAiLogo}
+              disabled={submitting || generatingLogo}
               className="flex flex-col items-center gap-3 rounded-lg border border-[#494454] bg-[#1d1a23] px-5 py-6 text-center transition-colors hover:border-[#8b5cf6] hover:bg-[#2c2141] disabled:cursor-not-allowed disabled:opacity-50"
             >
-              <Sparkles className="h-7 w-7 text-[#8b5cf6]" />
-              <span className="text-sm font-medium text-[#f7f2fb]">Que la IA lo cree</span>
-              <span className="text-xs text-[#9b8ab4]">Generamos un logotipo para ti</span>
+              {generatingLogo ? (
+                <Loader2 className="h-7 w-7 animate-spin text-[#8b5cf6]" />
+              ) : (
+                <Sparkles className="h-7 w-7 text-[#8b5cf6]" />
+              )}
+              <span className="text-sm font-medium text-[#f7f2fb]">
+                {generatingLogo ? "Generando..." : "Que la IA lo cree"}
+              </span>
+              <span className="text-xs text-[#9b8ab4]">
+                {generatingLogo ? "Un momento..." : "Creamos un logotipo para tu negocio"}
+              </span>
             </button>
           </div>
 
@@ -144,7 +199,7 @@ export function PromptComposer({ variant = "chat" }: PromptComposerProps) {
             <p role="alert" className="mt-3 text-sm text-[#ffb4ab]">{logoError}</p>
           )}
 
-          {logoDataUrl && (
+          {logoDataUrl ? (
             <div className="mt-5 flex justify-end">
               <Button
                 onClick={() => finish(true)}
@@ -154,6 +209,17 @@ export function PromptComposer({ variant = "chat" }: PromptComposerProps) {
                 {submitting ? <Loader2 className="animate-spin" /> : <ImageIcon className="h-4 w-4" />}
                 {submitting ? "Generando…" : "Usar este logo"}
               </Button>
+            </div>
+          ) : (
+            <div className="mt-5 flex justify-end">
+              <button
+                type="button"
+                onClick={() => finish(false)}
+                disabled={submitting || generatingLogo}
+                className="text-sm text-[#9b8ab4] hover:text-[#cbc3d7] transition-colors disabled:opacity-50"
+              >
+                Continuar sin logo
+              </button>
             </div>
           )}
         </div>

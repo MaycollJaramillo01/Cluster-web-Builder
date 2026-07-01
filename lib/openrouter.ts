@@ -111,6 +111,64 @@ async function safeReadText(response: Response): Promise<string> {
   }
 }
 
+export async function openrouterChatComplete(
+  messages: ChatMessage[],
+  options?: { temperature?: number; maxTokens?: number }
+): Promise<string> {
+  const apiKey = process.env.OPENROUTER_API_KEY;
+  if (!apiKey) throw new OpenRouterError("Falta OPENROUTER_API_KEY en el entorno del servidor.");
+
+  const models = getModels();
+  let lastError: OpenRouterError | null = null;
+
+  for (const model of models) {
+    let response: Response;
+    try {
+      response = await fetch(OPENROUTER_API_URL, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+          "HTTP-Referer": process.env.NEXT_PUBLIC_APP_URL || "https://cluster-web-builder.vercel.app",
+          "X-Title": "Cluster Web Builder",
+        },
+        body: JSON.stringify({
+          model,
+          stream: false,
+          temperature: options?.temperature ?? 0.3,
+          max_tokens: options?.maxTokens ?? 256,
+          messages,
+        }),
+      });
+    } catch (err) {
+      lastError = new OpenRouterError(
+        `No se pudo conectar con OpenRouter: ${err instanceof Error ? err.message : "error de red"}`
+      );
+      break;
+    }
+
+    if (response.ok) {
+      const json = await response.json();
+      const content = json?.choices?.[0]?.message?.content;
+      if (typeof content === "string") return content;
+      throw new OpenRouterError("OpenRouter respondió sin contenido.");
+    }
+
+    const detail = await safeReadText(response);
+    if (response.status === 429) {
+      lastError = new OpenRouterError(`OpenRouter: modelo ${model} con rate limit.`, 429);
+      continue;
+    }
+    lastError = new OpenRouterError(
+      `OpenRouter respondió con error ${response.status}: ${detail}`,
+      response.status
+    );
+    break;
+  }
+
+  throw lastError ?? new OpenRouterError("No se pudo obtener respuesta de OpenRouter.");
+}
+
 export async function* parseChatStream(
   body: ReadableStream<Uint8Array>
 ): AsyncGenerator<string, void, unknown> {
