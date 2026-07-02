@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Globe, MapPin, Search } from "lucide-react";
+import { Globe, MapPin, Pencil, Search } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -129,7 +129,7 @@ export default async function AdminSitesPage({
                 <th className="px-4 py-3">Estado</th>
                 <th className="px-4 py-3">Usuario</th>
                 <th className="px-4 py-3">Creado</th>
-                <th className="px-4 py-3 text-right">Ver</th>
+                <th className="px-4 py-3 text-right">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
@@ -178,6 +178,11 @@ export default async function AdminSitesPage({
                     <td className="px-4 py-3 text-muted-foreground">{date}</td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex justify-end gap-1">
+                        <Button asChild size="sm" variant="outline" className="h-8">
+                          <Link href={`/builder/${site.id}`} target="_blank">
+                            <Pencil className="h-3.5 w-3.5" /> Editar
+                          </Link>
+                        </Button>
                         <Button asChild size="icon" variant="ghost" className="h-7 w-7">
                           <Link href={previewUrl} target="_blank" aria-label="Ver preview">
                             <Globe className="h-3.5 w-3.5" />

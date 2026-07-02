@@ -22,10 +22,10 @@ export default async function TemplatesPage({ params }: { params: Promise<{ site
   const site = await prisma.site.findFirst({
     where: {
       id: siteId,
-      OR: [
+      ...(user?.role === "ADMIN" ? {} : { OR: [
         ...(user ? [{ userId: user.id }] : []),
         ...(guestTokenHash ? [{ userId: null, guestTokenHash, guestExpiresAt: { gt: new Date() } }] : []),
-      ],
+      ] }),
     },
     select: { id: true, businessName: true, businessType: true, visualStyle: true },
   });

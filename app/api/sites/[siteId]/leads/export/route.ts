@@ -7,7 +7,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   const user = await getUserBySessionToken(request.cookies.get(SESSION_COOKIE)?.value);
   if (!user) return Response.json({ error: "Inicia sesión." }, { status: 401 });
   const { siteId } = await params;
-  const site = await prisma.site.findFirst({ where: { id: siteId, userId: user.id }, select: { publicSlug: true, leads: { orderBy: { createdAt: "desc" } } } });
+  const site = await prisma.site.findFirst({ where: { id: siteId, ...(user.role === "ADMIN" ? {} : { userId: user.id }) }, select: { publicSlug: true, leads: { orderBy: { createdAt: "desc" } } } });
   if (!site) return Response.json({ error: "Sitio no encontrado." }, { status: 404 });
   const rows = [["Nombre", "Email", "Teléfono", "Mensaje", "Fecha"], ...site.leads.map((lead) => [lead.name, lead.email || "", lead.phone || "", lead.message, lead.createdAt.toISOString()])];
   const csv = rows.map((row) => row.map(csvCell).join(",")).join("\r\n");

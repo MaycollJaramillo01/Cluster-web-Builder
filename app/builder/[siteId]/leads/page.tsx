@@ -14,7 +14,7 @@ export default async function LeadsPage({ params }: { params: Promise<{ siteId: 
   const { siteId } = await params;
   if (!user) redirect(`/login?from=/builder/${siteId}/leads`);
   const site = await prisma.site.findFirst({
-    where: { id: siteId, userId: user.id },
+    where: { id: siteId, ...(user.role === "ADMIN" ? {} : { userId: user.id }) },
     select: { businessName: true, leads: { orderBy: { createdAt: "desc" } } },
   });
   if (!site) notFound();

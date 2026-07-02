@@ -12,7 +12,7 @@ export default async function DomainPage({ params }: { params: Promise<{ siteId:
   const user = await getCurrentUser();
   const { siteId } = await params;
   if (!user) redirect(`/login?from=/builder/${siteId}/domain`);
-  const site = await prisma.site.findFirst({ where: { id: siteId, userId: user.id }, select: { businessName: true, customDomain: true, domainVerifiedAt: true } });
+  const site = await prisma.site.findFirst({ where: { id: siteId, ...(user.role === "ADMIN" ? {} : { userId: user.id }) }, select: { businessName: true, customDomain: true, domainVerifiedAt: true } });
   if (!site) notFound();
   if (!hasProAccess(user)) redirect(`/billing?from=${encodeURIComponent(`/builder/${siteId}/domain`)}`);
   return <main className="min-h-dvh bg-background px-5 py-12 text-foreground"><div className="mx-auto max-w-2xl">

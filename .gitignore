@@ -41,3 +41,4 @@ yarn-error.log*
 /prisma/*.db
 
 .vercel
+test-results/*.log

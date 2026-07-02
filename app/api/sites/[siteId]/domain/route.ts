@@ -12,7 +12,7 @@ const schema = z.object({ domain: z.string().trim().toLowerCase().max(253).regex
 async function owner(request: NextRequest, siteId: string) {
   const user = await getUserBySessionToken(request.cookies.get(SESSION_COOKIE)?.value);
   if (!user) return null;
-  const site = await prisma.site.findFirst({ where: { id: siteId, userId: user.id }, select: { id: true, customDomain: true, domainVerifiedAt: true } });
+  const site = await prisma.site.findFirst({ where: { id: siteId, ...(user.role === "ADMIN" ? {} : { userId: user.id }) }, select: { id: true, customDomain: true, domainVerifiedAt: true } });
   return site ? { user, site } : null;
 }
 

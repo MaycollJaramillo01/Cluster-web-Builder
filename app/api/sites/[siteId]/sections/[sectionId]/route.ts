@@ -45,7 +45,7 @@ export async function PATCH(
 
   // Ensure the section exists and belongs to the site.
   const existing = await prisma.siteSection.findFirst({
-    where: { id: sectionId, siteId, site: { is: { userId: user.id } } },
+    where: { id: sectionId, siteId, ...(user.role === "ADMIN" ? {} : { site: { is: { userId: user.id } } }) },
   });
   if (!existing) {
     return NextResponse.json(
@@ -89,7 +89,7 @@ export async function DELETE(
   const user = await getUserBySessionToken(request.cookies.get(SESSION_COOKIE)?.value);
   if (!user) return NextResponse.json({ error: "Inicia sesión." }, { status: 401 });
   const section = await prisma.siteSection.findFirst({
-    where: { id: sectionId, siteId, site: { is: { userId: user.id } } },
+    where: { id: sectionId, siteId, ...(user.role === "ADMIN" ? {} : { site: { is: { userId: user.id } } }) },
     select: { id: true, type: true },
   });
   if (!section) return NextResponse.json({ error: "Bloque no encontrado." }, { status: 404 });

@@ -28,7 +28,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   if (!parsed.success) return NextResponse.json({ error: parsed.error.errors[0]?.message || "Bloque inválido." }, { status: 400 });
 
   const site = await prisma.site.findFirst({
-    where: { id: siteId, userId: user.id },
+    where: { id: siteId, ...(user.role === "ADMIN" ? {} : { userId: user.id }) },
     select: { id: true, _count: { select: { sections: true } } },
   });
   if (!site) return NextResponse.json({ error: "Proyecto no encontrado." }, { status: 404 });

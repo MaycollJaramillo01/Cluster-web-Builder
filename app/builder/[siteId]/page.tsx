@@ -25,10 +25,10 @@ export default async function SiteEditorPage({
   const site = await prisma.site.findFirst({
     where: {
       id: siteId,
-      OR: [
+      ...(user?.role === "ADMIN" ? {} : { OR: [
         ...(user ? [{ userId: user.id }] : []),
         ...(guestTokenHash ? [{ userId: null, guestTokenHash, guestExpiresAt: { gt: new Date() } }] : []),
-      ],
+      ] }),
     },
     include: { sections: { orderBy: { order: "asc" } } },
   });

@@ -35,10 +35,10 @@ export async function GET(
   const site = await prisma.site.findFirst({
     where: {
       id: siteId,
-      OR: [
+      ...(user?.role === "ADMIN" ? {} : { OR: [
         ...(user ? [{ userId: user.id }] : []),
         ...(guestTokenHash ? [{ userId: null, guestTokenHash, guestExpiresAt: { gt: new Date() } }] : []),
-      ],
+      ] }),
     },
     include: { sections: { orderBy: { order: "asc" } } },
   });
@@ -89,7 +89,7 @@ export async function PATCH(
 
   try {
     const updated = await prisma.site.updateMany({
-      where: { id: siteId, userId: user.id },
+      where: { id: siteId, ...(user.role === "ADMIN" ? {} : { userId: user.id }) },
       data,
     });
     if (updated.count === 0) throw new Error("not-found");

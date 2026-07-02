@@ -24,7 +24,7 @@ export async function POST(
   const { siteId } = await params;
 
   try {
-    const existing = await prisma.site.findFirst({ where: { id: siteId, userId: user.id }, select: { publicSlug: true } });
+    const existing = await prisma.site.findFirst({ where: { id: siteId, ...(user.role === "ADMIN" ? {} : { userId: user.id }) }, select: { publicSlug: true } });
     if (!existing) throw new Error("not-found");
     if (!hasProAccess(user)) return NextResponse.json(proRequiredResponse, { status: 402 });
     await prisma.site.update({ where: { id: siteId }, data: { status: "PUBLISHED", publishedAt: new Date() } });

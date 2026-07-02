@@ -31,11 +31,20 @@ try {
 
   assert((await fetch(`${baseUrl}/api/sites/${siteA.id}`, { headers: cookieA })).status === 200, "el propietario no puede leer su sitio");
   assert((await fetch(`${baseUrl}/api/sites/${siteA.id}`, { headers: cookieB })).status === 404, "otro usuario puede leer el sitio");
+  assert((await fetch(`${baseUrl}/api/sites/${siteA.id}`, { headers: cookieAdmin })).status === 200, "el administrador no puede abrir sitios de clientes");
+  assert((await fetch(`${baseUrl}/api/sites/${siteA.id}`, { method: "PATCH", headers: { ...cookieAdmin, "Content-Type": "application/json" }, body: JSON.stringify({ location: "QA administrado" }) })).status === 200, "el administrador no puede editar sitios de clientes");
+  const adminBlockResponse = await fetch(`${baseUrl}/api/sites/${siteA.id}/sections`, { method: "POST", headers: { ...cookieAdmin, "Content-Type": "application/json" }, body: JSON.stringify({ type: "text", title: "Bloque administrativo", order: 1 }) });
+  const adminBlock = await adminBlockResponse.json();
+  assert(adminBlockResponse.status === 201 && adminBlock.section?.id, "el administrador no puede agregar bloques a sitios de clientes");
+  assert((await fetch(`${baseUrl}/api/sites/${siteA.id}/sections/${adminBlock.section.id}`, { method: "DELETE", headers: cookieAdmin })).status === 200, "el administrador no puede eliminar bloques de sitios de clientes");
   assert((await fetch(`${baseUrl}/api/sites/${siteA.id}`)).status === 404, "la API revela proyectos sin autorización");
   assert((await fetch(`${baseUrl}/api/sites/${siteA.id}`, { method: "PATCH", headers: { ...cookieB, "Content-Type": "application/json" }, body: JSON.stringify({ businessName: "Intrusión" }) })).status === 404, "otro usuario puede editar el sitio");
 
   const dashboard = await fetch(`${baseUrl}/dashboard`, { headers: cookieA }).then((response) => response.text());
   assert(dashboard.includes(siteNames[0]) && !dashboard.includes(siteNames[1]), "el dashboard mezcla proyectos de usuarios");
+  const adminSitesPage = await fetch(`${baseUrl}/admin/sites`, { headers: cookieAdmin }).then((response) => response.text());
+  assert(adminSitesPage.includes(`/builder/${siteA.id}`) && adminSitesPage.includes("Editar"), "el panel admin no muestra la acción para editar sitios");
+  assert((await fetch(`${baseUrl}/builder/${siteA.id}`, { headers: cookieAdmin })).status === 200, "el botón admin apunta a un editor inaccesible");
   assert((await fetch(`${baseUrl}/preview/${siteA.id}`, { redirect: "manual" })).status === 404, "un borrador es público");
   assert((await fetch(`${baseUrl}/preview/${siteA.id}`, { headers: cookieA })).status === 200, "el propietario no puede previsualizar su borrador");
   const published = await fetch(`${baseUrl}/api/sites/${siteA.id}/publish`, { method: "POST", headers: cookieA });

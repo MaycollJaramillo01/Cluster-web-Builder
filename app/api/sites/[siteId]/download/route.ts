@@ -15,7 +15,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   const user = await getUserBySessionToken(request.cookies.get(SESSION_COOKIE)?.value);
   if (!user) return NextResponse.json({ error: "Inicia sesión para descargar el sitio.", authRequired: true }, { status: 401 });
   const { siteId } = await params;
-  const site = await prisma.site.findFirst({ where: { id: siteId, userId: user.id }, include: { sections: { orderBy: { order: "asc" } } } });
+  const site = await prisma.site.findFirst({ where: { id: siteId, ...(user.role === "ADMIN" ? {} : { userId: user.id }) }, include: { sections: { orderBy: { order: "asc" } } } });
   if (!site) return NextResponse.json({ error: "Sitio no encontrado." }, { status: 404 });
   if (!hasProAccess(user)) return NextResponse.json(proRequiredResponse, { status: 402 });
 
