@@ -2,7 +2,7 @@ import type { NormalizedSection } from "@/lib/site/normalize-site-blueprint";
 
 const ALLOWED_TYPES = new Set([
   "hero", "services", "about", "about_us", "benefits", "gallery", "faq", "contact",
-  "cta", "trust_badges", "process", "pricing", "location", "footer",
+  "cta", "trust_badges", "process", "pricing", "location", "testimonials", "footer",
 ]);
 
 export function applyPageStructure(

@@ -98,7 +98,18 @@ export function SiteBlockRenderer({
     .map((section) => ({ slug: section.type, name: sectionNames[section.type] }));
   const hero = pageSections.find((section) => section.type === "hero");
 
-  const renderSection = (section: RenderSection) => {
+  // La galería etiqueta sus celdas con los servicios reales cuando no trae items propios.
+  const servicesItems = (() => {
+    const services = sections.find((s) => s.type === "services");
+    const raw = services?.settings?.items;
+    return Array.isArray(raw) ? raw : [];
+  })();
+
+  const renderSection = (rawSection: RenderSection) => {
+    const section =
+      rawSection.type === "gallery" && !Array.isArray(rawSection.settings?.items) && servicesItems.length
+        ? { ...rawSection, settings: { ...rawSection.settings, items: servicesItems } }
+        : rawSection;
     if (!section.isVisible && !editable) return null;
     const Block = BLOCK_MAP[section.type] ?? GenericBlock;
     const content = (

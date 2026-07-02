@@ -33,6 +33,12 @@ export function buildFallbackSiteBlueprint(
   const services = parseServiceFacts(input.services);
   const serviceNames = services.map((item) => item.name);
   const proofPoints = splitFactLines(input.proofPoints);
+  const years = (input.yearsExperience ?? "").trim();
+  const reviews = splitFactLines(input.reviews).map((line) => {
+    const separator = line.indexOf(":");
+    if (separator < 0) return { name: "Cliente", quote: line.trim() };
+    return { name: line.slice(0, separator).trim() || "Cliente", quote: line.slice(separator + 1).trim() };
+  }).filter((item) => item.quote);
   const ctaText = ctaForGoal(input.goal);
 
   const hasLocation = input.location !== "Zona por definir";
@@ -67,16 +73,22 @@ export function buildFallbackSiteBlueprint(
     section("about_us", {
       title: `Sobre ${input.businessName}`,
       body: [
-        `${input.businessName} atiende a ${input.targetCustomer}${hasLocation ? ` en ${input.location}` : ""}. Ofrece ${naturalList(serviceNames)}.`,
+        years ? `Con ${years} años de experiencia, ${input.businessName} atiende a ${input.targetCustomer}${hasLocation ? ` en ${input.location}` : ""}.` : `${input.businessName} atiende a ${input.targetCustomer}${hasLocation ? ` en ${input.location}` : ""}.`,
+        `Ofrece ${naturalList(serviceNames)}.`,
         proofPoints.length > 0 ? `Datos confirmados: ${naturalList(proofPoints)}.` : "",
       ].filter(Boolean).join(" "),
       imagePrompt: `${imageKw} team serving local clients, realistic photography`,
       settings: { highlights: [
+        ...(years ? [{ title: "Experiencia", description: `${years} años de trayectoria`, value: `${years}+` }] : []),
         { title: "Actividad", description: businessType },
         { title: "Servicios", description: naturalList(serviceNames) },
         ...(hasLocation ? [{ title: "Zona de atención", description: input.location }] : []),
       ] },
     }),
+    ...(reviews.length > 0 ? [section("testimonials", {
+      title: "Lo que dicen los clientes",
+      settings: { items: reviews.map((item) => ({ name: item.name, quote: item.quote, rating: 5 })) },
+    })] : []),
     section("process", {
       title: "Cómo empezar",
       settings: { items: [

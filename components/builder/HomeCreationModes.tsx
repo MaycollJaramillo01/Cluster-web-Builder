@@ -387,6 +387,8 @@ function GuidedHomeForm() {
       services: serviceFacts,
       targetCustomer,
       proofPoints,
+      yearsExperience: read(form, "yearsExperience"),
+      reviews: read(form, "reviews"),
       goal: phone ? "calls" : "professional_presence",
       phone,
       email,
@@ -581,8 +583,32 @@ function GuidedHomeForm() {
               placeholder="Cuenta quién eres, qué haces y qué hace especial a tu negocio."
             />
           </Field>
-          <Field label="¿A quién quieres atraer?" hint="Opcional">
-            <input id={`${formId}-target-customer`} name="targetCustomer" maxLength={240} className={fieldClass(false)} placeholder="Ej. Familias, empresas locales o turistas" />
+          <div className="grid gap-5 sm:grid-cols-2">
+            <Field label="Años de experiencia" hint="Opcional">
+              <input
+                id={`${formId}-years-experience`}
+                name="yearsExperience"
+                type="number"
+                min={1}
+                max={120}
+                inputMode="numeric"
+                className={fieldClass(false)}
+                placeholder="Ej. 12"
+              />
+            </Field>
+            <Field label="¿A quién quieres atraer?" hint="Opcional">
+              <input id={`${formId}-target-customer`} name="targetCustomer" maxLength={240} className={fieldClass(false)} placeholder="Ej. Familias, empresas locales o turistas" />
+            </Field>
+          </div>
+          <Field label="Reseñas de tus clientes" hint="Opcional · una por línea">
+            <textarea
+              id={`${formId}-reviews`}
+              name="reviews"
+              rows={3}
+              maxLength={1600}
+              className={`${fieldClass(false)} min-h-24 resize-y py-3`}
+              placeholder={"Ej. María G.: Excelente servicio, cumplieron el plazo prometido.\nCarlos R.: Muy profesionales, los recomiendo."}
+            />
           </Field>
         </fieldset>
 

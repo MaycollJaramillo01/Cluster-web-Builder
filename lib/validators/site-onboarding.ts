@@ -30,6 +30,8 @@ export const onboardingSchema = z
     services: z.string().trim().min(3, "Escribe al menos un servicio o producto real.").max(1200),
     targetCustomer: z.string().trim().min(3, "Describe brevemente a quien atiendes.").max(240),
     proofPoints: z.string().trim().max(800).optional().or(z.literal("")),
+    yearsExperience: z.string().trim().max(40).optional().or(z.literal("")),
+    reviews: z.string().trim().max(1600).optional().or(z.literal("")),
     goal: z.enum(GOALS),
     phone: z.string().trim().max(40).optional().or(z.literal("")),
     email: z.string().trim().email("Escribe un email valido.").max(160).optional().or(z.literal("")),
@@ -182,6 +184,8 @@ export function promptToOnboardingInput(prompt: string): OnboardingInput {
       ? "Clientes potenciales"
       : `Personas que buscan ${businessLabel.toLocaleLowerCase("es")}`,
     proofPoints: "",
+    yearsExperience: detectYearsExperience(lower),
+    reviews: "",
     goal: detectGoal(lower),
     phone,
     email,
@@ -256,6 +260,18 @@ function detectBusinessType(value: string): OnboardingInput["businessType"] {
     ["fitness", ["gimnasio", "fitness", "entrenamiento"]],
   ];
   return matches.find(([, words]) => words.some((word) => value.includes(word)))?.[0] ?? "other";
+}
+
+// Detecta "15 años de experiencia", "más de 10 años en el mercado", "desde 2008", etc.
+function detectYearsExperience(value: string): string {
+  const years = value.match(/(\d{1,3})\s*a[ñn]os(?:\s+de)?\s+(?:experiencia|trayectoria|servicio|oficio|en el (?:mercado|rubro|sector|oficio))/)?.[1];
+  if (years) return years;
+  const since = value.match(/(?:desde|fundad[oa] en|operando desde|abiert[oa] desde)\s+(19\d{2}|20\d{2})\b/)?.[1];
+  if (since) {
+    const elapsed = new Date().getFullYear() - Number(since);
+    if (elapsed > 0 && elapsed < 120) return String(elapsed);
+  }
+  return "";
 }
 
 function detectGoal(value: string): OnboardingInput["goal"] {

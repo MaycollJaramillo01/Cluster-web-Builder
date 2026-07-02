@@ -22,6 +22,7 @@ assert(presets.every((preset) => preset.motionStyle), "algún template no tiene 
 assert(presets.filter((preset) => preset.heroMedia === "video").length === 6, "deben existir seis presets con hero de video.");
 assert(presets.filter((preset) => preset.heroStyle === "gradient").every((preset) => preset.useImages), "ningún hero gradient puede quedar sin imagen.");
 assert(presets.every((preset) => preset.sectionPlan[0] === "hero" && preset.sectionPlan.at(-1) === "footer"), "hero y footer deben delimitar todas las composiciones.");
+assert(presets.every((preset) => preset.sectionPlan.includes("about_us")), "toda composicion debe incluir la seccion about_us.");
 assert(new Set(presets.map((preset) => preset.family)).size === 6, "faltan familias de diseño.");
 for (const family of ["service", "editorial", "immersive", "catalog", "local", "minimal"]) {
   const count = presets.filter((preset) => preset.family === family).length;
