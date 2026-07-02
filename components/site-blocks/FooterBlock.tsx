@@ -1,4 +1,5 @@
 import { ensureReadable, getContrastText } from "@/lib/site/theme-surface";
+import { getStyleOverride, resolveElementStyle } from "@/lib/site/element-style";
 import type { BlockProps, BlockSiteInfo } from "./types";
 
 type ContactListProps = {
@@ -24,6 +25,8 @@ export function FooterBlock({ section, theme, site, preset }: BlockProps) {
   const year = new Date().getFullYear();
   const title = section.title || site.businessName;
   const darkText = getContrastText(theme.secondary);
+  const titleStyle = resolveElementStyle("title", getStyleOverride(section.settings, "title"));
+  const subtitleStyle = resolveElementStyle("subtitle", getStyleOverride(section.settings, "subtitle"));
 
   if (preset.footerStyle === "minimal") {
     return (
@@ -35,10 +38,10 @@ export function FooterBlock({ section, theme, site, preset }: BlockProps) {
       >
         <div className="mx-auto grid max-w-6xl gap-6 md:grid-cols-[1fr_auto] md:items-end">
           <div>
-            <p className="text-sm font-bold uppercase tracking-[0.16em]" style={{ fontFamily: "var(--site-heading)" }}>
+            <p className="text-sm font-bold uppercase tracking-[0.16em]" style={{ fontFamily: "var(--site-heading)", ...titleStyle }}>
               {title}
             </p>
-            {section.subtitle && <p className="mt-2 max-w-md text-sm opacity-65">{section.subtitle}</p>}
+            {section.subtitle && <p className="mt-2 max-w-md text-sm opacity-65" style={subtitleStyle}>{section.subtitle}</p>}
           </div>
           <ContactList site={site} className="flex flex-col gap-1 text-sm md:items-end" />
         </div>
@@ -56,12 +59,12 @@ export function FooterBlock({ section, theme, site, preset }: BlockProps) {
         style={{ backgroundColor: theme.background, borderColor: theme.accent, color: theme.text }}
       >
         <div className="mx-auto max-w-6xl">
-          <p className="max-w-4xl text-4xl leading-none sm:text-6xl" style={{ fontFamily: "var(--site-heading)", fontWeight: preset.headingWeight }}>
+          <p className="max-w-4xl text-4xl leading-none sm:text-6xl" style={{ fontFamily: "var(--site-heading)", fontWeight: preset.headingWeight, ...titleStyle }}>
             {title}
           </p>
           <div className="my-10 h-px w-full" style={{ backgroundColor: theme.text, opacity: 0.28 }} />
           <div className="grid gap-8 text-sm md:grid-cols-[1.5fr_1fr_auto] md:items-end">
-            <p className="max-w-lg text-base leading-relaxed opacity-70">{section.subtitle}</p>
+            <p className="max-w-lg text-base leading-relaxed opacity-70" style={subtitleStyle}>{section.subtitle}</p>
             <ContactList site={site} className="flex flex-col gap-2" />
             <p className="text-xs opacity-55 md:text-right"><Copyright site={site} year={year} /></p>
           </div>
@@ -82,10 +85,10 @@ export function FooterBlock({ section, theme, site, preset }: BlockProps) {
         <div className="mx-auto max-w-6xl">
           <div className="grid gap-8 lg:grid-cols-[1.4fr_1fr] lg:items-start">
             <div>
-              <p className="text-4xl font-black uppercase leading-[0.9] tracking-[-0.05em] sm:text-6xl" style={{ fontFamily: "var(--site-heading)" }}>
+              <p className="text-4xl font-black uppercase leading-[0.9] tracking-[-0.05em] sm:text-6xl" style={{ fontFamily: "var(--site-heading)", ...titleStyle }}>
                 {title}
               </p>
-              {section.subtitle && <p className="mt-5 max-w-xl font-bold uppercase">{section.subtitle}</p>}
+              {section.subtitle && <p className="mt-5 max-w-xl font-bold uppercase" style={subtitleStyle}>{section.subtitle}</p>}
             </div>
             <ContactList
               site={site}
@@ -103,8 +106,8 @@ export function FooterBlock({ section, theme, site, preset }: BlockProps) {
       <footer id="site-footer" data-footer-style="dark-band" className="px-6 py-16 text-center" style={{ backgroundColor: theme.secondary, color: darkText }}>
         <div className="mx-auto max-w-5xl">
           <div className="mx-auto mb-7 h-1 w-16" style={{ backgroundColor: theme.accent }} />
-          <p className="text-3xl font-bold uppercase tracking-[0.12em] sm:text-5xl" style={{ fontFamily: "var(--site-heading)" }}>{title}</p>
-          {section.subtitle && <p className="mx-auto mt-4 max-w-xl opacity-65">{section.subtitle}</p>}
+          <p className="text-3xl font-bold uppercase tracking-[0.12em] sm:text-5xl" style={{ fontFamily: "var(--site-heading)", ...titleStyle }}>{title}</p>
+          {section.subtitle && <p className="mx-auto mt-4 max-w-xl opacity-65" style={subtitleStyle}>{section.subtitle}</p>}
           <ContactList site={site} className="mt-9 flex flex-wrap justify-center gap-3 text-sm [&>*]:border [&>*]:border-current [&>*]:px-4 [&>*]:py-2 [&>*]:opacity-75" />
           <div className="mt-12 text-xs opacity-50"><Copyright site={site} year={year} /></div>
         </div>
@@ -117,8 +120,8 @@ export function FooterBlock({ section, theme, site, preset }: BlockProps) {
     return (
       <footer id="site-footer" data-footer-style="centered" className="px-6 py-14 text-center" style={{ backgroundColor: theme.primary, color: primaryText }}>
         <div className="mx-auto max-w-3xl">
-          <p className="text-2xl font-semibold sm:text-3xl" style={{ fontFamily: "var(--site-heading)" }}>{title}</p>
-          {section.subtitle && <p className="mx-auto mt-3 max-w-xl text-sm opacity-70">{section.subtitle}</p>}
+          <p className="text-2xl font-semibold sm:text-3xl" style={{ fontFamily: "var(--site-heading)", ...titleStyle }}>{title}</p>
+          {section.subtitle && <p className="mx-auto mt-3 max-w-xl text-sm opacity-70" style={subtitleStyle}>{section.subtitle}</p>}
           <ContactList site={site} className="mt-7 flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm" />
           <div className="mx-auto mt-10 h-px max-w-md bg-current opacity-20" />
           <div className="mt-5 text-xs opacity-55"><Copyright site={site} year={year} /></div>
@@ -136,8 +139,8 @@ export function FooterBlock({ section, theme, site, preset }: BlockProps) {
     >
       <div className="mx-auto grid max-w-6xl gap-10 sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr]">
         <div>
-          <p className="text-2xl font-bold" style={{ fontFamily: "var(--site-heading)" }}>{title}</p>
-          {section.subtitle && <p className="mt-3 max-w-sm text-sm leading-relaxed opacity-65">{section.subtitle}</p>}
+          <p className="text-2xl font-bold" style={{ fontFamily: "var(--site-heading)", ...titleStyle }}>{title}</p>
+          {section.subtitle && <p className="mt-3 max-w-sm text-sm leading-relaxed opacity-65" style={subtitleStyle}>{section.subtitle}</p>}
         </div>
         <div>
           <p className="mb-4 text-xs font-bold uppercase tracking-[0.16em]" style={{ color: ensureReadable(theme.accent, theme.secondary) }}>Contacto</p>

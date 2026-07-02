@@ -227,12 +227,12 @@ export function TestimonialsBlock({ section, theme, preset }: BlockProps) {
       <div className="mx-auto max-w-6xl">
         <div className="mx-auto max-w-2xl text-center">
           {section.subtitle && (
-            <p className="text-xs font-bold uppercase tracking-[0.2em]" style={{ color: ensureReadable(theme.accent, theme.secondary) }}>{section.subtitle}</p>
+            <p className="text-xs font-bold uppercase tracking-[0.2em]" style={{ color: ensureReadable(theme.accent, theme.secondary), ...subtitleStyle }}>{section.subtitle}</p>
           )}
           {section.title && (
             <h2
               className="mt-3 text-3xl font-bold sm:text-4xl"
-              style={{ fontFamily: "var(--site-heading)", fontWeight: preset.headingWeight, letterSpacing: preset.headingTracking, textTransform: preset.uppercaseHeadings ? "uppercase" : "none", color: bandText }}
+              style={{ fontFamily: "var(--site-heading)", fontWeight: preset.headingWeight, letterSpacing: preset.headingTracking, textTransform: preset.uppercaseHeadings ? "uppercase" : "none", color: bandText, ...titleStyle }}
             >
               {section.title}
             </h2>

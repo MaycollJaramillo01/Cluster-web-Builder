@@ -21,6 +21,7 @@
     "test:m5-commercial": "node --import tsx --test tests/m5-commercial.test.ts",
     "test:m5-http": "node scripts/test-m5-http.mjs",
     "test:editor-blocks": "node scripts/test-editor-blocks.mjs",
+    "test:plan-a": "node scripts/test-plan-a-style-coverage.mjs",
     "test:media-upload": "node scripts/test-media-upload.mjs",
     "postinstall": "prisma generate",
     "db:generate": "prisma generate",

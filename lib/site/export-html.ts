@@ -93,15 +93,15 @@ function sectionHtml(section: RenderSection, site: ExportSite, contactStyle: Con
     return `<section class="hero" id="${escape(id)}"><p class="eyebrow"${subtitleStyle}>${escape(section.subtitle || site.businessType)}</p><h1${titleStyle}>${escape(section.title || businessName)}</h1><p${bodyStyle}>${escape(section.body || site.location || "")}</p><a class="button" href="${escape(ctaHref)}"${ctaTextStyle}>${escape(section.ctaText || "Contáctanos")}</a></section>`;
   }
   if (section.type === "contact") return contactSectionHtml(section, site, contactStyle, id, titleStyle, bodyStyle, ctaTextStyle);
-  if (section.type === "footer") return `<footer><strong>${escape(section.title || businessName)}</strong><p>${escape(section.subtitle)}</p></footer>`;
+  if (section.type === "footer") return `<footer><strong${titleStyle}>${escape(section.title || businessName)}</strong><p${subtitleStyle}>${escape(section.subtitle)}</p></footer>`;
   if (section.type === "image") {
     const source = safeMediaUrl(section.mediaUrl);
-    return `<section id="${escape(id)}"><h2>${escape(section.title)}</h2>${source ? `<img src="${escape(source)}" alt="${escape(section.altText || section.title || businessName)}" style="width:100%;max-height:720px;object-fit:cover;border-radius:12px">` : ""}<p>${escape(section.body)}</p></section>`;
+    return `<section id="${escape(id)}"><h2${titleStyle}>${escape(section.title)}</h2>${source ? `<img src="${escape(source)}" alt="${escape(section.altText || section.title || businessName)}" style="width:100%;max-height:720px;object-fit:cover;border-radius:12px">` : ""}<figcaption${bodyStyle}>${escape(section.body)}</figcaption></section>`;
   }
   if (section.type === "video") {
     const media = exportVideo(section.mediaUrl);
     const player = media?.kind === "embed" ? `<iframe src="${escape(media.url)}" title="${escape(section.title || "Video")}" allowfullscreen loading="lazy" style="width:100%;aspect-ratio:16/9;border:0"></iframe>` : media ? `<video src="${escape(media.url)}" controls preload="metadata" style="width:100%;aspect-ratio:16/9;background:#000"></video>` : "";
-    return `<section id="${escape(id)}"><h2>${escape(section.title)}</h2>${player}<p>${escape(section.body)}</p></section>`;
+    return `<section id="${escape(id)}"><h2${titleStyle}>${escape(section.title)}</h2>${player}<p${bodyStyle}>${escape(section.body)}</p></section>`;
   }
   const items = Array.isArray(section.settings.items) ? section.settings.items : [];
   const cards = items.map((item) => { const record = typeof item === "object" && item ? item as Record<string, unknown> : {}; return `<article><h3>${escape(String(record.title || record.name || ""))}</h3><p>${escape(String(record.description || record.body || record.text || ""))}</p></article>`; }).join("");

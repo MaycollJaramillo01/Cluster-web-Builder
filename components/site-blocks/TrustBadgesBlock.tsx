@@ -1,4 +1,5 @@
 import { getItems } from "@/lib/site/section";
+import { getStyleOverride, resolveElementStyle } from "@/lib/site/element-style";
 import type { BlockProps } from "./types";
 
 export function TrustBadgesBlock({ section, theme }: BlockProps) {
@@ -9,7 +10,7 @@ export function TrustBadgesBlock({ section, theme }: BlockProps) {
         {section.title && (
           <h2
             className="text-center text-2xl font-bold"
-            style={{ color: theme.text, fontFamily: "var(--site-heading)" }}
+            style={{ color: theme.text, fontFamily: "var(--site-heading)", ...resolveElementStyle("title", getStyleOverride(section.settings, "title")) }}
           >
             {section.title}
           </h2>

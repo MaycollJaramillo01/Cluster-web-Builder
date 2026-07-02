@@ -68,6 +68,7 @@ const STYLE_ROLES: StyleRole[] = ["section", "title", "subtitle", "body", "ctaTe
 export const TEXT_STYLE_COVERED_TYPES = new Set([
   "hero", "services", "benefits", "testimonials", "faq", "process",
   "contact", "cta", "gallery", "location", "pricing", "text",
+  "about", "about_us", "footer", "trust_badges", "image", "video",
 ]);
 
 /** Validates the full per-section style-overrides map (one ElementStyle per role). */

@@ -3,6 +3,7 @@ import { sectionImageUrl } from "@/lib/site/images";
 import { ensureReadable, getThemeSurface } from "@/lib/site/theme-surface";
 import { getItems } from "@/lib/site/section";
 import type { AboutUsStyle } from "@/lib/site/design";
+import { getStyleOverride, resolveElementStyle } from "@/lib/site/element-style";
 import type { BlockProps } from "./types";
 
 /**
@@ -27,6 +28,7 @@ function hStyle(p: BlockProps, color?: string) {
     fontWeight: preset.headingWeight,
     letterSpacing: "var(--site-tracking)",
     textTransform: preset.uppercaseHeadings ? ("uppercase" as const) : ("none" as const),
+    ...resolveElementStyle("title", getStyleOverride(p.section.settings, "title")),
   };
 }
 
@@ -62,10 +64,15 @@ function Img({
 function Kicker({ p, children }: { p: BlockProps; children?: React.ReactNode }) {
   if (!children) return null;
   return (
-    <p className="text-xs font-semibold uppercase tracking-[0.2em]" style={{ color: ensureReadable(p.theme.primary, p.theme.background) }}>
+    <p className="text-xs font-semibold uppercase tracking-[0.2em]" style={{ color: ensureReadable(p.theme.primary, p.theme.background), ...resolveElementStyle("subtitle", getStyleOverride(p.section.settings, "subtitle")) }}>
       {children}
     </p>
   );
+}
+
+function Body({ p, children, className, style }: { p: BlockProps; children?: React.ReactNode; className?: string; style?: React.CSSProperties }) {
+  if (!children) return null;
+  return <p className={className} style={{ ...style, ...resolveElementStyle("body", getStyleOverride(p.section.settings, "body")) }}>{children}</p>;
 }
 
 type Highlight = { title: string; description?: string; value?: string };
@@ -103,7 +110,7 @@ function SplitAbout(p: BlockProps) {
         <div className={first ? "md:order-2" : ""}>
           <Kicker p={p}>{section.subtitle}</Kicker>
           {section.title && <h2 className="mt-2 text-3xl font-bold sm:text-4xl" style={hStyle(p)}>{section.title}</h2>}
-          {section.body && <p className="mt-5 leading-relaxed" style={{ color: surface.muted }}>{section.body}</p>}
+{section.body && <Body p={p} className="mt-5 leading-relaxed" style={{ color: surface.muted }}>{section.body}</Body>}
         </div>
         <div className={`group overflow-hidden ${first ? "md:order-1" : ""}`} style={{ borderRadius: imgRadius(p) }}>
           <Img p={p} seed="about" w={800} h={640} className="about-img-hover h-72 w-full object-cover shadow-lg md:h-80" anim="about-clip" />
@@ -127,9 +134,9 @@ function EditorialAbout(p: BlockProps) {
           </div>
           {section.body && (
             <div className="md:col-span-5">
-              <p className="text-lg leading-relaxed first-letter:float-left first-letter:mr-2 first-letter:text-5xl first-letter:font-bold first-letter:leading-none" style={{ color: surface.muted }}>
+              <Body p={p} className="text-lg leading-relaxed first-letter:float-left first-letter:mr-2 first-letter:text-5xl first-letter:font-bold first-letter:leading-none" style={{ color: surface.muted }}>
                 {section.body}
-              </p>
+              </Body>
             </div>
           )}
         </div>
@@ -144,9 +151,9 @@ function ManifestoAbout(p: BlockProps) {
     <section className="px-6 py-24 sm:py-32" style={{ backgroundColor: theme.secondary, color: "#fff" }}>
       <div className="mx-auto max-w-5xl about-stagger">
         <div className="mb-8 h-1.5 w-20" style={{ backgroundColor: theme.accent }} />
-        {section.subtitle && <p className="mb-4 text-sm font-semibold uppercase tracking-[0.2em]" style={{ color: ensureReadable(theme.accent, theme.secondary) }}>{section.subtitle}</p>}
+        {section.subtitle && <p className="mb-4 text-sm font-semibold uppercase tracking-[0.2em]" style={{ color: ensureReadable(theme.accent, theme.secondary), ...resolveElementStyle("subtitle", getStyleOverride(section.settings, "subtitle")) }}>{section.subtitle}</p>}
         {section.title && <h2 className="text-4xl leading-[1.05] sm:text-6xl" style={hStyle(p, "#fff")}>{section.title}</h2>}
-        {section.body && <p className="mt-8 max-w-3xl text-xl leading-relaxed text-white/80 sm:text-2xl">{section.body}</p>}
+{section.body && <Body p={p} className="mt-8 max-w-3xl text-xl leading-relaxed text-white/80 sm:text-2xl">{section.body}</Body>}
       </div>
     </section>
   );
@@ -160,7 +167,7 @@ function StatementAbout(p: BlockProps) {
       <div className="mx-auto max-w-3xl text-center about-rise">
         <Kicker p={p}>{section.subtitle}</Kicker>
         {section.title && <h2 className="mt-5 text-3xl leading-snug sm:text-5xl" style={hStyle(p)}>{section.title}</h2>}
-        {section.body && <p className="mx-auto mt-7 max-w-2xl text-lg leading-relaxed" style={{ color: surface.muted }}>{section.body}</p>}
+{section.body && <Body p={p} className="mx-auto mt-7 max-w-2xl text-lg leading-relaxed" style={{ color: surface.muted }}>{section.body}</Body>}
         <div className="mx-auto mt-10 h-px w-16" style={{ backgroundColor: theme.accent }} />
       </div>
     </section>
@@ -177,7 +184,7 @@ function GridAbout(p: BlockProps) {
         <div>
           <Kicker p={p}>{section.subtitle}</Kicker>
           {section.title && <h2 className="mt-3 text-3xl font-bold sm:text-5xl" style={hStyle(p)}>{section.title}</h2>}
-          {section.body && <p className="mt-5 leading-relaxed" style={{ color: surface.muted }}>{section.body}</p>}
+{section.body && <Body p={p} className="mt-5 leading-relaxed" style={{ color: surface.muted }}>{section.body}</Body>}
         </div>
         {hl.length > 0 ? (
           <div className="grid gap-4 about-stagger sm:grid-cols-2">
@@ -209,7 +216,7 @@ function ImmersiveAbout(p: BlockProps) {
         <div className="p-8 sm:p-12" style={{ backgroundColor: `${theme.background}f2`, borderRadius: "var(--site-radius)", border: `1px solid ${theme.text}14` }}>
           <Kicker p={p}>{section.subtitle}</Kicker>
           {section.title && <h2 className="mt-3 text-3xl font-bold sm:text-5xl" style={hStyle(p)}>{section.title}</h2>}
-          {section.body && <p className="mt-5 leading-relaxed" style={{ color: theme.text, opacity: 0.8 }}>{section.body}</p>}
+{section.body && <Body p={p} className="mt-5 leading-relaxed" style={{ color: theme.text, opacity: 0.8 }}>{section.body}</Body>}
         </div>
       </div>
     </section>
@@ -229,7 +236,7 @@ function OverlapAbout(p: BlockProps) {
           <div className="p-8 sm:p-10" style={{ backgroundColor: surface.panel, borderRadius: "var(--site-radius)", boxShadow: "0 24px 60px -24px rgba(15,23,42,.4)" }}>
             <Kicker p={p}>{section.subtitle}</Kicker>
             {section.title && <h2 className="mt-2 text-3xl font-bold sm:text-4xl" style={hStyle(p)}>{section.title}</h2>}
-            {section.body && <p className="mt-4 leading-relaxed" style={{ color: surface.muted }}>{section.body}</p>}
+{section.body && <Body p={p} className="mt-4 leading-relaxed" style={{ color: surface.muted }}>{section.body}</Body>}
           </div>
         </div>
       </div>
@@ -251,7 +258,7 @@ function PolaroidAbout(p: BlockProps) {
         <div>
           <Kicker p={p}>{section.subtitle}</Kicker>
           {section.title && <h2 className="mt-2 text-3xl font-bold sm:text-4xl" style={hStyle(p)}>{section.title}</h2>}
-          {section.body && <p className="mt-5 leading-relaxed" style={{ color: surface.muted }}>{section.body}</p>}
+{section.body && <Body p={p} className="mt-5 leading-relaxed" style={{ color: surface.muted }}>{section.body}</Body>}
         </div>
       </div>
     </section>
@@ -270,7 +277,7 @@ function BannerAbout(p: BlockProps) {
       <div className="mx-auto max-w-3xl px-6 py-14 text-center about-rise">
         <Kicker p={p}>{section.subtitle}</Kicker>
         {section.title && <h2 className="mt-2 text-3xl font-bold sm:text-5xl" style={hStyle(p)}>{section.title}</h2>}
-        {section.body && <p className="mx-auto mt-5 max-w-2xl leading-relaxed" style={{ color: surface.muted }}>{section.body}</p>}
+{section.body && <Body p={p} className="mx-auto mt-5 max-w-2xl leading-relaxed" style={{ color: surface.muted }}>{section.body}</Body>}
       </div>
     </section>
   );
@@ -290,7 +297,7 @@ function CollageAbout(p: BlockProps) {
         <div>
           <Kicker p={p}>{section.subtitle}</Kicker>
           {section.title && <h2 className="mt-2 text-3xl font-bold sm:text-4xl" style={hStyle(p)}>{section.title}</h2>}
-          {section.body && <p className="mt-5 leading-relaxed" style={{ color: surface.muted }}>{section.body}</p>}
+{section.body && <Body p={p} className="mt-5 leading-relaxed" style={{ color: surface.muted }}>{section.body}</Body>}
         </div>
       </div>
     </section>
@@ -310,7 +317,7 @@ function PortraitAbout(p: BlockProps) {
         <div>
           <Kicker p={p}>{section.subtitle}</Kicker>
           {section.title && <h2 className="mt-2 text-3xl font-bold sm:text-5xl" style={hStyle(p)}>{section.title}</h2>}
-          {section.body && <p className="mt-5 leading-relaxed" style={{ color: surface.muted }}>{section.body}</p>}
+{section.body && <Body p={p} className="mt-5 leading-relaxed" style={{ color: surface.muted }}>{section.body}</Body>}
           {hl.length > 0 && (
             <div className="mt-7 flex flex-wrap gap-8 about-stagger">
               {hl.slice(0, 3).map((h, i) => (
@@ -339,7 +346,7 @@ function ReverseAbout(p: BlockProps) {
         <div>
           <Kicker p={p}>{section.subtitle}</Kicker>
           {section.title && <h2 className="mt-2 text-3xl font-bold sm:text-4xl" style={hStyle(p)}>{section.title}</h2>}
-          {section.body && <p className="mt-5 leading-relaxed" style={{ color: surface.muted }}>{section.body}</p>}
+{section.body && <Body p={p} className="mt-5 leading-relaxed" style={{ color: surface.muted }}>{section.body}</Body>}
         </div>
       </div>
     </section>
@@ -359,7 +366,7 @@ function MastheadAbout(p: BlockProps) {
           <div className="p-8 sm:p-10" style={{ backgroundColor: surface.panel, borderRadius: "var(--site-radius)", boxShadow: "0 24px 60px -24px rgba(15,23,42,.4)" }}>
             <Kicker p={p}>{section.subtitle}</Kicker>
             {section.title && <h2 className="mt-2 text-3xl font-bold sm:text-4xl" style={hStyle(p)}>{section.title}</h2>}
-            {section.body && <p className="mt-4 leading-relaxed" style={{ color: surface.muted }}>{section.body}</p>}
+{section.body && <Body p={p} className="mt-4 leading-relaxed" style={{ color: surface.muted }}>{section.body}</Body>}
           </div>
         </div>
       </div>
@@ -382,7 +389,7 @@ function FramedAbout(p: BlockProps) {
         <div>
           <Kicker p={p}>{section.subtitle}</Kicker>
           {section.title && <h2 className="mt-2 text-3xl font-bold sm:text-4xl" style={hStyle(p)}>{section.title}</h2>}
-          {section.body && <p className="mt-5 leading-relaxed" style={{ color: surface.muted }}>{section.body}</p>}
+{section.body && <Body p={p} className="mt-5 leading-relaxed" style={{ color: surface.muted }}>{section.body}</Body>}
         </div>
       </div>
     </section>
@@ -402,7 +409,7 @@ function StatsAbout(p: BlockProps) {
         <div>
           <Kicker p={p}>{section.subtitle}</Kicker>
           {section.title && <h2 className="mt-2 text-3xl font-bold sm:text-4xl" style={hStyle(p)}>{section.title}</h2>}
-          {section.body && <p className="mt-4 leading-relaxed" style={{ color: surface.muted }}>{section.body}</p>}
+{section.body && <Body p={p} className="mt-4 leading-relaxed" style={{ color: surface.muted }}>{section.body}</Body>}
           {hl.length > 0 && (
             <div className="mt-8 grid grid-cols-2 gap-6 about-stagger">
               {hl.map((h, i) => (
@@ -429,7 +436,7 @@ function ChecklistAbout(p: BlockProps) {
         <div>
           <Kicker p={p}>{section.subtitle}</Kicker>
           {section.title && <h2 className="mt-2 text-3xl font-bold sm:text-4xl" style={hStyle(p)}>{section.title}</h2>}
-          {section.body && <p className="mt-4 leading-relaxed" style={{ color: surface.muted }}>{section.body}</p>}
+{section.body && <Body p={p} className="mt-4 leading-relaxed" style={{ color: surface.muted }}>{section.body}</Body>}
           {hl.length > 0 && (
             <ul className="mt-7 space-y-3 about-stagger">
               {hl.map((h, i) => (
@@ -463,7 +470,7 @@ function MosaicAbout(p: BlockProps) {
         <div>
           <Kicker p={p}>{section.subtitle}</Kicker>
           {section.title && <h2 className="mt-2 text-3xl font-bold sm:text-4xl" style={hStyle(p)}>{section.title}</h2>}
-          {section.body && <p className="mt-5 leading-relaxed" style={{ color: surface.muted }}>{section.body}</p>}
+{section.body && <Body p={p} className="mt-5 leading-relaxed" style={{ color: surface.muted }}>{section.body}</Body>}
         </div>
       </div>
     </section>
@@ -480,8 +487,8 @@ function QuoteAbout(p: BlockProps) {
       <div className="mx-auto max-w-4xl text-center about-rise">
         <div className="text-7xl leading-none" style={{ color: theme.accent, fontFamily: "Georgia, serif" }}>“</div>
         {section.title && <h2 className="mx-auto -mt-6 max-w-3xl text-2xl leading-snug sm:text-4xl" style={hStyle(p)}>{section.title}</h2>}
-        {section.body && <p className="mx-auto mt-6 max-w-2xl leading-relaxed" style={{ color: surface.muted }}>{section.body}</p>}
-        {section.subtitle && <p className="mt-8 text-sm font-semibold uppercase tracking-[0.2em]" style={{ color: ensureReadable(theme.primary, theme.background) }}>{section.subtitle}</p>}
+{section.body && <Body p={p} className="mx-auto mt-6 max-w-2xl leading-relaxed" style={{ color: surface.muted }}>{section.body}</Body>}
+        {section.subtitle && <p className="mt-8 text-sm font-semibold uppercase tracking-[0.2em]" style={{ color: ensureReadable(theme.primary, theme.background), ...resolveElementStyle("subtitle", getStyleOverride(section.settings, "subtitle")) }}>{section.subtitle}</p>}
       </div>
     </section>
   );
@@ -496,7 +503,7 @@ function TimelineAbout(p: BlockProps) {
       <div className="mx-auto max-w-3xl">
         <Kicker p={p}>{section.subtitle}</Kicker>
         {section.title && <h2 className="mt-2 text-3xl font-bold sm:text-4xl" style={hStyle(p)}>{section.title}</h2>}
-        {section.body && <p className="mt-4 leading-relaxed" style={{ color: surface.muted }}>{section.body}</p>}
+{section.body && <Body p={p} className="mt-4 leading-relaxed" style={{ color: surface.muted }}>{section.body}</Body>}
         {hl.length > 0 && (
           <ol className="mt-10 space-y-8 border-l-2 pl-8 about-stagger" style={{ borderColor: `${theme.primary}33` }}>
             {hl.map((h, i) => (
@@ -524,8 +531,8 @@ function ColumnsAbout(p: BlockProps) {
         {section.title && <h2 className="mt-3 max-w-3xl text-3xl font-bold sm:text-5xl" style={hStyle(p)}>{section.title}</h2>}
         {section.body && (
           <div className="mt-8 gap-10 sm:columns-2">
-            <p className="mb-4 text-lg font-medium leading-relaxed" style={{ color: theme.text }}>{lead}</p>
-            <p className="leading-relaxed" style={{ color: surface.muted }}>{rest.join(" ")}</p>
+            <Body p={p} className="mb-4 text-lg font-medium leading-relaxed" style={{ color: theme.text }}>{lead}</Body>
+            <Body p={p} className="leading-relaxed" style={{ color: surface.muted }}>{rest.join(" ")}</Body>
           </div>
         )}
       </div>
@@ -541,7 +548,7 @@ function AccentAbout(p: BlockProps) {
       <div className="mx-auto max-w-4xl border-l-4 pl-8 about-rise" style={{ borderColor: theme.accent }}>
         <Kicker p={p}>{section.subtitle}</Kicker>
         {section.title && <h2 className="mt-2 text-3xl font-bold sm:text-5xl" style={hStyle(p)}>{section.title}</h2>}
-        {section.body && <p className="mt-5 max-w-2xl text-lg leading-relaxed" style={{ color: surface.muted }}>{section.body}</p>}
+{section.body && <Body p={p} className="mt-5 max-w-2xl text-lg leading-relaxed" style={{ color: surface.muted }}>{section.body}</Body>}
       </div>
     </section>
   );
@@ -556,7 +563,7 @@ function NumberedAbout(p: BlockProps) {
       <div className="mx-auto max-w-5xl">
         <Kicker p={p}>{section.subtitle}</Kicker>
         {section.title && <h2 className="mt-2 text-3xl font-bold sm:text-4xl" style={hStyle(p)}>{section.title}</h2>}
-        {section.body && <p className="mt-4 max-w-2xl leading-relaxed" style={{ color: surface.muted }}>{section.body}</p>}
+{section.body && <Body p={p} className="mt-4 max-w-2xl leading-relaxed" style={{ color: surface.muted }}>{section.body}</Body>}
         {hl.length > 0 && (
           <div className="mt-12 grid gap-10 about-stagger sm:grid-cols-2 lg:grid-cols-4">
             {hl.map((h, i) => (
@@ -579,9 +586,9 @@ function BigtypeAbout(p: BlockProps) {
   return (
     <section className="px-6 py-24 sm:py-32" style={{ backgroundColor: sectionBg(p) }}>
       <div className="mx-auto max-w-6xl about-rise">
-        {section.subtitle && <p className="text-sm font-semibold uppercase tracking-[0.3em]" style={{ color: ensureReadable(theme.primary, theme.background) }}>{section.subtitle}</p>}
+        {section.subtitle && <p className="text-sm font-semibold uppercase tracking-[0.3em]" style={{ color: ensureReadable(theme.primary, theme.background), ...resolveElementStyle("subtitle", getStyleOverride(section.settings, "subtitle")) }}>{section.subtitle}</p>}
         {section.title && <h2 className="mt-4 text-5xl leading-[0.95] sm:text-8xl" style={hStyle(p)}>{section.title}</h2>}
-        {section.body && <p className="mt-8 max-w-2xl text-lg leading-relaxed" style={{ color: surface.muted }}>{section.body}</p>}
+{section.body && <Body p={p} className="mt-8 max-w-2xl text-lg leading-relaxed" style={{ color: surface.muted }}>{section.body}</Body>}
       </div>
     </section>
   );
@@ -597,7 +604,7 @@ function SplitStatsAbout(p: BlockProps) {
         <div>
           <Kicker p={p}>{section.subtitle}</Kicker>
           {section.title && <h2 className="mt-2 text-3xl font-bold sm:text-4xl" style={hStyle(p)}>{section.title}</h2>}
-          {section.body && <p className="mt-5 leading-relaxed" style={{ color: surface.muted }}>{section.body}</p>}
+{section.body && <Body p={p} className="mt-5 leading-relaxed" style={{ color: surface.muted }}>{section.body}</Body>}
         </div>
         {hl.length > 0 && (
           <div className="grid grid-cols-2 gap-px overflow-hidden about-stagger" style={{ backgroundColor: `${theme.text}14`, borderRadius: "var(--site-radius)" }}>
@@ -623,8 +630,8 @@ function MinimalLineAbout(p: BlockProps) {
         {section.title && <h2 className="text-2xl leading-snug sm:text-4xl" style={hStyle(p)}>{section.title}</h2>}
         <div className="my-8 h-px w-full" style={{ backgroundColor: `${theme.text}1f` }} />
         <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-          {section.body && <p className="max-w-xl leading-relaxed" style={{ color: surface.muted }}>{section.body}</p>}
-          {section.subtitle && <p className="shrink-0 text-sm font-semibold uppercase tracking-[0.2em]" style={{ color: ensureReadable(theme.primary, theme.background) }}>{section.subtitle}</p>}
+{section.body && <Body p={p} className="max-w-xl leading-relaxed" style={{ color: surface.muted }}>{section.body}</Body>}
+          {section.subtitle && <p className="shrink-0 text-sm font-semibold uppercase tracking-[0.2em]" style={{ color: ensureReadable(theme.primary, theme.background), ...resolveElementStyle("subtitle", getStyleOverride(section.settings, "subtitle")) }}>{section.subtitle}</p>}
         </div>
       </div>
     </section>
@@ -640,7 +647,7 @@ function BadgesAbout(p: BlockProps) {
       <div className="mx-auto max-w-3xl text-center about-rise">
         <Kicker p={p}>{section.subtitle}</Kicker>
         {section.title && <h2 className="mt-2 text-3xl font-bold sm:text-4xl" style={hStyle(p)}>{section.title}</h2>}
-        {section.body && <p className="mx-auto mt-5 max-w-2xl leading-relaxed" style={{ color: surface.muted }}>{section.body}</p>}
+{section.body && <Body p={p} className="mx-auto mt-5 max-w-2xl leading-relaxed" style={{ color: surface.muted }}>{section.body}</Body>}
         {hl.length > 0 && (
           <div className="mt-8 flex flex-wrap justify-center gap-2.5">
             {hl.map((h, i) => (
