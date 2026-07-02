@@ -703,7 +703,10 @@ export function SiteEditorPanel({
     setError(null);
     try {
       const created = await persistSave(payload);
-      if (created.size > 0) setSections((current) => current.map((section) => created.get(section.id) ?? section));
+    if (created.length > 0) {
+      const createdMap = new Map(created.map((s) => [s.id, s]));
+      setSections((current) => current.map((section) => createdMap.get(section.id) ?? section));
+    }
       setDeletedSectionIds([]);
       sessionStorage.removeItem(pendingSaveKey);
       localStorage.removeItem(draftKey);

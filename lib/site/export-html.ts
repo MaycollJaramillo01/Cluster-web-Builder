@@ -69,7 +69,7 @@ const form=document.querySelector('#contact-form');if(form)form.addEventListener
 
 function sectionHtml(section: RenderSection, site: ExportSite, contactStyle: ContactStyle, id: string) {
   const businessName = site.businessName;
-  const layoutStyle = sectionLayoutStyle(section);
+  const layoutStyle = normalizeSectionLayout(section);
   const ctaHref = sanitizeLink(section.ctaLink) || "#contact";
   if (section.type === "hero") {
     // El hero exportado respeta el contenido editado en el editor.
