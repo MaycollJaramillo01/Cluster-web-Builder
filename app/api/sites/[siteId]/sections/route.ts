@@ -3,15 +3,19 @@ import { z } from "zod";
 
 import { getUserBySessionToken, SESSION_COOKIE } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { sanitizeLink } from "@/lib/site/links";
 import { toRenderSection } from "@/lib/site/section";
 
 const createSectionSchema = z.object({
-  type: z.enum(["text", "image", "video", "about_us", "cta", "testimonials"]),
+  type: z.enum([
+    "text", "image", "video", "about_us", "cta", "testimonials", "services",
+    "faq", "gallery", "pricing", "process", "benefits", "location", "contact", "trust_badges",
+  ]),
   title: z.string().max(200).default(""),
   subtitle: z.string().max(400).default(""),
   body: z.string().max(4000).default(""),
   ctaText: z.string().max(120).default(""),
-  ctaLink: z.string().max(300).default(""),
+  ctaLink: z.string().max(300).default("").transform(sanitizeLink),
   imagePrompt: z.string().max(500).default(""),
   mediaUrl: z.string().max(2000).default(""),
   altText: z.string().max(300).default(""),

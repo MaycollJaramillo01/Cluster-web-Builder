@@ -111,12 +111,22 @@ export function SiteBlockRenderer({
     return Array.isArray(raw) ? raw : [];
   })();
 
+  // IDs unicos por seccion: el primero de cada tipo conserva el ancla clasica
+  // (#section-contact) y los repetidos llevan sufijo para no romper accesibilidad.
+  const idCounts = new Map<string, number>();
+  const sectionDomId = (type: string) => {
+    const count = (idCounts.get(type) ?? 0) + 1;
+    idCounts.set(type, count);
+    return count === 1 ? `section-${type}` : `section-${type}-${count}`;
+  };
+
   const renderSection = (rawSection: RenderSection) => {
     const section =
       rawSection.type === "gallery" && !Array.isArray(rawSection.settings?.items) && servicesItems.length
         ? { ...rawSection, settings: { ...rawSection.settings, items: servicesItems } }
         : rawSection;
     if (!section.isVisible && !editable) return null;
+    const domId = sectionDomId(section.type);
     const Block = BLOCK_MAP[section.type] ?? GenericBlock;
     const content = (
       <Block section={section} theme={theme} preset={preset} site={site} index={section.order} />
@@ -124,7 +134,7 @@ export function SiteBlockRenderer({
 
     if (editable && !section.isVisible) {
       return (
-        <div id={`section-${section.type}`} key={section.id} className="relative opacity-40 scroll-mt-16">
+        <div id={domId} key={section.id} className="relative opacity-40 scroll-mt-16">
           <div className="pointer-events-none absolute right-3 top-3 z-10 rounded bg-slate-900/80 px-2 py-1 text-xs text-white">
             Oculta
           </div>
@@ -134,7 +144,7 @@ export function SiteBlockRenderer({
     }
     const animate = !editable;
     return (
-      <div id={`section-${section.type}`} key={section.id} className={`scroll-mt-16 design-reveal design-reveal-${preset.motionStyle}`}>
+      <div id={domId} key={section.id} className={`scroll-mt-16 design-reveal design-reveal-${preset.motionStyle}`}>
         <Reveal disabled={!animate} motion={preset.motionStyle} delay={Math.min(section.order, 6) * 40}>{content}</Reveal>
       </div>
     );

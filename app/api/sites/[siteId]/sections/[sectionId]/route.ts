@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import { getUserBySessionToken, SESSION_COOKIE } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { sanitizeLink } from "@/lib/site/links";
 import { toRenderSection } from "@/lib/site/section";
 
 export const runtime = "nodejs";
@@ -13,7 +14,7 @@ const updateSectionSchema = z.object({
   subtitle: z.string().max(400).optional(),
   body: z.string().max(4000).optional(),
   ctaText: z.string().max(120).optional(),
-  ctaLink: z.string().max(300).optional(),
+  ctaLink: z.string().max(300).transform(sanitizeLink).optional(),
   imagePrompt: z.string().max(500).optional(),
   mediaUrl: z.string().max(2000).optional(),
   altText: z.string().max(300).optional(),

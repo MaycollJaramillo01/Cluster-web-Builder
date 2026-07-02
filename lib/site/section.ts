@@ -1,4 +1,5 @@
 import type { SiteTheme } from "@/lib/site/blueprint";
+import { sanitizeLink } from "@/lib/site/links";
 
 /**
  * Flat, serializable representation of a site section used by the renderer,
@@ -41,7 +42,8 @@ export function toRenderSection(row: DbSectionRow): RenderSection {
     subtitle: asString(content.subtitle),
     body: asString(content.body),
     ctaText: asString(content.ctaText),
-    ctaLink: asString(content.ctaLink),
+    // Punto unico: todo enlace persistido pasa por aqui antes de renderizarse o exportarse.
+    ctaLink: sanitizeLink(asString(content.ctaLink)),
     imagePrompt: asString(content.imagePrompt),
     mediaUrl: asString(content.mediaUrl),
     altText: asString(content.altText),

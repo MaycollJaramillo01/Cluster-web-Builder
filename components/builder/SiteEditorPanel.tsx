@@ -492,7 +492,54 @@ function createSectionDraft(id: string, type: string, order: number): RenderSect
     video: { title: "Video destacado" },
     about_us: { title: "Sobre nosotros", subtitle: "Nuestra historia", body: "Cuenta aquí la historia y experiencia del negocio." },
     cta: { title: "¿Listo para comenzar?", subtitle: "Habla con nuestro equipo.", ctaText: "Contáctanos", ctaLink: "#contact" },
-    testimonials: { title: "Lo que dicen nuestros clientes", subtitle: "Reseñas" },
+    testimonials: {
+      title: "Lo que dicen nuestros clientes", subtitle: "Reseñas",
+      settings: { items: [
+        { name: "Nombre del cliente", role: "", quote: "Escribe aquí una reseña real de tu cliente.", rating: 5, source: "" },
+        { name: "Otro cliente", role: "", quote: "Otra reseña breve y concreta.", rating: 5, source: "" },
+      ] },
+    },
+    services: {
+      title: "Nuestros servicios", subtitle: "Lo que hacemos",
+      settings: { items: [
+        { name: "Servicio 1", description: "Describe qué incluye este servicio.", price: "" },
+        { name: "Servicio 2", description: "Describe qué incluye este servicio.", price: "" },
+        { name: "Servicio 3", description: "Describe qué incluye este servicio.", price: "" },
+      ] },
+    },
+    faq: {
+      title: "Preguntas frecuentes", subtitle: "FAQ",
+      settings: { items: [
+        { question: "¿Escribe aquí una pregunta frecuente?", answer: "Y aquí la respuesta clara y directa." },
+        { question: "¿Otra pregunta habitual?", answer: "Respuesta breve." },
+      ] },
+    },
+    benefits: {
+      title: "¿Por qué elegirnos?", subtitle: "Beneficios",
+      settings: { items: [
+        { title: "Beneficio 1", description: "Explica por qué esto importa a tu cliente." },
+        { title: "Beneficio 2", description: "Explica por qué esto importa a tu cliente." },
+        { title: "Beneficio 3", description: "Explica por qué esto importa a tu cliente." },
+      ] },
+    },
+    process: {
+      title: "Cómo trabajamos", subtitle: "Nuestro proceso",
+      settings: { items: [
+        { title: "Paso 1", description: "Describe el primer paso." },
+        { title: "Paso 2", description: "Describe el segundo paso." },
+        { title: "Paso 3", description: "Describe el resultado final." },
+      ] },
+    },
+    pricing: {
+      title: "Planes y precios", subtitle: "Inversión",
+      settings: { items: [
+        { name: "Plan básico", price: "$0", description: "Qué incluye este plan." },
+        { name: "Plan completo", price: "$0", description: "Qué incluye este plan." },
+      ] },
+    },
+    gallery: { title: "Galería", subtitle: "Nuestro trabajo" },
+    location: { title: "Dónde encontrarnos", body: "Dirección, zona de servicio u horarios." },
+    contact: { title: "Contáctanos", body: "Estamos listos para ayudarte.", ctaText: "Enviar mensaje" },
   };
   return {
     id,
@@ -567,15 +614,16 @@ export function SiteEditorPanel({
     );
   };
 
+  // Inserta debajo del bloque abierto; si no hay ninguno abierto, antes del footer.
   const addSection = (type: string) => {
     const id = `new-${crypto.randomUUID()}`;
     setSections((current) => {
-      const footer = current.find((section) => section.type === "footer");
-      const order = footer?.order ?? current.length;
-      return [
-        ...current.map((section) => section.type === "footer" ? { ...section, order: section.order + 1 } : section),
-        createSectionDraft(id, type, order),
-      ];
+      const ordered = [...current].sort((a, b) => a.order - b.order);
+      const openIndex = ordered.findIndex((section) => section.id === openId && section.type !== "footer");
+      const footerIndex = ordered.findIndex((section) => section.type === "footer");
+      const insertAt = openIndex >= 0 ? openIndex + 1 : footerIndex >= 0 ? footerIndex : ordered.length;
+      ordered.splice(insertAt, 0, createSectionDraft(id, type, insertAt));
+      return ordered.map((section, order) => ({ ...section, order }));
     });
     setOpenId(id);
     setDirty(true);
@@ -610,53 +658,16 @@ export function SiteEditorPanel({
     });
   };
 
+  // Guardado atomico: una sola peticion, una transaccion en el servidor.
   const persistSave = useCallback(async (payload: SavePayload) => {
-      const siteResponse = await fetch(`/api/sites/${initialSite.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload.site),
-      });
-      if (!siteResponse.ok) {
-        const data = await siteResponse.json().catch(() => null);
-        throw new Error(data?.error ?? "No se pudieron guardar los datos del sitio.");
-      }
-
-      for (const sectionId of payload.deletedSectionIds ?? []) {
-        const response = await fetch(`/api/sites/${initialSite.id}/sections/${sectionId}`, { method: "DELETE" });
-        if (!response.ok) throw new Error((await response.json().catch(() => null))?.error ?? "No se pudo eliminar un bloque.");
-      }
-
-      const created = new Map<string, RenderSection>();
-      for (const section of payload.sections) {
-        const isNew = section.id.startsWith("new-");
-        const response = await fetch(
-          isNew ? `/api/sites/${initialSite.id}/sections` : `/api/sites/${initialSite.id}/sections/${section.id}`,
-          {
-            method: isNew ? "POST" : "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              type: section.type,
-              title: section.title,
-              subtitle: section.subtitle,
-              body: section.body,
-              ctaText: section.ctaText,
-              ctaLink: section.ctaLink,
-              imagePrompt: section.imagePrompt,
-              mediaUrl: section.mediaUrl,
-              altText: section.altText,
-              settings: section.settings,
-              isVisible: section.isVisible,
-              order: section.order,
-            }),
-          }
-        );
-        if (!response.ok) {
-          const data = await response.json().catch(() => null);
-          throw new Error(data?.error ?? "No se pudo guardar una sección.");
-        }
-        if (isNew) created.set(section.id, (await response.json()).section as RenderSection);
-      }
-      return created;
+    const response = await fetch(`/api/sites/${initialSite.id}/content`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    const data = await response.json().catch(() => null);
+    if (!response.ok) throw new Error(data?.error ?? "No se pudo guardar. Ningún cambio fue aplicado.");
+    return data as { idMap: Record<string, string>; sections: RenderSection[] };
   }, [initialSite.id]);
 
   const save = async () => {
@@ -683,8 +694,9 @@ export function SiteEditorPanel({
     setSaving(true);
     setError(null);
     try {
-      const created = await persistSave(payload);
-      if (created.size > 0) setSections((current) => current.map((section) => created.get(section.id) ?? section));
+      const result = await persistSave(payload);
+      setSections(result.sections);
+      setOpenId((current) => (current && result.idMap[current]) || current);
       setDeletedSectionIds([]);
       sessionStorage.removeItem(pendingSaveKey);
       setDirty(false);
@@ -694,6 +706,17 @@ export function SiteEditorPanel({
       setSaving(false);
     }
   };
+
+  // Advierte antes de cerrar la pestaña con cambios sin guardar.
+  useEffect(() => {
+    if (!dirty) return;
+    const warn = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [dirty]);
 
   useEffect(() => {
     if (!isAuthenticated || pendingSaveStartedRef.current) return;
