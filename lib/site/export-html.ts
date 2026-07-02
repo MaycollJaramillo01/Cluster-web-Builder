@@ -57,10 +57,38 @@ function sectionHtml(section: RenderSection, site: ExportSite, contactStyle: Con
   const businessName = site.businessName;
   if (section.type === "contact") return contactSectionHtml(section, site, contactStyle);
   if (section.type === "footer") return `<footer><strong>${escape(section.title || businessName)}</strong><p>${escape(section.subtitle)}</p></footer>`;
-  if (section.type === "contact") return `<section id="contact"><h2>${escape(section.title || "Contacto")}</h2><p>${escape(section.body)}</p><form id="contact-form"><label>Nombre<input name="name" required maxlength="120" autocomplete="name"></label><label>Email<input name="email" type="email" required maxlength="160" autocomplete="email"></label><label>Teléfono<input name="phone" type="tel" maxlength="40" autocomplete="tel"></label><label>Mensaje<textarea name="message" required maxlength="2000"></textarea></label><input name="website" class="trap" tabindex="-1" autocomplete="off"><button>${escape(section.ctaText || "Enviar mensaje")}</button><output aria-live="polite"></output></form></section>`;
+  if (section.type === "image") {
+    const source = safeMediaUrl(section.mediaUrl);
+    return `<section id="image"><h2>${escape(section.title)}</h2>${source ? `<img src="${escape(source)}" alt="${escape(section.altText || section.title || businessName)}" style="width:100%;max-height:720px;object-fit:cover;border-radius:12px">` : ""}<p>${escape(section.body)}</p></section>`;
+  }
+  if (section.type === "video") {
+    const media = exportVideo(section.mediaUrl);
+    const player = media?.kind === "embed" ? `<iframe src="${escape(media.url)}" title="${escape(section.title || "Video")}" allowfullscreen loading="lazy" style="width:100%;aspect-ratio:16/9;border:0"></iframe>` : media ? `<video src="${escape(media.url)}" controls preload="metadata" style="width:100%;aspect-ratio:16/9;background:#000"></video>` : "";
+    return `<section id="video"><h2>${escape(section.title)}</h2>${player}<p>${escape(section.body)}</p></section>`;
+  }
   const items = Array.isArray(section.settings.items) ? section.settings.items : [];
   const cards = items.map((item) => { const record = typeof item === "object" && item ? item as Record<string, unknown> : {}; return `<article><h3>${escape(String(record.title || record.name || ""))}</h3><p>${escape(String(record.description || record.body || record.text || ""))}</p></article>`; }).join("");
   return `<section id="${escape(section.type)}"><p class="eyebrow">${escape(section.subtitle)}</p><h2>${escape(section.title)}</h2><p>${escape(section.body)}</p>${cards ? `<div class="grid">${cards}</div>` : ""}${section.ctaText ? `<a class="button" href="${escape(section.ctaLink || "#contact")}">${escape(section.ctaText)}</a>` : ""}</section>`;
+}
+
+function safeMediaUrl(value?: string) {
+  try {
+    const url = new URL(value || "");
+    return url.protocol === "http:" || url.protocol === "https:" ? url.toString() : "";
+  } catch {
+    return "";
+  }
+}
+
+function exportVideo(value?: string): { kind: "embed" | "file"; url: string } | null {
+  const source = safeMediaUrl(value);
+  if (!source) return null;
+  const url = new URL(source);
+  const youtubeId = url.hostname.includes("youtu.be") ? url.pathname.slice(1) : url.hostname.includes("youtube.com") ? url.searchParams.get("v") : null;
+  if (youtubeId && /^[\w-]{6,20}$/.test(youtubeId)) return { kind: "embed", url: `https://www.youtube-nocookie.com/embed/${youtubeId}` };
+  const vimeoId = url.hostname.includes("vimeo.com") ? url.pathname.split("/").filter(Boolean).at(-1) : null;
+  if (vimeoId && /^\d+$/.test(vimeoId)) return { kind: "embed", url: `https://player.vimeo.com/video/${vimeoId}` };
+  return /\.(mp4|webm)(?:$|\?)/i.test(source) ? { kind: "file", url: source } : null;
 }
 
 function contactSectionHtml(section: RenderSection, site: ExportSite, contactStyle: ContactStyle) {

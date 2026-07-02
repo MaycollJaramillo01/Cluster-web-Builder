@@ -29,7 +29,9 @@ import {
   Shield,
   Sparkles,
   Tag,
+  Type,
   Users,
+  Video,
 } from "lucide-react";
 
 import { SitePreview } from "@/components/builder/SitePreview";
@@ -71,6 +73,7 @@ type SavePayload = {
     accentColor: string;
   };
   sections: RenderSection[];
+  deletedSectionIds: string[];
 };
 
 /* ------------------------------------------------------------------ */
@@ -440,6 +443,36 @@ const SECTION_META: Record<string, EditorSectionMeta> = {
       },
     ],
   },
+  text: {
+    icon: Type,
+    label: "Texto",
+    fields: [
+      { key: "title", label: "Título", type: "input", placeholder: "Título del bloque" },
+      { key: "subtitle", label: "Texto destacado", type: "input", placeholder: "Una frase breve opcional" },
+      { key: "body", label: "Contenido", type: "textarea", placeholder: "Escribe el contenido", rows: 7 },
+      { key: "ctaText", label: "Texto del enlace", type: "input", placeholder: "Opcional" },
+      { key: "ctaLink", label: "URL del enlace", type: "input", placeholder: "#contact o https://…" },
+    ],
+  },
+  image: {
+    icon: Image,
+    label: "Imagen",
+    fields: [
+      { key: "title", label: "Título", type: "input", placeholder: "Título opcional" },
+      { key: "mediaUrl", label: "URL de la imagen", type: "input", placeholder: "https://…" },
+      { key: "altText", label: "Descripción accesible", type: "input", placeholder: "Describe lo que aparece en la imagen" },
+      { key: "body", label: "Pie de imagen", type: "textarea", placeholder: "Texto opcional", rows: 2 },
+    ],
+  },
+  video: {
+    icon: Video,
+    label: "Video",
+    fields: [
+      { key: "title", label: "Título", type: "input", placeholder: "Título opcional" },
+      { key: "mediaUrl", label: "URL del video", type: "input", placeholder: "YouTube, Vimeo, MP4 o WebM" },
+      { key: "body", label: "Descripción", type: "textarea", placeholder: "Texto opcional", rows: 2 },
+    ],
+  },
 };
 
 const DEFAULT_SECTION_META: EditorSectionMeta = {
@@ -451,6 +484,33 @@ const DEFAULT_SECTION_META: EditorSectionMeta = {
     { key: "body", label: "Texto", type: "textarea", placeholder: "Contenido de la sección", rows: 4 },
   ],
 };
+
+function createSectionDraft(id: string, type: string, order: number): RenderSection {
+  const defaults: Record<string, Partial<RenderSection>> = {
+    text: { title: "Nueva sección de texto", body: "Escribe aquí el contenido de esta sección." },
+    image: { title: "Imagen destacada", altText: "Imagen del negocio" },
+    video: { title: "Video destacado" },
+    about_us: { title: "Sobre nosotros", subtitle: "Nuestra historia", body: "Cuenta aquí la historia y experiencia del negocio." },
+    cta: { title: "¿Listo para comenzar?", subtitle: "Habla con nuestro equipo.", ctaText: "Contáctanos", ctaLink: "#contact" },
+    testimonials: { title: "Lo que dicen nuestros clientes", subtitle: "Reseñas" },
+  };
+  return {
+    id,
+    type,
+    title: "Nueva sección",
+    subtitle: "",
+    body: "",
+    ctaText: "",
+    ctaLink: "",
+    imagePrompt: "",
+    mediaUrl: "",
+    altText: "",
+    order,
+    isVisible: true,
+    settings: {},
+    ...defaults[type],
+  };
+}
 
 /* ------------------------------------------------------------------ */
 /* Component                                                            */
@@ -491,6 +551,7 @@ export function SiteEditorPanel({
   const [published, setPublished] = useState(initialSite.status === "PUBLISHED");
   const [publicUrl, setPublicUrl] = useState(initialSite.publicUrl);
   const [error, setError] = useState<string | null>(null);
+  const [deletedSectionIds, setDeletedSectionIds] = useState<string[]>([]);
 
   const previewTheme: SiteTheme = useMemo(
     () => ({ ...initialSite.theme, primary, secondary, accent }),
@@ -504,6 +565,27 @@ export function SiteEditorPanel({
     setSections((current) =>
       current.map((s) => (s.id === id ? { ...s, ...patch } : s))
     );
+  };
+
+  const addSection = (type: string) => {
+    const id = `new-${crypto.randomUUID()}`;
+    setSections((current) => {
+      const footer = current.find((section) => section.type === "footer");
+      const order = footer?.order ?? current.length;
+      return [
+        ...current.map((section) => section.type === "footer" ? { ...section, order: section.order + 1 } : section),
+        createSectionDraft(id, type, order),
+      ];
+    });
+    setOpenId(id);
+    setDirty(true);
+  };
+
+  const deleteSection = (id: string) => {
+    setSections((current) => current.filter((section) => section.id !== id));
+    if (!id.startsWith("new-")) setDeletedSectionIds((current) => [...current, id]);
+    setOpenId(null);
+    setDirty(true);
   };
 
   const move = (id: string, direction: -1 | 1) => {
@@ -539,18 +621,30 @@ export function SiteEditorPanel({
         throw new Error(data?.error ?? "No se pudieron guardar los datos del sitio.");
       }
 
+      for (const sectionId of payload.deletedSectionIds ?? []) {
+        const response = await fetch(`/api/sites/${initialSite.id}/sections/${sectionId}`, { method: "DELETE" });
+        if (!response.ok) throw new Error((await response.json().catch(() => null))?.error ?? "No se pudo eliminar un bloque.");
+      }
+
+      const created = new Map<string, RenderSection>();
       for (const section of payload.sections) {
+        const isNew = section.id.startsWith("new-");
         const response = await fetch(
-          `/api/sites/${initialSite.id}/sections/${section.id}`,
+          isNew ? `/api/sites/${initialSite.id}/sections` : `/api/sites/${initialSite.id}/sections/${section.id}`,
           {
-            method: "PATCH",
+            method: isNew ? "POST" : "PATCH",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
+              type: section.type,
               title: section.title,
               subtitle: section.subtitle,
               body: section.body,
               ctaText: section.ctaText,
               ctaLink: section.ctaLink,
+              imagePrompt: section.imagePrompt,
+              mediaUrl: section.mediaUrl,
+              altText: section.altText,
+              settings: section.settings,
               isVisible: section.isVisible,
               order: section.order,
             }),
@@ -560,7 +654,9 @@ export function SiteEditorPanel({
           const data = await response.json().catch(() => null);
           throw new Error(data?.error ?? "No se pudo guardar una sección.");
         }
+        if (isNew) created.set(section.id, (await response.json()).section as RenderSection);
       }
+      return created;
   }, [initialSite.id]);
 
   const save = async () => {
@@ -575,6 +671,7 @@ export function SiteEditorPanel({
         accentColor: accent,
       },
       sections,
+      deletedSectionIds,
     };
 
     if (!isAuthenticated) {
@@ -586,7 +683,9 @@ export function SiteEditorPanel({
     setSaving(true);
     setError(null);
     try {
-      await persistSave(payload);
+      const created = await persistSave(payload);
+      if (created.size > 0) setSections((current) => current.map((section) => created.get(section.id) ?? section));
+      setDeletedSectionIds([]);
       sessionStorage.removeItem(pendingSaveKey);
       setDirty(false);
     } catch (reason) {
@@ -876,6 +975,8 @@ export function SiteEditorPanel({
                 onOpenChange={setOpenId}
                 onMove={move}
                 onUpdate={updateSection}
+                onAdd={addSection}
+                onDelete={deleteSection}
               />
             ) : (
               <EditorDesignPanel

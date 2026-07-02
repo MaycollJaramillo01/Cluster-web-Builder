@@ -14,6 +14,10 @@ const updateSectionSchema = z.object({
   body: z.string().max(4000).optional(),
   ctaText: z.string().max(120).optional(),
   ctaLink: z.string().max(300).optional(),
+  imagePrompt: z.string().max(500).optional(),
+  mediaUrl: z.string().max(2000).optional(),
+  altText: z.string().max(300).optional(),
+  settings: z.record(z.unknown()).optional(),
   isVisible: z.boolean().optional(),
   order: z.number().int().min(0).optional(),
 });
@@ -53,7 +57,7 @@ export async function PATCH(
   // Merge text fields into the JSON `content` blob.
   const currentContent = (existing.content ?? {}) as Record<string, unknown>;
   const nextContent = { ...currentContent };
-  for (const key of ["subtitle", "body", "ctaText", "ctaLink"] as const) {
+  for (const key of ["subtitle", "body", "ctaText", "ctaLink", "imagePrompt", "mediaUrl", "altText"] as const) {
     if (data[key] !== undefined) nextContent[key] = data[key];
   }
 
@@ -65,6 +69,7 @@ export async function PATCH(
         isVisible: data.isVisible ?? existing.isVisible,
         order: data.order ?? existing.order,
         content: nextContent as object,
+        settingsJson: (data.settings ?? existing.settingsJson ?? {}) as object,
       },
     });
     return NextResponse.json({ ok: true, section: toRenderSection(updated) });
@@ -74,4 +79,23 @@ export async function PATCH(
       { status: 500 }
     );
   }
+}
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ siteId: string; sectionId: string }> }
+) {
+  const { siteId, sectionId } = await params;
+  const user = await getUserBySessionToken(request.cookies.get(SESSION_COOKIE)?.value);
+  if (!user) return NextResponse.json({ error: "Inicia sesión." }, { status: 401 });
+  const section = await prisma.siteSection.findFirst({
+    where: { id: sectionId, siteId, site: { is: { userId: user.id } } },
+    select: { id: true, type: true },
+  });
+  if (!section) return NextResponse.json({ error: "Bloque no encontrado." }, { status: 404 });
+  if (section.type === "hero" || section.type === "footer") {
+    return NextResponse.json({ error: "La portada y el pie de página no se pueden eliminar." }, { status: 400 });
+  }
+  await prisma.siteSection.delete({ where: { id: section.id } });
+  return NextResponse.json({ ok: true });
 }

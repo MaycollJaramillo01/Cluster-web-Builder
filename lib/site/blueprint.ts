@@ -21,6 +21,9 @@ export const SECTION_TYPES = [
   "process",
   "pricing",
   "location",
+  "text",
+  "image",
+  "video",
   "footer",
 ] as const;
 

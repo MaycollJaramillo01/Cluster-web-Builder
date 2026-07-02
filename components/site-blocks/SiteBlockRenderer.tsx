@@ -20,6 +20,9 @@ import { GalleryBlock } from "./GalleryBlock";
 import { GenericBlock } from "./GenericBlock";
 import { ProcessBlock } from "./ProcessBlock";
 import { PricingBlock } from "./PricingBlock";
+import { TextBlock } from "./TextBlock";
+import { ImageBlock } from "./ImageBlock";
+import { VideoBlock } from "./VideoBlock";
 import { Reveal } from "./Reveal";
 import { SiteNav } from "./SiteNav";
 import { SocialDock } from "./SocialDock";
@@ -43,6 +46,9 @@ const BLOCK_MAP: Record<string, BlockComponent> = {
   gallery: GalleryBlock,
   process: ProcessBlock,
   pricing: PricingBlock,
+  text: TextBlock,
+  image: ImageBlock,
+  video: VideoBlock,
 };
 
 export type SiteBlockRendererProps = {

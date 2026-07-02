@@ -13,6 +13,8 @@ export type RenderSection = {
   ctaText: string;
   ctaLink: string;
   imagePrompt: string;
+  mediaUrl?: string;
+  altText?: string;
   order: number;
   isVisible: boolean;
   settings: Record<string, unknown>;
@@ -41,6 +43,8 @@ export function toRenderSection(row: DbSectionRow): RenderSection {
     ctaText: asString(content.ctaText),
     ctaLink: asString(content.ctaLink),
     imagePrompt: asString(content.imagePrompt),
+    mediaUrl: asString(content.mediaUrl),
+    altText: asString(content.altText),
     order: row.order,
     isVisible: row.isVisible,
     settings,

@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDown, ChevronUp, Eye, EyeOff, Link2 } from "lucide-react";
+import { ChevronDown, ChevronUp, Eye, EyeOff, Link2, Plus, Trash2 } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -8,7 +8,7 @@ import type { RenderSection } from "@/lib/site/section";
 import { cn } from "@/lib/utils";
 
 export type EditorFieldDef = {
-  key: "title" | "subtitle" | "body" | "ctaText" | "ctaLink";
+  key: "title" | "subtitle" | "body" | "ctaText" | "ctaLink" | "imagePrompt" | "mediaUrl" | "altText";
   label: string;
   type: "input" | "textarea";
   placeholder?: string;
@@ -30,7 +30,17 @@ type Props = {
   onOpenChange: (id: string | null) => void;
   onMove: (id: string, direction: -1 | 1) => void;
   onUpdate: (id: string, patch: Partial<RenderSection>) => void;
+  onAdd: (type: string) => void;
+  onDelete: (id: string) => void;
 };
+
+const ADDABLE_BLOCKS = [
+  ["text", "Texto"],
+  ["image", "Imagen"],
+  ["video", "Video"],
+  ["about_us", "Nosotros"],
+  ["cta", "Llamado a la acción"],
+] as const;
 
 const fieldClass = "border-border bg-[#120c1d] text-foreground placeholder:text-muted-foreground focus:border-[#8b5cf6] focus:ring-0 transition-colors";
 
@@ -42,6 +52,8 @@ export function EditorContentPanel({
   onOpenChange,
   onMove,
   onUpdate,
+  onAdd,
+  onDelete,
 }: Props) {
   const movableSections = sections.filter((section) => section.type !== "footer");
 
@@ -52,6 +64,21 @@ export function EditorContentPanel({
         {sections.filter((section) => section.isVisible).length} de {sections.length} visibles
       </span>
     </div>
+
+    <label className="mb-4 block">
+      <span className="sr-only">Agregar bloque</span>
+      <span className="flex min-h-11 items-center gap-2 rounded-lg border border-dashed border-[#6d5b83] bg-[#1d1a23] px-3 text-sm text-[#d8c8f8] focus-within:border-[#8b5cf6]">
+        <Plus className="h-4 w-4" aria-hidden="true" />
+        <select
+          value=""
+          onChange={(event) => event.target.value && onAdd(event.target.value)}
+          className="min-h-10 flex-1 cursor-pointer bg-transparent outline-none"
+        >
+          <option value="" className="bg-[#1d1a23]">Agregar bloque…</option>
+          {ADDABLE_BLOCKS.map(([value, label]) => <option key={value} value={value} className="bg-[#1d1a23]">{label}</option>)}
+        </select>
+      </span>
+    </label>
 
     <div className="space-y-2">
       {sections.map((section) => {
@@ -95,6 +122,14 @@ export function EditorContentPanel({
             >
               {section.isVisible ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
             </IconButton>
+            {!isFooter && section.type !== "hero" && (
+              <IconButton
+                title="Eliminar bloque"
+                onClick={() => window.confirm("¿Eliminar este bloque?") && onDelete(section.id)}
+              >
+                <Trash2 className="h-4 w-4" />
+              </IconButton>
+            )}
           </div>
 
           {open && <div className="space-y-5 border-t border-[#2c2832] bg-[#120c1d] px-4 py-5">
