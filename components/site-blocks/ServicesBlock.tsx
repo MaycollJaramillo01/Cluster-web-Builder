@@ -1,7 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
 import { getItems } from "@/lib/site/section";
 import { stockImageUrl } from "@/lib/site/images";
-import { getThemeSurface } from "@/lib/site/theme-surface";
+import { ensureReadable, getThemeSurface } from "@/lib/site/theme-surface";
 import { SectionHeading } from "./shared";
 import type { BlockProps } from "./types";
 
@@ -39,7 +39,7 @@ export function ServicesBlock({ section, theme, preset, site }: BlockProps) {
           <div className="mt-12 border-t" style={{ borderColor: `${theme.text}4d` }}>
             {items.map((item, i) => (
               <article key={i} data-motion-item className="grid gap-4 border-b py-7 md:grid-cols-[5rem_1fr_1.2fr] md:items-start" style={{ borderColor: `${theme.text}33` }}>
-                <span className="text-sm font-semibold" style={{ color: theme.primary }}>{String(i + 1).padStart(2, "0")}</span>
+                <span className="text-sm font-semibold" style={{ color: ensureReadable(theme.primary, theme.background) }}>{String(i + 1).padStart(2, "0")}</span>
                 <h3 className="text-xl font-semibold" style={{ color: theme.text, fontFamily: "var(--site-heading)" }}>{titleFor(item)}</h3>
                 {descriptionFor(item) && <p className="leading-relaxed" style={{ color: surface.muted }}>{descriptionFor(item)}</p>}
               </article>
@@ -79,7 +79,7 @@ export function ServicesBlock({ section, theme, preset, site }: BlockProps) {
             {items.map((item, i) => (
               <article key={i} data-motion-item className={`group flex min-h-64 flex-col border-b border-r p-7 transition-colors duration-200 ${borderedSpan(i)}`} style={{ borderColor: `${theme.text}a6`, backgroundColor: i % 2 ? surface.panel : "transparent" }}>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-bold" style={{ color: theme.primary }}>{String(i + 1).padStart(2, "0")}</span>
+                  <span className="text-sm font-bold" style={{ color: ensureReadable(theme.primary, theme.background) }}>{String(i + 1).padStart(2, "0")}</span>
                   <span className="h-px w-12 transition-[width] duration-200 group-hover:w-20" style={{ backgroundColor: theme.accent }} />
                 </div>
                 <div className="mt-auto pt-12">
@@ -102,7 +102,7 @@ export function ServicesBlock({ section, theme, preset, site }: BlockProps) {
           <div className="grid gap-4 sm:grid-cols-2">
             {items.map((item, i) => (
               <article key={i} data-motion-item className={`p-7 ${preset.cardShadow}`} style={{ backgroundColor: surface.panel, borderRadius: "var(--site-radius)" }}>
-                <span className="text-xs font-bold uppercase tracking-widest" style={{ color: theme.primary }}>Servicio {i + 1}</span>
+                <span className="text-xs font-bold uppercase tracking-widest" style={{ color: ensureReadable(theme.primary, theme.background) }}>Servicio {i + 1}</span>
                 <h3 className="mt-6 text-xl font-semibold" style={{ color: theme.text, fontFamily: "var(--site-heading)" }}>{titleFor(item)}</h3>
                 {descriptionFor(item) && <p className="mt-3 text-sm leading-relaxed" style={{ color: surface.muted }}>{descriptionFor(item)}</p>}
               </article>

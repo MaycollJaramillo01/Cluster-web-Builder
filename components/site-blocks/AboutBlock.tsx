@@ -1,6 +1,6 @@
 /* eslint-disable @next/next/no-img-element */
 import { sectionImageUrl } from "@/lib/site/images";
-import { getThemeSurface } from "@/lib/site/theme-surface";
+import { ensureReadable, getThemeSurface } from "@/lib/site/theme-surface";
 import { getItems } from "@/lib/site/section";
 import type { AboutUsStyle } from "@/lib/site/design";
 import type { BlockProps } from "./types";
@@ -62,7 +62,7 @@ function Img({
 function Kicker({ p, children }: { p: BlockProps; children?: React.ReactNode }) {
   if (!children) return null;
   return (
-    <p className="text-xs font-semibold uppercase tracking-[0.2em]" style={{ color: p.theme.primary }}>
+    <p className="text-xs font-semibold uppercase tracking-[0.2em]" style={{ color: ensureReadable(p.theme.primary, p.theme.background) }}>
       {children}
     </p>
   );
@@ -144,7 +144,7 @@ function ManifestoAbout(p: BlockProps) {
     <section className="px-6 py-24 sm:py-32" style={{ backgroundColor: theme.secondary, color: "#fff" }}>
       <div className="mx-auto max-w-5xl about-stagger">
         <div className="mb-8 h-1.5 w-20" style={{ backgroundColor: theme.accent }} />
-        {section.subtitle && <p className="mb-4 text-sm font-semibold uppercase tracking-[0.2em]" style={{ color: theme.accent }}>{section.subtitle}</p>}
+        {section.subtitle && <p className="mb-4 text-sm font-semibold uppercase tracking-[0.2em]" style={{ color: ensureReadable(theme.accent, theme.secondary) }}>{section.subtitle}</p>}
         {section.title && <h2 className="text-4xl leading-[1.05] sm:text-6xl" style={hStyle(p, "#fff")}>{section.title}</h2>}
         {section.body && <p className="mt-8 max-w-3xl text-xl leading-relaxed text-white/80 sm:text-2xl">{section.body}</p>}
       </div>
@@ -183,7 +183,7 @@ function GridAbout(p: BlockProps) {
           <div className="grid gap-4 about-stagger sm:grid-cols-2">
             {hl.map((h, i) => (
               <div key={i} className={`p-5 ${p.preset.cardShadow}`} style={{ backgroundColor: surface.panel, borderRadius: "var(--site-radius)", border: `1px solid ${theme.text}14` }}>
-                {h.value && <p className="text-3xl font-bold" style={{ color: theme.primary, fontFamily: "var(--site-heading)" }}>{h.value}</p>}
+                {h.value && <p className="text-3xl font-bold" style={{ color: ensureReadable(theme.primary, theme.background, 3), fontFamily: "var(--site-heading)" }}>{h.value}</p>}
                 <p className="font-semibold" style={{ color: theme.text }}>{h.title}</p>
                 {h.description && <p className="mt-1 text-sm" style={{ color: surface.muted }}>{h.description}</p>}
               </div>
@@ -315,7 +315,7 @@ function PortraitAbout(p: BlockProps) {
             <div className="mt-7 flex flex-wrap gap-8 about-stagger">
               {hl.slice(0, 3).map((h, i) => (
                 <div key={i}>
-                  <p className="text-2xl font-bold" style={{ color: theme.primary }}>{h.value || h.title}</p>
+                  <p className="text-2xl font-bold" style={{ color: ensureReadable(theme.primary, theme.background, 3) }}>{h.value || h.title}</p>
                   {h.value && <p className="text-sm" style={{ color: surface.muted }}>{h.title}</p>}
                 </div>
               ))}
@@ -407,7 +407,7 @@ function StatsAbout(p: BlockProps) {
             <div className="mt-8 grid grid-cols-2 gap-6 about-stagger">
               {hl.map((h, i) => (
                 <div key={i} className="border-l-2 pl-4" style={{ borderColor: theme.accent }}>
-                  <p className="text-3xl font-bold" style={{ color: theme.primary, fontFamily: "var(--site-heading)" }}>{h.value || h.title}</p>
+                  <p className="text-3xl font-bold" style={{ color: ensureReadable(theme.primary, theme.background, 3), fontFamily: "var(--site-heading)" }}>{h.value || h.title}</p>
                   {h.value && <p className="text-sm" style={{ color: surface.muted }}>{h.title}</p>}
                 </div>
               ))}
@@ -481,7 +481,7 @@ function QuoteAbout(p: BlockProps) {
         <div className="text-7xl leading-none" style={{ color: theme.accent, fontFamily: "Georgia, serif" }}>“</div>
         {section.title && <h2 className="mx-auto -mt-6 max-w-3xl text-2xl leading-snug sm:text-4xl" style={hStyle(p)}>{section.title}</h2>}
         {section.body && <p className="mx-auto mt-6 max-w-2xl leading-relaxed" style={{ color: surface.muted }}>{section.body}</p>}
-        {section.subtitle && <p className="mt-8 text-sm font-semibold uppercase tracking-[0.2em]" style={{ color: theme.primary }}>{section.subtitle}</p>}
+        {section.subtitle && <p className="mt-8 text-sm font-semibold uppercase tracking-[0.2em]" style={{ color: ensureReadable(theme.primary, theme.background) }}>{section.subtitle}</p>}
       </div>
     </section>
   );
@@ -579,7 +579,7 @@ function BigtypeAbout(p: BlockProps) {
   return (
     <section className="px-6 py-24 sm:py-32" style={{ backgroundColor: sectionBg(p) }}>
       <div className="mx-auto max-w-6xl about-rise">
-        {section.subtitle && <p className="text-sm font-semibold uppercase tracking-[0.3em]" style={{ color: theme.primary }}>{section.subtitle}</p>}
+        {section.subtitle && <p className="text-sm font-semibold uppercase tracking-[0.3em]" style={{ color: ensureReadable(theme.primary, theme.background) }}>{section.subtitle}</p>}
         {section.title && <h2 className="mt-4 text-5xl leading-[0.95] sm:text-8xl" style={hStyle(p)}>{section.title}</h2>}
         {section.body && <p className="mt-8 max-w-2xl text-lg leading-relaxed" style={{ color: surface.muted }}>{section.body}</p>}
       </div>
@@ -624,7 +624,7 @@ function MinimalLineAbout(p: BlockProps) {
         <div className="my-8 h-px w-full" style={{ backgroundColor: `${theme.text}1f` }} />
         <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
           {section.body && <p className="max-w-xl leading-relaxed" style={{ color: surface.muted }}>{section.body}</p>}
-          {section.subtitle && <p className="shrink-0 text-sm font-semibold uppercase tracking-[0.2em]" style={{ color: theme.primary }}>{section.subtitle}</p>}
+          {section.subtitle && <p className="shrink-0 text-sm font-semibold uppercase tracking-[0.2em]" style={{ color: ensureReadable(theme.primary, theme.background) }}>{section.subtitle}</p>}
         </div>
       </div>
     </section>

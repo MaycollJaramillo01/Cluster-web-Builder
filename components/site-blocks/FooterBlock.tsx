@@ -1,4 +1,4 @@
-import { getContrastText } from "@/lib/site/theme-surface";
+import { ensureReadable, getContrastText } from "@/lib/site/theme-surface";
 import type { BlockProps, BlockSiteInfo } from "./types";
 
 type ContactListProps = {
@@ -140,11 +140,11 @@ export function FooterBlock({ section, theme, site, preset }: BlockProps) {
           {section.subtitle && <p className="mt-3 max-w-sm text-sm leading-relaxed opacity-65">{section.subtitle}</p>}
         </div>
         <div>
-          <p className="mb-4 text-xs font-bold uppercase tracking-[0.16em]" style={{ color: theme.accent }}>Contacto</p>
+          <p className="mb-4 text-xs font-bold uppercase tracking-[0.16em]" style={{ color: ensureReadable(theme.accent, theme.secondary) }}>Contacto</p>
           <ContactList site={{ ...site, location: null }} className="flex flex-col gap-2 text-sm" />
         </div>
         <div>
-          <p className="mb-4 text-xs font-bold uppercase tracking-[0.16em]" style={{ color: theme.accent }}>Ubicación</p>
+          <p className="mb-4 text-xs font-bold uppercase tracking-[0.16em]" style={{ color: ensureReadable(theme.accent, theme.secondary) }}>Ubicación</p>
           <p className="text-sm opacity-70">{site.location || "Atención disponible en línea"}</p>
         </div>
       </div>

@@ -1,4 +1,5 @@
-import { ABOUT_US_STYLES, CONTACT_STYLES, DESIGN_STYLE_IDS, getAllDesignPresets, getDesignPreset, getDesignRecipeFingerprint, resolvePalette } from "../lib/site/design.ts";
+import { ABOUT_US_STYLES, CONTACT_STYLES, DESIGN_STYLE_IDS, getAllDesignPresets, getAllPalettes, getDesignPreset, getDesignRecipeFingerprint, resolvePalette } from "../lib/site/design.ts";
+import { ensureReadable, getContrastRatio, getContrastText } from "../lib/site/theme-surface.ts";
 import { getFamilyAffinity, selectLandingTemplate } from "../lib/site/template-intent.ts";
 import { getTemplateCandidates } from "../lib/site/template-selection.ts";
 import { normalizeSocialLinks } from "../lib/site/social-links.ts";
@@ -77,6 +78,21 @@ assert(legacyCandidates[0].style === "Service" && legacyCandidates.length === 6,
 assert(getFamilyAffinity("Restaurante")[0] === "catalog", "la etiqueta Restaurante no mapea a la familia catalog.");
 assert(getFamilyAffinity("restaurant")[0] === "catalog", "el enum restaurant no mapea a la familia catalog.");
 assert(getFamilyAffinity("Negocio")[0] === "service", "una industria desconocida debe caer a la afinidad genérica.");
+
+// Accesibilidad WCAG 2.1: cada variante de paleta debe cumplir AA en sus usos reales.
+for (const [group, variants] of Object.entries(getAllPalettes())) {
+  variants.forEach((palette, index) => {
+    const id = `${group}[${index}]`;
+    assert(getContrastRatio(palette.text, palette.background) >= 4.5, `${id}: el texto de cuerpo no alcanza 4.5:1 sobre el fondo.`);
+    assert(getContrastRatio(palette.primary, palette.background) >= 3, `${id}: el primario no alcanza 3:1 sobre el fondo (botones invisibles, WCAG 1.4.11).`);
+    for (const [role, fill] of [["primario", palette.primary], ["acento", palette.accent], ["secundario", palette.secondary]]) {
+      assert(getContrastRatio(getContrastText(fill), fill) >= 4.5, `${id}: un boton ${role} no permite texto legible (4.5:1).`);
+    }
+    assert(getContrastRatio(ensureReadable(palette.accent, palette.background), palette.background) >= 4.5, `${id}: ensureReadable no logra acento legible sobre el fondo.`);
+    assert(getContrastRatio(ensureReadable(palette.primary, palette.background), palette.background) >= 4.5, `${id}: ensureReadable no logra primario legible sobre el fondo.`);
+    assert(getContrastRatio(ensureReadable(palette.accent, palette.secondary), palette.secondary) >= 4.5, `${id}: ensureReadable no logra acento legible sobre el secundario.`);
+  });
+}
 
 const social = normalizeSocialLinks({ instagram: "@cluster", facebook: "facebook.com/cluster" });
 assert(social.instagram === "https://instagram.com/cluster", "Instagram no se normaliza a una URL funcional.");

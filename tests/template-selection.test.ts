@@ -65,3 +65,13 @@ test("la plantilla reordena secciones y mantiene el footer al final", () => {
   const ordered = orderSectionsForTemplate(sections, "Catalog");
   assert.deepEqual(ordered.map((section) => section.type), ["hero", "services", "contact", "footer"]);
 });
+
+test("ensureReadable garantiza contraste AA conservando colores ya validos", async () => {
+  const { ensureReadable, getContrastRatio } = await import("@/lib/site/theme-surface");
+  assert.equal(ensureReadable("#111827", "#ffffff"), "#111827");
+  const fixed = ensureReadable("#facc15", "#ffffff");
+  assert.ok(getContrastRatio(fixed, "#ffffff") >= 4.5, "no alcanzo 4.5:1 sobre blanco");
+  const lightened = ensureReadable("#0f172a", "#0b1120");
+  assert.ok(getContrastRatio(lightened, "#0b1120") >= 4.5, "no alcanzo 4.5:1 sobre fondo oscuro");
+  assert.ok(getContrastRatio(ensureReadable("#22d3ee", "#f0f9ff", 3), "#f0f9ff") >= 3, "no alcanzo 3:1 grafico");
+});

@@ -2,7 +2,7 @@
 import { BadgeCheck, Star } from "lucide-react";
 
 import { getItems } from "@/lib/site/section";
-import { getContrastText, getThemeSurface } from "@/lib/site/theme-surface";
+import { ensureReadable, getContrastText, getThemeSurface } from "@/lib/site/theme-surface";
 import { SectionHeading } from "./shared";
 import type { BlockProps } from "./types";
 
@@ -83,13 +83,13 @@ export function TestimonialsBlock({ section, theme, preset }: BlockProps) {
             {reviews.map((review, i) => (
               <figure key={i} data-motion-item className="flex flex-col gap-5">
                 <span className="block text-7xl font-black leading-none" style={{ color: theme.primary, fontFamily: "var(--site-heading)", opacity: 0.25 }}>"</span>
-                <Stars rating={review.rating} color={theme.accent} />
+                <Stars rating={review.rating} color={ensureReadable(theme.accent, theme.background, 3)} />
                 <blockquote className="flex-1 text-xl leading-relaxed" style={{ color: theme.text, fontFamily: "var(--site-heading)", fontStyle: "italic" }}>
                   {review.quote}
                 </blockquote>
                 <div className="flex flex-col gap-3 border-t pt-5" style={{ borderColor: `${theme.text}18` }}>
                   {author(review, theme.text, surface.muted, theme.primary)}
-                  <VerifiedChip source={review.source} color={theme.primary} />
+                  <VerifiedChip source={review.source} color={ensureReadable(theme.primary, theme.background)} />
                 </div>
               </figure>
             ))}
@@ -112,9 +112,9 @@ export function TestimonialsBlock({ section, theme, preset }: BlockProps) {
                 <blockquote className="mt-3 text-lg leading-relaxed" style={{ color: theme.text }}>"{review.quote}"</blockquote>
                 <figcaption className="mt-4 flex flex-wrap items-center gap-3">
                   <span className="h-px flex-1" style={{ backgroundColor: `${theme.primary}33` }} />
-                  <span className="text-sm font-semibold" style={{ color: theme.primary }}>{review.name}</span>
+                  <span className="text-sm font-semibold" style={{ color: ensureReadable(theme.primary, theme.background) }}>{review.name}</span>
                   {review.role && <span className="text-xs" style={{ color: surface.muted }}>{review.role}</span>}
-                  <VerifiedChip source={review.source} color={theme.primary} />
+                  <VerifiedChip source={review.source} color={ensureReadable(theme.primary, theme.background)} />
                 </figcaption>
               </figure>
             ))}
@@ -137,10 +137,10 @@ export function TestimonialsBlock({ section, theme, preset }: BlockProps) {
               const mutedColor = i % 3 === 0 ? `${textColor}b8` : surface.muted;
               return (
                 <figure key={i} data-motion-item className="flex flex-col gap-4 p-6" style={{ backgroundColor: bg, borderRadius: "var(--site-radius)" }}>
-                  <Stars rating={review.rating} color={i % 3 === 0 ? textColor : theme.accent} />
+                  <Stars rating={review.rating} color={i % 3 === 0 ? textColor : ensureReadable(theme.accent, theme.background, 3)} />
                   <blockquote className="flex-1 text-sm leading-relaxed" style={{ color: textColor }}>"{review.quote}"</blockquote>
                   {author(review, textColor, mutedColor, i % 3 === 0 ? theme.accent : theme.primary)}
-                  <VerifiedChip source={review.source} color={i % 3 === 0 ? textColor : theme.primary} />
+                  <VerifiedChip source={review.source} color={i % 3 === 0 ? textColor : ensureReadable(theme.primary, theme.background)} />
                 </figure>
               );
             })}
@@ -164,8 +164,8 @@ export function TestimonialsBlock({ section, theme, preset }: BlockProps) {
                 </span>
                 <div className="flex-1">
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <Stars rating={review.rating} color={theme.accent} />
-                    <VerifiedChip source={review.source} color={theme.primary} />
+                    <Stars rating={review.rating} color={ensureReadable(theme.accent, theme.background, 3)} />
+                    <VerifiedChip source={review.source} color={ensureReadable(theme.primary, theme.background)} />
                   </div>
                   <blockquote className="mt-3 leading-relaxed" style={{ color: theme.text }}>"{review.quote}"</blockquote>
                   <figcaption className="mt-3 flex items-center gap-2">
@@ -191,8 +191,8 @@ export function TestimonialsBlock({ section, theme, preset }: BlockProps) {
           <div className="mt-14 space-y-6">
             <figure data-motion-item className={`border p-8 sm:p-10 ${preset.cardShadow}`} style={{ backgroundColor: surface.panel, borderColor: `${theme.primary}22`, borderRadius: "var(--site-radius)" }}>
               <div className="flex items-center justify-between gap-3">
-                <Stars rating={first.rating} color={theme.accent} />
-                <VerifiedChip source={first.source} color={theme.primary} />
+                <Stars rating={first.rating} color={ensureReadable(theme.accent, theme.background, 3)} />
+                <VerifiedChip source={first.source} color={ensureReadable(theme.primary, theme.background)} />
               </div>
               <blockquote className="mt-6 text-2xl font-semibold leading-snug sm:text-3xl" style={{ color: theme.text, fontFamily: "var(--site-heading)" }}>
                 {first.quote}
@@ -203,7 +203,7 @@ export function TestimonialsBlock({ section, theme, preset }: BlockProps) {
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {rest.map((review, i) => (
                   <figure key={i} data-motion-item className={`flex flex-col gap-4 border p-6 ${preset.cardShadow}`} style={{ backgroundColor: surface.panel, borderRadius: "var(--site-radius)", borderColor: `${theme.text}14` }}>
-                    <Stars rating={review.rating} color={theme.accent} />
+                    <Stars rating={review.rating} color={ensureReadable(theme.accent, theme.background, 3)} />
                     <blockquote className="flex-1 text-sm leading-relaxed" style={{ color: surface.muted }}>"{review.quote}"</blockquote>
                     {author(review, theme.text, surface.muted, theme.primary)}
                   </figure>
@@ -224,7 +224,7 @@ export function TestimonialsBlock({ section, theme, preset }: BlockProps) {
       <div className="mx-auto max-w-6xl">
         <div className="mx-auto max-w-2xl text-center">
           {section.subtitle && (
-            <p className="text-xs font-bold uppercase tracking-[0.2em]" style={{ color: theme.accent }}>{section.subtitle}</p>
+            <p className="text-xs font-bold uppercase tracking-[0.2em]" style={{ color: ensureReadable(theme.accent, theme.secondary) }}>{section.subtitle}</p>
           )}
           {section.title && (
             <h2
@@ -239,13 +239,13 @@ export function TestimonialsBlock({ section, theme, preset }: BlockProps) {
         <div className="mt-12 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
           {reviews.map((review, i) => (
             <figure key={i} data-motion-item className="flex flex-col gap-4 border p-7" style={{ backgroundColor: cardBg, borderColor: `${bandText}1f`, borderRadius: "var(--site-radius)" }}>
-              <Stars rating={review.rating} color={theme.accent} />
+              <Stars rating={review.rating} color={ensureReadable(theme.accent, theme.secondary, 3)} />
               <blockquote className="flex-1 leading-relaxed" style={{ color: bandText, opacity: 0.92 }}>"{review.quote}"</blockquote>
               <figcaption>
                 <span className="block font-semibold" style={{ color: bandText }}>{review.name}</span>
                 {review.role && <span className="text-sm" style={{ color: bandText, opacity: 0.65 }}>{review.role}</span>}
               </figcaption>
-              <VerifiedChip source={review.source} color={theme.accent} />
+              <VerifiedChip source={review.source} color={ensureReadable(theme.accent, theme.secondary)} />
             </figure>
           ))}
         </div>

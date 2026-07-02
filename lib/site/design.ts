@@ -305,7 +305,7 @@ const PALETTES: Record<string, Palette[]> = {
   modern_clean: [
     { primary: "#2563eb", secondary: "#0f172a", accent: "#0ea5e9", background: "#ffffff", text: "#0f172a" },
     { primary: "#0d9488", secondary: "#134e4a", accent: "#f59e0b", background: "#ffffff", text: "#0f172a" },
-    { primary: "#0284c7", secondary: "#0c4a6e", accent: "#f97316", background: "#ffffff", text: "#0f172a" },
+    { primary: "#0369a1", secondary: "#0c4a6e", accent: "#f97316", background: "#ffffff", text: "#0f172a" },
   ],
   premium_elegant: [
     { primary: "#1e293b", secondary: "#0f172a", accent: "#c2a14d", background: "#faf9f6", text: "#1a1a1a" },
@@ -346,15 +346,15 @@ const EXTRA_PALETTES: Record<string, Palette[]> = {
   ],
 
   startup_modern: [
-    { primary: "#6366f1", secondary: "#312e81", accent: "#f97316", background: "#ffffff", text: "#1e1b4b" },
-    { primary: "#0ea5e9", secondary: "#075985", accent: "#84cc16", background: "#f8fafc", text: "#082f49" },
-    { primary: "#14b8a6", secondary: "#134e4a", accent: "#eab308", background: "#ffffff", text: "#0f172a" },
+    { primary: "#4f46e5", secondary: "#312e81", accent: "#f97316", background: "#ffffff", text: "#1e1b4b" },
+    { primary: "#0369a1", secondary: "#075985", accent: "#84cc16", background: "#f8fafc", text: "#082f49" },
+    { primary: "#0f766e", secondary: "#134e4a", accent: "#eab308", background: "#ffffff", text: "#0f172a" },
   ],
 
   luxury_dark: [
-    { primary: "#0f172a", secondary: "#020617", accent: "#d4af37", background: "#0b1120", text: "#f8fafc" },
-    { primary: "#1c1917", secondary: "#0c0a09", accent: "#c08457", background: "#120f0d", text: "#fafaf9" },
-    { primary: "#111827", secondary: "#030712", accent: "#eab308", background: "#0a0a0a", text: "#f9fafb" },
+    { primary: "#cbd5e1", secondary: "#020617", accent: "#d4af37", background: "#0b1120", text: "#f8fafc" },
+    { primary: "#d6d3d1", secondary: "#0c0a09", accent: "#c08457", background: "#120f0d", text: "#fafaf9" },
+    { primary: "#d1d5db", secondary: "#030712", accent: "#eab308", background: "#0a0a0a", text: "#f9fafb" },
   ],
 
   luxury_light: [
@@ -371,7 +371,7 @@ const EXTRA_PALETTES: Record<string, Palette[]> = {
 
   construction: [
     { primary: "#ea580c", secondary: "#1f2937", accent: "#facc15", background: "#fff7ed", text: "#111827" },
-    { primary: "#ca8a04", secondary: "#292524", accent: "#f97316", background: "#ffffff", text: "#1c1917" },
+    { primary: "#a16207", secondary: "#292524", accent: "#f97316", background: "#ffffff", text: "#1c1917" },
     { primary: "#b45309", secondary: "#111827", accent: "#ef4444", background: "#fffbeb", text: "#1f2937" },
   ],
 
@@ -412,15 +412,15 @@ const EXTRA_PALETTES: Record<string, Palette[]> = {
   ],
 
   medical_healthcare: [
-    { primary: "#0284c7", secondary: "#075985", accent: "#22c55e", background: "#f8fafc", text: "#0f172a" },
+    { primary: "#0369a1", secondary: "#075985", accent: "#22c55e", background: "#f8fafc", text: "#0f172a" },
     { primary: "#0d9488", secondary: "#134e4a", accent: "#38bdf8", background: "#ffffff", text: "#0f172a" },
     { primary: "#2563eb", secondary: "#1e40af", accent: "#14b8a6", background: "#f0f9ff", text: "#172554" },
   ],
 
   dental_clinic: [
-    { primary: "#0ea5e9", secondary: "#075985", accent: "#ffffff", background: "#f0f9ff", text: "#0f172a" },
-    { primary: "#06b6d4", secondary: "#164e63", accent: "#a7f3d0", background: "#ecfeff", text: "#083344" },
-    { primary: "#2563eb", secondary: "#1d4ed8", accent: "#67e8f9", background: "#ffffff", text: "#111827" },
+    { primary: "#0369a1", secondary: "#075985", accent: "#0e7490", background: "#f0f9ff", text: "#0f172a" },
+    { primary: "#0e7490", secondary: "#164e63", accent: "#0f766e", background: "#ecfeff", text: "#083344" },
+    { primary: "#2563eb", secondary: "#1d4ed8", accent: "#0891b2", background: "#ffffff", text: "#111827" },
   ],
 
   legal_professional: [
@@ -460,8 +460,8 @@ const EXTRA_PALETTES: Record<string, Palette[]> = {
   ],
 
   cleaning_services: [
-    { primary: "#0ea5e9", secondary: "#075985", accent: "#22c55e", background: "#f0f9ff", text: "#0f172a" },
-    { primary: "#14b8a6", secondary: "#0f766e", accent: "#38bdf8", background: "#ffffff", text: "#134e4a" },
+    { primary: "#0369a1", secondary: "#075985", accent: "#22c55e", background: "#f0f9ff", text: "#0f172a" },
+    { primary: "#0f766e", secondary: "#115e59", accent: "#38bdf8", background: "#ffffff", text: "#134e4a" },
     { primary: "#2563eb", secondary: "#1e40af", accent: "#a3e635", background: "#f8fafc", text: "#111827" },
   ],
 
@@ -472,9 +472,9 @@ const EXTRA_PALETTES: Record<string, Palette[]> = {
   ],
 
   kids_fun: [
-    { primary: "#f97316", secondary: "#7c2d12", accent: "#22c55e", background: "#fff7ed", text: "#1f2937" },
+    { primary: "#c2410c", secondary: "#7c2d12", accent: "#22c55e", background: "#fff7ed", text: "#1f2937" },
     { primary: "#db2777", secondary: "#831843", accent: "#38bdf8", background: "#fdf2f8", text: "#3b0a24" },
-    { primary: "#eab308", secondary: "#854d0e", accent: "#7c3aed", background: "#fefce8", text: "#292524" },
+    { primary: "#a16207", secondary: "#854d0e", accent: "#7c3aed", background: "#fefce8", text: "#292524" },
   ],
 
   cybersecurity: [
@@ -494,6 +494,11 @@ const ALL_PALETTES: Record<string, Palette[]> = {
   ...PALETTES,
   ...EXTRA_PALETTES,
 };
+
+/** Todas las paletas del sistema, para la auditoria de accesibilidad de check:design. */
+export function getAllPalettes(): Record<string, Palette[]> {
+  return ALL_PALETTES;
+}
 
 /** Deterministic palette for a given style + seed (business name). */
 export function getPalette(

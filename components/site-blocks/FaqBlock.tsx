@@ -1,5 +1,5 @@
 import { getItems } from "@/lib/site/section";
-import { getThemeSurface } from "@/lib/site/theme-surface";
+import { ensureReadable, getThemeSurface } from "@/lib/site/theme-surface";
 import { SectionHeading } from "./shared";
 import type { BlockProps } from "./types";
 
@@ -16,7 +16,7 @@ export function FaqBlock({ section, theme, preset }: BlockProps) {
           <div className="lg:sticky lg:top-28 lg:self-start">
             <SectionHeading title={section.title} subtitle={section.subtitle} theme={theme} preset={preset} align="left" />
             {section.body ? <p className="mt-6 max-w-xl leading-relaxed" style={{ color: surface.muted }}>{section.body}</p> : null}
-            <p className="mt-10 text-xs font-bold uppercase tracking-[0.2em]" style={{ color: theme.primary }}>
+            <p className="mt-10 text-xs font-bold uppercase tracking-[0.2em]" style={{ color: ensureReadable(theme.primary, theme.background) }}>
               {items.length} {items.length === 1 ? "respuesta" : "respuestas"}
             </p>
           </div>
@@ -28,7 +28,7 @@ export function FaqBlock({ section, theme, preset }: BlockProps) {
                     <span className="text-xs font-bold tabular-nums opacity-55">{String(i + 1).padStart(2, "0")}</span>
                     <span>{String(item.question ?? item.title ?? "Pregunta")}</span>
                   </span>
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border text-lg transition-transform duration-200 group-open:rotate-45" aria-hidden="true" style={{ color: theme.accent }}>+</span>
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border text-lg transition-transform duration-200 group-open:rotate-45" aria-hidden="true" style={{ color: ensureReadable(theme.accent, theme.background, 3) }}>+</span>
                 </summary>
                 {item.answer ? <p className="pb-6 pl-10 pr-12 text-sm leading-relaxed sm:text-base" style={{ color: surface.muted }}>{String(item.answer)}</p> : null}
               </details>
@@ -48,7 +48,7 @@ export function FaqBlock({ section, theme, preset }: BlockProps) {
           <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {items.map((item, i) => (
               <article key={i} data-motion-item className={`flex flex-col gap-4 border p-6 ${preset.cardShadow}`} style={{ backgroundColor: surface.panel, borderColor: `${theme.primary}28`, borderRadius: "var(--site-radius)" }}>
-                <p className="text-xs font-bold uppercase tracking-[0.18em]" style={{ color: theme.primary }}>{String(i + 1).padStart(2, "0")}</p>
+                <p className="text-xs font-bold uppercase tracking-[0.18em]" style={{ color: ensureReadable(theme.primary, theme.background) }}>{String(i + 1).padStart(2, "0")}</p>
                 <h3 className="font-semibold leading-snug" style={{ color: theme.text, fontFamily: "var(--site-heading)" }}>
                   {String(item.question ?? item.title ?? "Pregunta")}
                 </h3>
@@ -135,7 +135,7 @@ export function FaqBlock({ section, theme, preset }: BlockProps) {
         <div className={useSplitLayout ? "lg:sticky lg:top-28 lg:self-start" : ""}>
           <SectionHeading title={section.title} subtitle={section.subtitle} theme={theme} preset={preset} align={useSplitLayout ? "left" : undefined} />
           {section.body ? <p className={`mt-6 max-w-xl leading-relaxed ${useSplitLayout ? "" : "mx-auto text-center"}`} style={{ color: surface.muted }}>{section.body}</p> : null}
-          {useSplitLayout ? <p className="mt-10 text-xs font-bold uppercase tracking-[0.2em]" style={{ color: theme.primary }}>Respuestas directas</p> : null}
+          {useSplitLayout ? <p className="mt-10 text-xs font-bold uppercase tracking-[0.2em]" style={{ color: ensureReadable(theme.primary, theme.background) }}>Respuestas directas</p> : null}
         </div>
         <div className={`${useSplitLayout ? "" : "mt-12"} divide-y border`} style={{ backgroundColor: surface.panel, borderColor: `${theme.text}1f`, borderRadius: "var(--site-radius)" }}>
           {items.map((item, i) => (
@@ -145,7 +145,7 @@ export function FaqBlock({ section, theme, preset }: BlockProps) {
                   <span className="text-xs font-bold tabular-nums opacity-55">{String(i + 1).padStart(2, "0")}</span>
                   <span>{String(item.question ?? item.title ?? "Pregunta")}</span>
                 </span>
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border text-lg transition-transform duration-200 group-open:rotate-45" aria-hidden="true" style={{ color: theme.accent }}>+</span>
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border text-lg transition-transform duration-200 group-open:rotate-45" aria-hidden="true" style={{ color: ensureReadable(theme.accent, theme.background, 3) }}>+</span>
               </summary>
               {item.answer ? <p className="pb-6 pl-10 pr-12 text-sm leading-relaxed sm:text-base" style={{ color: surface.muted }}>{String(item.answer)}</p> : null}
             </details>

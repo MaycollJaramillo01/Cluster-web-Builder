@@ -1,5 +1,5 @@
 import { getItems } from "@/lib/site/section";
-import { getThemeSurface } from "@/lib/site/theme-surface";
+import { ensureReadable, getThemeSurface } from "@/lib/site/theme-surface";
 import { SectionHeading } from "./shared";
 import type { BlockProps } from "./types";
 
@@ -98,7 +98,7 @@ export function PricingBlock({ section, theme, preset }: BlockProps) {
                   )}
                 </div>
                 {item.price != null && (
-                  <span className="shrink-0 text-xl font-bold tabular-nums" style={{ color: theme.primary }}>
+                  <span className="shrink-0 text-xl font-bold tabular-nums" style={{ color: ensureReadable(theme.primary, theme.background, 3) }}>
                     {String(item.price)}
                   </span>
                 )}
@@ -125,14 +125,14 @@ export function PricingBlock({ section, theme, preset }: BlockProps) {
             <div data-motion-item className={`mt-12 border p-8 sm:p-10 ${preset.cardShadow}`} style={{ borderColor: theme.primary, borderRadius: "var(--site-radius)", backgroundColor: surface.panel }}>
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>
-                  <span className="text-xs font-bold uppercase tracking-[0.2em]" style={{ color: theme.primary }}>Mas popular</span>
+                  <span className="text-xs font-bold uppercase tracking-[0.2em]" style={{ color: ensureReadable(theme.primary, theme.background) }}>Mas popular</span>
                   <h3 className="mt-2 text-3xl font-bold" style={{ color: theme.text, fontFamily: "var(--site-heading)", fontWeight: preset.headingWeight }}>
                     {firstName}
                   </h3>
                 </div>
                 {first.price != null && (
                   <div className="text-right">
-                    <span className="block text-4xl font-black tabular-nums" style={{ color: theme.primary }}>{String(first.price)}</span>
+                    <span className="block text-4xl font-black tabular-nums" style={{ color: ensureReadable(theme.primary, theme.background, 3) }}>{String(first.price)}</span>
                   </div>
                 )}
               </div>
@@ -155,7 +155,7 @@ export function PricingBlock({ section, theme, preset }: BlockProps) {
                 return (
                   <div key={i} data-motion-item className={`border p-6 ${preset.cardShadow}`} style={{ borderColor: `${theme.text}14`, borderRadius: "var(--site-radius)", backgroundColor: surface.panel }}>
                     <h3 className="font-semibold" style={{ color: theme.text, fontFamily: "var(--site-heading)" }}>{name}</h3>
-                    {item.price != null && <p className="mt-2 text-2xl font-bold" style={{ color: theme.primary }}>{String(item.price)}</p>}
+                    {item.price != null && <p className="mt-2 text-2xl font-bold" style={{ color: ensureReadable(theme.primary, theme.background, 3) }}>{String(item.price)}</p>}
                     {item.description != null && <p className="mt-3 text-sm leading-relaxed" style={{ color: surface.muted }}>{String(item.description)}</p>}
                   </div>
                 );
@@ -178,7 +178,7 @@ export function PricingBlock({ section, theme, preset }: BlockProps) {
             {items.map((item, i) => (
               <div key={i} data-motion-item className="border-t-2 pt-6" style={{ borderColor: i === 0 ? theme.primary : `${theme.primary}40` }}>
                 {item.price != null && (
-                  <p className="text-4xl font-black tabular-nums" style={{ color: theme.primary, fontFamily: "var(--site-heading)" }}>
+                  <p className="text-4xl font-black tabular-nums" style={{ color: ensureReadable(theme.primary, theme.background, 3), fontFamily: "var(--site-heading)" }}>
                     {String(item.price)}
                   </p>
                 )}

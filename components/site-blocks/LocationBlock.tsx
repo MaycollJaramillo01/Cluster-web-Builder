@@ -1,4 +1,4 @@
-import { getThemeSurface } from "@/lib/site/theme-surface";
+import { ensureReadable, getThemeSurface } from "@/lib/site/theme-surface";
 import { SectionHeading } from "./shared";
 import type { BlockProps } from "./types";
 
@@ -19,18 +19,18 @@ export function LocationBlock({ section, theme, preset, site }: BlockProps) {
           <div className="mt-12 grid overflow-hidden border lg:grid-cols-[0.9fr_1.1fr]" style={{ borderColor: `${theme.primary}22`, borderRadius: "var(--site-radius)" }}>
             <div className="flex flex-col justify-center gap-6 p-8 sm:p-10" style={{ backgroundColor: surface.panel }}>
               <div>
-                <p className="text-xs font-bold uppercase tracking-[0.18em]" style={{ color: theme.primary }}>Ubicacion</p>
+                <p className="text-xs font-bold uppercase tracking-[0.18em]" style={{ color: ensureReadable(theme.primary, theme.background) }}>Ubicacion</p>
                 <p className="mt-2 text-xl font-semibold" style={{ color: theme.text, fontFamily: "var(--site-heading)" }}>{place}</p>
               </div>
               {phone && (
                 <div>
-                  <p className="text-xs font-bold uppercase tracking-[0.18em]" style={{ color: theme.primary }}>Telefono</p>
+                  <p className="text-xs font-bold uppercase tracking-[0.18em]" style={{ color: ensureReadable(theme.primary, theme.background) }}>Telefono</p>
                   <a href={`tel:${phone}`} className="mt-2 block text-lg hover:underline" style={{ color: theme.text }}>{phone}</a>
                 </div>
               )}
               {email && (
                 <div>
-                  <p className="text-xs font-bold uppercase tracking-[0.18em]" style={{ color: theme.primary }}>Email</p>
+                  <p className="text-xs font-bold uppercase tracking-[0.18em]" style={{ color: ensureReadable(theme.primary, theme.background) }}>Email</p>
                   <a href={`mailto:${email}`} className="mt-2 block text-sm hover:underline" style={{ color: theme.text }}>{email}</a>
                 </div>
               )}
@@ -55,7 +55,7 @@ export function LocationBlock({ section, theme, preset, site }: BlockProps) {
         <div className="absolute inset-0 pointer-events-none" style={{ background: `linear-gradient(to right, ${theme.secondary}f0 0%, ${theme.secondary}a0 45%, transparent 75%)` }} />
         <div className="relative flex h-full items-center px-8 sm:px-16">
           <div className="max-w-sm text-white">
-            <p className="text-xs font-bold uppercase tracking-[0.2em]" style={{ color: theme.accent }}>{section.subtitle || "Ubicacion"}</p>
+            <p className="text-xs font-bold uppercase tracking-[0.2em]" style={{ color: ensureReadable(theme.accent, theme.background) }}>{section.subtitle || "Ubicacion"}</p>
             <h2 className="mt-3 text-3xl font-bold leading-tight" style={{ fontFamily: "var(--site-heading)" }}>
               {section.title || site.businessName}
             </h2>
@@ -75,18 +75,18 @@ export function LocationBlock({ section, theme, preset, site }: BlockProps) {
           <SectionHeading title={section.title} subtitle={section.subtitle} theme={theme} preset={preset} />
           <div className={`mt-12 grid gap-5 border p-8 sm:grid-cols-3 sm:p-10 ${preset.cardShadow}`} style={{ backgroundColor: surface.panel, borderColor: `${theme.primary}22`, borderRadius: "var(--site-radius)" }}>
             <div className="flex flex-col gap-2">
-              <p className="text-xs font-bold uppercase tracking-[0.18em]" style={{ color: theme.primary }}>Direccion</p>
+              <p className="text-xs font-bold uppercase tracking-[0.18em]" style={{ color: ensureReadable(theme.primary, theme.background) }}>Direccion</p>
               <p className="text-lg font-semibold" style={{ color: theme.text }}>{place}</p>
             </div>
             {phone && (
               <div className="flex flex-col gap-2">
-                <p className="text-xs font-bold uppercase tracking-[0.18em]" style={{ color: theme.primary }}>Telefono</p>
+                <p className="text-xs font-bold uppercase tracking-[0.18em]" style={{ color: ensureReadable(theme.primary, theme.background) }}>Telefono</p>
                 <a href={`tel:${phone}`} className="text-lg font-semibold hover:underline" style={{ color: theme.text }}>{phone}</a>
               </div>
             )}
             {email && (
               <div className="flex flex-col gap-2">
-                <p className="text-xs font-bold uppercase tracking-[0.18em]" style={{ color: theme.primary }}>Email</p>
+                <p className="text-xs font-bold uppercase tracking-[0.18em]" style={{ color: ensureReadable(theme.primary, theme.background) }}>Email</p>
                 <a href={`mailto:${email}`} className="text-sm font-semibold hover:underline break-all" style={{ color: theme.text }}>{email}</a>
               </div>
             )}
@@ -109,7 +109,7 @@ export function LocationBlock({ section, theme, preset, site }: BlockProps) {
           <SectionHeading title={section.title} subtitle={section.subtitle} theme={theme} preset={preset} />
           <div className="mt-10 flex flex-col items-center gap-2">
             <p className="text-2xl font-semibold" style={{ color: theme.text, fontFamily: "var(--site-heading)" }}>{place}</p>
-            {phone && <a href={`tel:${phone}`} className="text-lg hover:underline" style={{ color: theme.primary }}>{phone}</a>}
+            {phone && <a href={`tel:${phone}`} className="text-lg hover:underline" style={{ color: ensureReadable(theme.primary, theme.background) }}>{phone}</a>}
             {email && <a href={`mailto:${email}`} className="text-sm hover:underline" style={{ color: surface.muted }}>{email}</a>}
           </div>
         </div>
@@ -130,7 +130,7 @@ export function LocationBlock({ section, theme, preset, site }: BlockProps) {
               { label: "Area de servicio", loc: secondPlace },
             ].map(({ label, loc }, i) => (
               <div key={i} data-motion-item className={`border p-7 ${preset.cardShadow}`} style={{ backgroundColor: surface.panel, borderColor: `${theme.primary}22`, borderRadius: "var(--site-radius)" }}>
-                <p className="text-xs font-bold uppercase tracking-[0.18em]" style={{ color: theme.primary }}>{label}</p>
+                <p className="text-xs font-bold uppercase tracking-[0.18em]" style={{ color: ensureReadable(theme.primary, theme.background) }}>{label}</p>
                 <p className="mt-3 text-xl font-semibold" style={{ color: theme.text, fontFamily: "var(--site-heading)" }}>{loc}</p>
                 {i === 0 && phone && <p className="mt-4 text-sm" style={{ color: surface.muted }}>{phone}</p>}
               </div>

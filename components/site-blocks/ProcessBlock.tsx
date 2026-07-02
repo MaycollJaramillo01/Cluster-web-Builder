@@ -1,5 +1,5 @@
 import { getItems } from "@/lib/site/section";
-import { getThemeSurface } from "@/lib/site/theme-surface";
+import { ensureReadable, getThemeSurface } from "@/lib/site/theme-surface";
 import { SectionHeading } from "./shared";
 import type { BlockProps } from "./types";
 
@@ -31,7 +31,7 @@ export function ProcessBlock({ section, theme, preset }: BlockProps) {
           <div className="lg:sticky lg:top-28 lg:self-start">
             <SectionHeading title={section.title} subtitle={section.subtitle} theme={theme} preset={preset} align="left" />
             {section.body && <p className="mt-6 max-w-xl text-base leading-relaxed" style={{ color: surface.muted }}>{section.body}</p>}
-            <p className="mt-10 text-xs font-bold uppercase tracking-[0.2em]" style={{ color: theme.primary }}>
+            <p className="mt-10 text-xs font-bold uppercase tracking-[0.2em]" style={{ color: ensureReadable(theme.primary, theme.background) }}>
               {items.length} {items.length === 1 ? "etapa" : "etapas"}
             </p>
           </div>
@@ -63,7 +63,7 @@ export function ProcessBlock({ section, theme, preset }: BlockProps) {
           <ol className="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
             {items.map((item, i) => (
               <li key={i} data-motion-item className={`min-h-52 border p-6 ${preset.cardShadow}`} style={{ borderColor: `${theme.primary}2e`, backgroundColor: surface.panel, borderRadius: "var(--site-radius)" }}>
-                <span className="text-xs font-bold uppercase tracking-[0.2em]" style={{ color: theme.primary }}>Paso {String(i + 1).padStart(2, "0")}</span>
+                <span className="text-xs font-bold uppercase tracking-[0.2em]" style={{ color: ensureReadable(theme.primary, theme.background) }}>Paso {String(i + 1).padStart(2, "0")}</span>
                 <h3 className="mt-8 text-xl" style={{ color: theme.text, fontFamily: "var(--site-heading)", fontWeight: preset.headingWeight }}>
                   {String(item.title ?? item.name ?? `Paso ${i + 1}`)}
                 </h3>
@@ -136,7 +136,7 @@ export function ProcessBlock({ section, theme, preset }: BlockProps) {
           <ol className="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
             {items.map((item, i) => (
               <li key={i} data-motion-item className="border p-7" style={{ borderColor: "rgba(255,255,255,0.12)", borderRadius: "var(--site-radius)", backgroundColor: "rgba(255,255,255,0.06)" }}>
-                <span className="block text-5xl font-black leading-none" style={{ color: theme.accent, fontFamily: "var(--site-heading)", opacity: 0.9 }}>
+                <span className="block text-5xl font-black leading-none" style={{ color: ensureReadable(theme.accent, theme.secondary, 3), fontFamily: "var(--site-heading)", opacity: 0.9 }}>
                   {String(i + 1).padStart(2, "0")}
                 </span>
                 <h3 className="mt-8 text-xl font-semibold text-white" style={{ fontFamily: "var(--site-heading)", fontWeight: preset.headingWeight }}>
@@ -184,7 +184,7 @@ export function ProcessBlock({ section, theme, preset }: BlockProps) {
           <ol className="mt-14 hidden gap-5 md:grid md:grid-cols-2 lg:grid-cols-3">
             {items.map((item, i) => (
               <li key={i} data-motion-item className={`min-h-52 border p-6 ${preset.cardShadow}`} style={{ borderColor: `${theme.primary}2e`, backgroundColor: surface.panel, borderRadius: "var(--site-radius)" }}>
-                <span className="text-xs font-bold uppercase tracking-[0.2em]" style={{ color: theme.primary }}>Paso {String(i + 1).padStart(2, "0")}</span>
+                <span className="text-xs font-bold uppercase tracking-[0.2em]" style={{ color: ensureReadable(theme.primary, theme.background) }}>Paso {String(i + 1).padStart(2, "0")}</span>
                 <h3 className="mt-8 text-xl" style={{ color: theme.text, fontFamily: "var(--site-heading)", fontWeight: preset.headingWeight }}>
                   {String(item.title ?? item.name ?? `Paso ${i + 1}`)}
                 </h3>

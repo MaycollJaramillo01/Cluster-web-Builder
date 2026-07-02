@@ -63,8 +63,8 @@ const COUNTRIES = [
 ] as const;
 
 const PALETTES = [
-  { id: "cluster", label: "Cluster", style: "modern_clean", colors: ["#8b5cf6", "#2c2141", "#f59e0b", "#0f0d15", "#f7f2fb"] },
-  { id: "ocean", label: "Océano", style: "corporate", colors: ["#0284c7", "#0c4a6e", "#22d3ee", "#f0f9ff", "#0f172a"] },
+  { id: "cluster", label: "Cluster", style: "modern_clean", colors: ["#7c3aed", "#2c2141", "#f59e0b", "#0f0d15", "#f7f2fb"] },
+  { id: "ocean", label: "Océano", style: "corporate", colors: ["#0369a1", "#0c4a6e", "#22d3ee", "#f0f9ff", "#0f172a"] },
   { id: "forest", label: "Bosque", style: "local_trustworthy", colors: ["#15803d", "#14532d", "#eab308", "#f7fee7", "#142616"] },
   { id: "terracotta", label: "Terracota", style: "premium_elegant", colors: ["#c2410c", "#7c2d12", "#f59e0b", "#fff7ed", "#2c1810"] },
   { id: "rose", label: "Rosa", style: "creative", colors: ["#db2777", "#831843", "#fb7185", "#fff1f2", "#3f0a25"] },

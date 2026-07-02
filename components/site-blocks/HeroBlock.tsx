@@ -1,7 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
 import { sectionImageUrl } from "@/lib/site/images";
 import { sectionVideoUrl } from "@/lib/site/videos";
-import { getContrastText } from "@/lib/site/theme-surface";
+import { ensureReadable, getContrastText } from "@/lib/site/theme-surface";
 import type { BlockProps } from "./types";
 import { HeroVideo } from "./HeroVideo";
 
@@ -73,7 +73,7 @@ export function HeroBlock({ section, theme, preset, site }: BlockProps) {
       <section className="px-6 py-16 sm:py-24" style={{ backgroundColor: theme.background }}>
         <div className="mx-auto grid max-w-6xl gap-8 border-y py-10 lg:grid-cols-12" style={{ borderColor: `${theme.text}33` }}>
           <div className="lg:col-span-7" style={{ color: theme.text }}>
-            <p className="mb-10 text-xs font-semibold uppercase tracking-[0.25em]" style={{ color: theme.primary }}>{site.businessType}</p>
+            <p className="mb-10 text-xs font-semibold uppercase tracking-[0.25em]" style={{ color: ensureReadable(theme.primary, theme.background) }}>{site.businessType}</p>
             <div className="[&_h1]:text-5xl [&_h1]:sm:text-7xl">{heading}</div>
             {section.subtitle && <p className="mt-7 max-w-xl text-xl italic" style={{ opacity: 0.85 }}>{section.subtitle}</p>}
             {section.body && <p className="mt-5 max-w-xl leading-relaxed" style={{ opacity: 0.75 }}>{section.body}</p>}
@@ -99,7 +99,7 @@ export function HeroBlock({ section, theme, preset, site }: BlockProps) {
           )}
           <div className="absolute inset-0" style={{ background: `linear-gradient(90deg, ${theme.secondary} 0%, ${theme.secondary}E8 45%, ${theme.secondary}22 100%)` }} />
           <div className="relative flex min-h-[34rem] max-w-3xl flex-col justify-center p-8 text-white sm:p-14">
-            {section.subtitle && <p className="mb-5 text-sm font-semibold uppercase tracking-[0.18em]" style={{ color: theme.accent }}>{section.subtitle}</p>}
+            {section.subtitle && <p className="mb-5 text-sm font-semibold uppercase tracking-[0.18em]" style={{ color: ensureReadable(theme.accent, theme.secondary) }}>{section.subtitle}</p>}
             {heading}
             {section.body && <p className="mt-6 max-w-xl text-lg opacity-85">{section.body}</p>}
             {ctaButton && <div className="mt-9">{ctaButton}</div>}
@@ -221,7 +221,7 @@ export function HeroBlock({ section, theme, preset, site }: BlockProps) {
             {section.subtitle && (
               <p
                 className="mb-6 text-[11px] font-bold uppercase tracking-[0.22em]"
-                style={{ color: theme.accent }}
+                style={{ color: ensureReadable(theme.accent, theme.secondary) }}
               >
                 {section.subtitle}
               </p>
@@ -243,7 +243,7 @@ export function HeroBlock({ section, theme, preset, site }: BlockProps) {
                 className="mt-0.5 text-5xl font-bold italic leading-[1.06] sm:text-6xl lg:text-[4.5rem]"
                 style={{
                   fontFamily: "var(--site-heading)",
-                  color: theme.accent,
+                  color: ensureReadable(theme.accent, theme.secondary, 3),
                   fontWeight: preset.headingWeight,
                   letterSpacing: preset.headingTracking,
                 }}
@@ -283,7 +283,7 @@ export function HeroBlock({ section, theme, preset, site }: BlockProps) {
                   <p
                     className="text-3xl font-bold sm:text-4xl"
                     style={{
-                      color: theme.accent,
+                      color: ensureReadable(theme.accent, theme.secondary, 3),
                       fontFamily: "var(--site-heading)",
                       fontWeight: preset.headingWeight,
                     }}
