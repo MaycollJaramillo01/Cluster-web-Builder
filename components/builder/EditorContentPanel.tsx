@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { ChevronDown, ChevronUp, Eye, EyeOff, Link2, Loader2, Plus, Sparkles, Trash2 } from "lucide-react";
 
+import { SortableItem, SortableList } from "@/components/builder/dnd";
 import { EditorMediaField } from "@/components/builder/EditorMediaField";
 import { EditorStylePanel } from "@/components/builder/EditorStylePanel";
 import { fieldClass, IconButton } from "@/components/builder/editor-ui";
@@ -36,6 +37,7 @@ type Props = {
   defaultSectionMeta: EditorSectionMeta;
   onOpenChange: (id: string | null) => void;
   onMove: (id: string, direction: -1 | 1) => void;
+  onReorder: (activeId: string, overId: string) => void;
   onUpdate: (id: string, patch: Partial<RenderSection>) => void;
   onAdd: (type: string) => void;
   onDelete: (id: string) => void;
@@ -133,6 +135,7 @@ export function EditorContentPanel({
   defaultSectionMeta,
   onOpenChange,
   onMove,
+  onReorder,
   onUpdate,
   onAdd,
   onDelete,
@@ -194,6 +197,7 @@ export function EditorContentPanel({
       </span>
     </label>
 
+    <SortableList ids={movableSections.map((section) => section.id)} onReorder={onReorder}>
     <div className="space-y-2">
       {sections.map((section) => {
         const open = openId === section.id;
@@ -202,11 +206,13 @@ export function EditorContentPanel({
         const movableIndex = movableSections.findIndex((item) => item.id === section.id);
         const isFooter = section.type === "footer";
 
-        return <div key={section.id} className={cn(
+        return <SortableItem key={section.id} id={section.id} disabled={isFooter} className={cn(
           "overflow-hidden rounded-lg border transition-colors",
           open ? "border-[#8b5cf6] bg-[#1d1a23]" : "border-border bg-[#1d1a23] hover:border-[#8b5cf6]/40",
         )}>
+          {(handle) => <>
           <div className="flex min-h-[3.25rem] items-center gap-1 px-2">
+            {handle}
             <button
               type="button"
               aria-expanded={open}
@@ -278,9 +284,11 @@ export function EditorContentPanel({
               onUpdate={onUpdate}
             />}
           </div>}
-        </div>;
+          </>}
+        </SortableItem>;
       })}
     </div>
+    </SortableList>
   </>;
 }
 

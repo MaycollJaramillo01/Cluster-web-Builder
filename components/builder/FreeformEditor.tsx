@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { ChevronDown, ChevronUp, Columns3, Plus, Trash2 } from "lucide-react";
 
+import { SortableItem, SortableList } from "@/components/builder/dnd";
 import { fieldClass, IconButton } from "@/components/builder/editor-ui";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -66,6 +67,16 @@ export function FreeformEditor({ section, onUpdate }: { section: RenderSection; 
     [next[index], next[target]] = [next[target], next[index]];
     commit(next);
   };
+  // Reordena por arrastre: inserta la fila activa en la posicion de la fila destino.
+  const reorderRows = (activeId: string, overId: string) => {
+    const from = layout.rows.findIndex((row) => row.id === activeId);
+    const to = layout.rows.findIndex((row) => row.id === overId);
+    if (from < 0 || to < 0 || from === to) return;
+    const next = [...layout.rows];
+    const [moved] = next.splice(from, 1);
+    next.splice(to, 0, moved);
+    commit(next);
+  };
   const setRowColumns = (rowId: string, widths: (1 | 2 | 3)[]) => {
     commit(layout.rows.map((row) => {
       if (row.id !== rowId) return row;
@@ -98,6 +109,17 @@ export function FreeformEditor({ section, onUpdate }: { section: RenderSection; 
       return { ...column, widgets };
     });
   };
+  const reorderWidgets = (rowId: string, columnId: string, activeId: string, overId: string) => {
+    mapColumn(rowId, columnId, (column) => {
+      const from = column.widgets.findIndex((widget) => widget.id === activeId);
+      const to = column.widgets.findIndex((widget) => widget.id === overId);
+      if (from < 0 || to < 0 || from === to) return column;
+      const widgets = [...column.widgets];
+      const [moved] = widgets.splice(from, 1);
+      widgets.splice(to, 0, moved);
+      return { ...column, widgets };
+    });
+  };
   const updateWidget = (rowId: string, columnId: string, widgetId: string, patch: Partial<FreeformWidget>) => {
     mapColumn(rowId, columnId, (column) => ({
       ...column,
@@ -116,9 +138,12 @@ export function FreeformEditor({ section, onUpdate }: { section: RenderSection; 
 
     {layout.rows.length === 0 && <p className="text-xs text-[#6b6079]">Esta sección está vacía. Agrega una fila para empezar.</p>}
 
+    <SortableList ids={layout.rows.map((row) => row.id)} onReorder={reorderRows}>
     {layout.rows.map((row, rowIndex) => (
-      <div key={row.id} className="space-y-3 rounded-lg border border-[#2c2832] bg-[#120c1d] p-3">
+      <SortableItem key={row.id} id={row.id} className="space-y-3 rounded-lg border border-[#2c2832] bg-[#120c1d] p-3">
+        {(rowHandle) => <>
         <div className="flex items-center gap-1">
+          {rowHandle}
           <Columns3 className="h-3.5 w-3.5 shrink-0 text-[#6b6079]" aria-hidden="true" />
           <select
             value={row.columns.map((c) => c.width).join(",")}
@@ -135,19 +160,25 @@ export function FreeformEditor({ section, onUpdate }: { section: RenderSection; 
         <div className={cn("grid gap-2", row.columns.length > 1 ? "sm:grid-cols-2" : "")}>
           {row.columns.map((column) => (
             <div key={column.id} className="space-y-2 rounded-md border border-dashed border-[#3d3549] p-2">
-              {column.widgets.map((widget) => (
-                <button
-                  key={widget.id}
-                  type="button"
-                  onClick={() => setSelected(widget.id === selected ? null : widget.id)}
-                  className={cn(
-                    "flex min-h-9 w-full items-center justify-between rounded px-2 text-left text-xs",
-                    widget.id === selected ? "bg-[#2c2141] text-[#c4b5fd]" : "bg-[#1d1a23] text-[#cbc3d7] hover:text-[#e9ddff]"
-                  )}
-                >
-                  <span className="truncate">{WIDGET_LABEL[widget.type]}{widget.content.text ? `: ${widget.content.text.slice(0, 24)}` : ""}</span>
-                </button>
-              ))}
+              <SortableList ids={column.widgets.map((widget) => widget.id)} onReorder={(activeId, overId) => reorderWidgets(row.id, column.id, activeId, overId)}>
+                {column.widgets.map((widget) => (
+                  <SortableItem key={widget.id} id={widget.id}>
+                    {(widgetHandle) => <span className="flex items-center gap-0.5">
+                      {widgetHandle}
+                      <button
+                        type="button"
+                        onClick={() => setSelected(widget.id === selected ? null : widget.id)}
+                        className={cn(
+                          "flex min-h-9 w-full min-w-0 flex-1 items-center justify-between rounded px-2 text-left text-xs",
+                          widget.id === selected ? "bg-[#2c2141] text-[#c4b5fd]" : "bg-[#1d1a23] text-[#cbc3d7] hover:text-[#e9ddff]"
+                        )}
+                      >
+                        <span className="truncate">{WIDGET_LABEL[widget.type]}{widget.content.text ? `: ${widget.content.text.slice(0, 24)}` : ""}</span>
+                      </button>
+                    </span>}
+                  </SortableItem>
+                ))}
+              </SortableList>
               <label className="flex min-h-9 items-center gap-1.5 rounded-md border border-dashed border-[#4a4156] px-2 text-[11px] text-[#958ea0]">
                 <Plus className="h-3 w-3 shrink-0" aria-hidden="true" />
                 <select
@@ -163,8 +194,10 @@ export function FreeformEditor({ section, onUpdate }: { section: RenderSection; 
             </div>
           ))}
         </div>
-      </div>
+        </>}
+      </SortableItem>
     ))}
+    </SortableList>
 
     <button
       type="button"

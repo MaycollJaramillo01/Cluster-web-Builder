@@ -708,6 +708,22 @@ export function SiteEditorPanel({
     setDirty(true);
   };
 
+  // Reordena por arrastre: mueve la seccion activa a la posicion de la seccion destino (footer siempre al final).
+  const reorderSections = (activeId: string, overId: string) => {
+    setSections((current) => {
+      const ordered = [...current].sort((a, b) => a.order - b.order);
+      const movable = ordered.filter((s) => s.type !== "footer");
+      const from = movable.findIndex((s) => s.id === activeId);
+      const to = movable.findIndex((s) => s.id === overId);
+      if (from < 0 || to < 0 || from === to) return current;
+      const [moved] = movable.splice(from, 1);
+      movable.splice(to, 0, moved);
+      const footer = ordered.filter((s) => s.type === "footer");
+      return [...movable, ...footer].map((section, order) => ({ ...section, order }));
+    });
+    setDirty(true);
+  };
+
   const move = (id: string, direction: -1 | 1) => {
     setSections((current) => {
       const section = current.find((s) => s.id === id);
@@ -1074,6 +1090,7 @@ export function SiteEditorPanel({
                 defaultSectionMeta={DEFAULT_SECTION_META}
                 onOpenChange={setOpenId}
                 onMove={move}
+                onReorder={reorderSections}
                 onUpdate={updateSection}
                 onAdd={addSection}
                 onDelete={deleteSection}
