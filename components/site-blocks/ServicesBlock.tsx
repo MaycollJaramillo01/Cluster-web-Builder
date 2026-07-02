@@ -2,12 +2,15 @@
 import { getItems } from "@/lib/site/section";
 import { stockImageUrl } from "@/lib/site/images";
 import { ensureReadable, getThemeSurface } from "@/lib/site/theme-surface";
+import { getStyleOverride, resolveElementStyle } from "@/lib/site/element-style";
 import { SectionHeading } from "./shared";
 import type { BlockProps } from "./types";
 
 export function ServicesBlock({ section, theme, preset, site }: BlockProps) {
   const items = getItems(section);
   const surface = getThemeSurface(theme);
+  const titleStyle = resolveElementStyle("title", getStyleOverride(section.settings, "title"));
+  const subtitleStyle = resolveElementStyle("subtitle", getStyleOverride(section.settings, "subtitle"));
   const titleFor = (item: (typeof items)[number]) => String(item.name ?? item.title ?? "Servicio");
   const descriptionFor = (item: (typeof items)[number]) => item.description ? String(item.description) : "";
   const averageDescriptionLength = items.length
@@ -35,7 +38,7 @@ export function ServicesBlock({ section, theme, preset, site }: BlockProps) {
     return (
       <section className="px-6 py-20 sm:py-28" style={{ backgroundColor: theme.background }}>
         <div className="mx-auto max-w-6xl">
-          <SectionHeading title={section.title} subtitle={section.subtitle} theme={theme} preset={preset} align="left" />
+          <SectionHeading title={section.title} subtitle={section.subtitle} theme={theme} preset={preset} titleStyle={titleStyle} subtitleStyle={subtitleStyle} align="left" />
           <div className="mt-12 border-t" style={{ borderColor: `${theme.text}4d` }}>
             {items.map((item, i) => (
               <article key={i} data-motion-item className="grid gap-4 border-b py-7 md:grid-cols-[5rem_1fr_1.2fr] md:items-start" style={{ borderColor: `${theme.text}33` }}>
@@ -54,7 +57,7 @@ export function ServicesBlock({ section, theme, preset, site }: BlockProps) {
     return (
       <section className="px-6 py-20 sm:py-28" style={{ backgroundColor: surface.section }}>
         <div className="mx-auto max-w-6xl">
-          <SectionHeading title={section.title} subtitle={section.subtitle} theme={theme} preset={preset} align="left" />
+          <SectionHeading title={section.title} subtitle={section.subtitle} theme={theme} preset={preset} titleStyle={titleStyle} subtitleStyle={subtitleStyle} align="left" />
           <div className="mt-14 grid gap-x-12 gap-y-10 md:grid-cols-2">
             {items.map((item, i) => (
               <article key={i} data-motion-item className="border-t pt-5" style={{ borderColor: theme.primary }}>
@@ -73,7 +76,7 @@ export function ServicesBlock({ section, theme, preset, site }: BlockProps) {
     return (
       <section className="px-6 py-20 sm:py-24" style={{ backgroundColor: theme.background }}>
         <div className="mx-auto max-w-6xl">
-          <SectionHeading title={section.title} subtitle={section.subtitle} theme={theme} preset={preset} />
+          <SectionHeading title={section.title} subtitle={section.subtitle} theme={theme} preset={preset} titleStyle={titleStyle} subtitleStyle={subtitleStyle} />
           {section.body ? <p className="mx-auto mt-6 max-w-2xl text-center leading-relaxed" style={{ color: surface.muted }}>{section.body}</p> : null}
           <div className={`mt-12 grid border-l border-t md:grid-cols-2 ${borderedGrid}`} style={{ borderColor: `${theme.text}a6` }}>
             {items.map((item, i) => (
@@ -98,7 +101,7 @@ export function ServicesBlock({ section, theme, preset, site }: BlockProps) {
     return (
       <section className="px-6 py-20 sm:py-28" style={{ backgroundColor: surface.section }}>
         <div className="mx-auto grid max-w-6xl gap-12 lg:grid-cols-[0.7fr_1.3fr]">
-          <div><SectionHeading title={section.title} subtitle={section.subtitle} theme={theme} preset={preset} align="left" /></div>
+          <div><SectionHeading title={section.title} subtitle={section.subtitle} theme={theme} preset={preset} titleStyle={titleStyle} subtitleStyle={subtitleStyle} align="left" /></div>
           <div className="grid gap-4 sm:grid-cols-2">
             {items.map((item, i) => (
               <article key={i} data-motion-item className={`p-7 ${preset.cardShadow}`} style={{ backgroundColor: surface.panel, borderRadius: "var(--site-radius)" }}>
@@ -117,7 +120,7 @@ export function ServicesBlock({ section, theme, preset, site }: BlockProps) {
     return (
       <section className="px-6 py-20 sm:py-28" style={{ backgroundColor: theme.background }}>
         <div className="mx-auto max-w-6xl">
-          <SectionHeading title={section.title} subtitle={section.subtitle} theme={theme} preset={preset} />
+          <SectionHeading title={section.title} subtitle={section.subtitle} theme={theme} preset={preset} titleStyle={titleStyle} subtitleStyle={subtitleStyle} />
           <div className="mt-12 grid auto-rows-[14rem] gap-4 md:grid-cols-2 lg:grid-cols-3">
             {items.map((item, i) => (
               <article key={i} data-motion-item className={`relative overflow-hidden p-7 ${i === 0 ? "md:col-span-2 lg:row-span-2 lg:min-h-[29rem]" : ""} ${preset.cardShadow}`} style={{ backgroundColor: i === 0 ? theme.secondary : surface.panel, color: i === 0 ? "#fff" : theme.text, borderRadius: "var(--site-radius)" }}>

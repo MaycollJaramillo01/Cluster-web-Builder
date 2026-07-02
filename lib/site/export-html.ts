@@ -1,4 +1,5 @@
 import type { SiteTheme } from "@/lib/site/blueprint";
+import { getStyleOverride, resolveElementStyleString, TEXT_STYLE_COVERED_TYPES } from "@/lib/site/element-style";
 import { sanitizeLink } from "@/lib/site/links";
 import type { RenderSection } from "@/lib/site/section";
 import { normalizeSectionLayout } from "@/lib/site/section-layout";
@@ -54,7 +55,12 @@ export function exportSiteHtml(site: ExportSite, leadEndpoint: string) {
     idCounts.set(type, count);
     return count === 1 ? type : `${type}-${count}`;
   };
-  const sections = visible.map((section) => sectionHtml(section, site, contactStyle, uniqueId(section.type))).join("");
+  const sections = visible.map((section) => {
+    const layout = normalizeSectionLayout(section.settings?.layout);
+    const tonal = `color-mix(in srgb, ${site.theme.primary} 8%, ${site.theme.background})`;
+    const sectionStyle = resolveElementStyleString("section", getStyleOverride(section.settings, "section"));
+    return `<div class="site-section-layout" data-width="${layout.width}" data-align="${layout.align}" data-background="${layout.background}" data-spacing="${layout.spacing}" style="--section-tonal:${tonal};${sectionStyle}">${sectionHtml(section, site, contactStyle, uniqueId(section.type))}</div>`;
+  }).join("");
   // Solo genera un hero de respaldo si el sitio no tiene uno editado.
   const fallbackHero = visible.some((section) => section.type === "hero")
     ? ""
@@ -62,33 +68,44 @@ export function exportSiteHtml(site: ExportSite, leadEndpoint: string) {
 
   return `<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escape(site.businessName)}</title><meta name="description" content="${escape(`${site.businessName} — ${site.businessType}`)}"><style>
 :root{--primary:${site.theme.primary};--secondary:${site.theme.secondary};--accent:${site.theme.accent};--bg:${site.theme.background};--text:${site.theme.text}}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--text);font:16px/1.65 system-ui,sans-serif}nav,section,footer{padding:24px max(6vw,24px)}nav{display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:var(--bg);border-bottom:1px solid #8883;z-index:2}nav div{display:flex;gap:16px;align-items:center}a{color:inherit}section{max-width:1100px;margin:auto;padding-top:80px;padding-bottom:80px}h1,h2{line-height:1.08}h1{font-size:clamp(2.6rem,8vw,6rem)}h2{font-size:clamp(2rem,5vw,3.8rem)}.hero{min-height:75vh;display:grid;align-content:center}.eyebrow{color:var(--primary);font-weight:700;text-transform:uppercase;letter-spacing:.12em}.button,button{display:inline-block;border:0;border-radius:8px;background:var(--accent);color:#fff;min-height:44px;padding:13px 20px;font-weight:700;text-decoration:none;cursor:pointer}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:20px;margin-top:30px}.grid article,form{padding:24px;border:1px solid #8884;border-radius:12px}form{display:grid;gap:14px;max-width:620px}input,textarea{width:100%;min-height:44px;padding:12px;border:1px solid #8886;border-radius:7px;background:transparent;color:inherit;font:inherit}textarea{min-height:130px}.trap{display:none}output{min-height:24px}.social-dock{position:fixed;right:20px;bottom:20px;display:grid;gap:8px;padding:0;border:0;background:none}.social-dock a{display:grid;place-items:center;width:48px;height:48px;border-radius:999px;background:#111018;color:#fff;text-decoration:none;box-shadow:0 10px 28px #0004;font:800 11px system-ui}footer{background:var(--secondary);color:#fff}@media(max-width:640px){body>nav div{display:none}section{padding-top:56px;padding-bottom:56px}}@media(prefers-reduced-motion:no-preference){section{animation:reveal .4s ease-out both}@keyframes reveal{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}}
+.site-section-layout[data-background="tonal"]>section{background-color:var(--section-tonal)!important}.site-section-layout[data-spacing="compact"]>section{padding-block:2rem!important}.site-section-layout[data-spacing="normal"]>section{padding-block:4rem!important}.site-section-layout[data-spacing="spacious"]>section{padding-block:7rem!important}.site-section-layout[data-width="narrow"]>section{max-width:48rem!important}.site-section-layout[data-width="standard"]>section{max-width:72rem!important}.site-section-layout[data-width="wide"]>section{max-width:90rem!important}.site-section-layout[data-align="center"]>section{text-align:center}.site-section-layout[data-align="center"]>section :where(a,button){margin-inline:auto}
 </style></head><body><nav><strong>${escape(site.businessName)}</strong><div>${phone}${site.email ? `<a href="mailto:${escape(site.email)}">${escape(site.email)}</a>` : ""}<a href="#contact">Contacto</a></div></nav>${fallbackHero}${sections}${site.showBranding ? '<div style="padding:16px;text-align:center;font-size:13px;color:#888">Creado con Cluster</div>' : ""}${dock ? `<nav class="social-dock" aria-label="Redes y contacto">${dock}</nav>` : ""}<script>
 const form=document.querySelector('#contact-form');if(form)form.addEventListener('submit',async event=>{event.preventDefault();const output=form.querySelector('output');const button=form.querySelector('button');button.disabled=true;output.textContent='Enviando…';try{const response=await fetch(${JSON.stringify(leadEndpoint)},{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.fromEntries(new FormData(form)))});const data=await response.json().catch(()=>({}));if(!response.ok)throw new Error(data.error||'No se pudo enviar.');form.reset();output.textContent='Mensaje enviado correctamente.'}catch(error){output.textContent=error.message||'No se pudo enviar. Intenta de nuevo.'}finally{button.disabled=false}});
 </script></body></html>`;
 }
 
+function styleAttr(css: string): string {
+  return css ? ` style="${css}"` : "";
+}
+
 function sectionHtml(section: RenderSection, site: ExportSite, contactStyle: ContactStyle, id: string) {
   const businessName = site.businessName;
-  const layoutStyle = normalizeSectionLayout(section);
   const ctaHref = sanitizeLink(section.ctaLink) || "#contact";
+  // Solo los tipos cubiertos en fase 1 (ver TEXT_STYLE_COVERED_TYPES) reciben estilo por rol,
+  // para que coincida exactamente con lo que el usuario ve en la vista previa en vivo.
+  const covered = TEXT_STYLE_COVERED_TYPES.has(section.type);
+  const titleStyle = covered ? styleAttr(resolveElementStyleString("title", getStyleOverride(section.settings, "title"))) : "";
+  const subtitleStyle = covered ? styleAttr(resolveElementStyleString("subtitle", getStyleOverride(section.settings, "subtitle"))) : "";
+  const bodyStyle = covered ? styleAttr(resolveElementStyleString("body", getStyleOverride(section.settings, "body"))) : "";
+  const ctaTextStyle = covered ? styleAttr(resolveElementStyleString("ctaText", getStyleOverride(section.settings, "ctaText"))) : "";
   if (section.type === "hero") {
     // El hero exportado respeta el contenido editado en el editor.
-    return `<section class="hero" id="${escape(id)}"><p class="eyebrow">${escape(section.subtitle || site.businessType)}</p><h1>${escape(section.title || businessName)}</h1><p>${escape(section.body || site.location || "")}</p><a class="button" href="${escape(ctaHref)}">${escape(section.ctaText || "Contáctanos")}</a></section>`;
+    return `<section class="hero" id="${escape(id)}"><p class="eyebrow"${subtitleStyle}>${escape(section.subtitle || site.businessType)}</p><h1${titleStyle}>${escape(section.title || businessName)}</h1><p${bodyStyle}>${escape(section.body || site.location || "")}</p><a class="button" href="${escape(ctaHref)}"${ctaTextStyle}>${escape(section.ctaText || "Contáctanos")}</a></section>`;
   }
-  if (section.type === "contact") return contactSectionHtml(section, site, contactStyle, id);
+  if (section.type === "contact") return contactSectionHtml(section, site, contactStyle, id, titleStyle, bodyStyle, ctaTextStyle);
   if (section.type === "footer") return `<footer><strong>${escape(section.title || businessName)}</strong><p>${escape(section.subtitle)}</p></footer>`;
   if (section.type === "image") {
     const source = safeMediaUrl(section.mediaUrl);
-    return `<section id="image"><h2>${escape(section.title)}</h2>${source ? `<img src="${escape(source)}" alt="${escape(section.altText || section.title || businessName)}" style="width:100%;max-height:720px;object-fit:cover;border-radius:12px">` : ""}<p>${escape(section.body)}</p></section>`;
+    return `<section id="${escape(id)}"><h2>${escape(section.title)}</h2>${source ? `<img src="${escape(source)}" alt="${escape(section.altText || section.title || businessName)}" style="width:100%;max-height:720px;object-fit:cover;border-radius:12px">` : ""}<p>${escape(section.body)}</p></section>`;
   }
   if (section.type === "video") {
     const media = exportVideo(section.mediaUrl);
     const player = media?.kind === "embed" ? `<iframe src="${escape(media.url)}" title="${escape(section.title || "Video")}" allowfullscreen loading="lazy" style="width:100%;aspect-ratio:16/9;border:0"></iframe>` : media ? `<video src="${escape(media.url)}" controls preload="metadata" style="width:100%;aspect-ratio:16/9;background:#000"></video>` : "";
-    return `<section id="video"><h2>${escape(section.title)}</h2>${player}<p>${escape(section.body)}</p></section>`;
+    return `<section id="${escape(id)}"><h2>${escape(section.title)}</h2>${player}<p>${escape(section.body)}</p></section>`;
   }
   const items = Array.isArray(section.settings.items) ? section.settings.items : [];
   const cards = items.map((item) => { const record = typeof item === "object" && item ? item as Record<string, unknown> : {}; return `<article><h3>${escape(String(record.title || record.name || ""))}</h3><p>${escape(String(record.description || record.body || record.text || ""))}</p></article>`; }).join("");
-  return `<section id="${escape(section.type)}"><p class="eyebrow">${escape(section.subtitle)}</p><h2>${escape(section.title)}</h2><p>${escape(section.body)}</p>${cards ? `<div class="grid">${cards}</div>` : ""}${section.ctaText ? `<a class="button" href="${escape(section.ctaLink || "#contact")}">${escape(section.ctaText)}</a>` : ""}</section>`;
+  return `<section id="${escape(id)}"><p class="eyebrow"${subtitleStyle}>${escape(section.subtitle)}</p><h2${titleStyle}>${escape(section.title)}</h2><p${bodyStyle}>${escape(section.body)}</p>${cards ? `<div class="grid">${cards}</div>` : ""}${section.ctaText ? `<a class="button" href="${escape(ctaHref)}"${ctaTextStyle}>${escape(section.ctaText)}</a>` : ""}</section>`;
 }
 
 function safeMediaUrl(value?: string) {
@@ -111,12 +128,12 @@ function exportVideo(value?: string): { kind: "embed" | "file"; url: string } | 
   return /\.(mp4|webm)(?:$|\?)/i.test(source) ? { kind: "file", url: source } : null;
 }
 
-function contactSectionHtml(section: RenderSection, site: ExportSite, contactStyle: ContactStyle, id: string) {
+function contactSectionHtml(section: RenderSection, site: ExportSite, contactStyle: ContactStyle, id: string, titleStyle: string, bodyStyle: string, ctaTextStyle: string) {
   const layout = EXPORT_CONTACT_LAYOUTS[contactStyle];
   const details = [
     site.phone ? `<a href="tel:${escape(site.phone)}">${escape(site.phone)}</a>` : "",
     site.email ? `<a href="mailto:${escape(site.email)}">${escape(site.email)}</a>` : "",
     site.location ? `<span>${escape(site.location)}</span>` : "",
   ].filter(Boolean).join("");
-  return `<section id="${escape(id)}" data-contact-style="${contactStyle}" style="${layout.section || ""}"><style>.cluster-contact-wrap{${layout.wrap}}.cluster-contact-info{${layout.info || ""}}.cluster-contact-form{${layout.form || ""};max-width:none}.cluster-contact-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;${layout.grid || ""}}.cluster-contact-wide{grid-column:1/-1}.cluster-contact-details{display:grid;gap:8px;margin-top:24px}@media(max-width:760px){.cluster-contact-wrap{display:block!important}.cluster-contact-info{order:initial!important;transform:none!important;margin-bottom:28px}.cluster-contact-form{order:initial!important;transform:none!important;padding-left:24px!important}.cluster-contact-grid{grid-template-columns:1fr!important}.cluster-contact-wide{grid-column:auto}}</style><div class="cluster-contact-wrap"><div class="cluster-contact-info"><p class="eyebrow">Contacto</p><h2>${escape(section.title || "Contacto")}</h2><p>${escape(section.body)}</p><div class="cluster-contact-details">${details}</div></div><form id="contact-form" class="cluster-contact-form"><div class="cluster-contact-grid"><label>Nombre<input name="name" required maxlength="120" autocomplete="name"></label><label>Email<input name="email" type="email" required maxlength="160" autocomplete="email"></label><label class="cluster-contact-wide">Teléfono <small>(opcional)</small><input name="phone" type="tel" maxlength="40" autocomplete="tel"></label><label class="cluster-contact-wide">Mensaje<textarea name="message" required maxlength="2000"></textarea></label></div><input name="website" class="trap" tabindex="-1" autocomplete="off"><button>${escape(section.ctaText || "Enviar mensaje")}</button><output aria-live="polite"></output></form></div></section>`;
+  return `<section id="${escape(id)}" data-contact-style="${contactStyle}" style="${layout.section || ""}"><style>.cluster-contact-wrap{${layout.wrap}}.cluster-contact-info{${layout.info || ""}}.cluster-contact-form{${layout.form || ""};max-width:none}.cluster-contact-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;${layout.grid || ""}}.cluster-contact-wide{grid-column:1/-1}.cluster-contact-details{display:grid;gap:8px;margin-top:24px}@media(max-width:760px){.cluster-contact-wrap{display:block!important}.cluster-contact-info{order:initial!important;transform:none!important;margin-bottom:28px}.cluster-contact-form{order:initial!important;transform:none!important;padding-left:24px!important}.cluster-contact-grid{grid-template-columns:1fr!important}.cluster-contact-wide{grid-column:auto}}</style><div class="cluster-contact-wrap"><div class="cluster-contact-info"><p class="eyebrow">Contacto</p><h2${titleStyle}>${escape(section.title || "Contacto")}</h2><p${bodyStyle}>${escape(section.body)}</p><div class="cluster-contact-details">${details}</div></div><form id="contact-form" class="cluster-contact-form"><div class="cluster-contact-grid"><label>Nombre<input name="name" required maxlength="120" autocomplete="name"></label><label>Email<input name="email" type="email" required maxlength="160" autocomplete="email"></label><label class="cluster-contact-wide">Teléfono <small>(opcional)</small><input name="phone" type="tel" maxlength="40" autocomplete="tel"></label><label class="cluster-contact-wide">Mensaje<textarea name="message" required maxlength="2000"></textarea></label></div><input name="website" class="trap" tabindex="-1" autocomplete="off"><button${ctaTextStyle}>${escape(section.ctaText || "Enviar mensaje")}</button><output aria-live="polite"></output></form></div></section>`;
 }

@@ -1,3 +1,5 @@
+import type { CSSProperties } from "react";
+
 import type { SiteTheme } from "@/lib/site/blueprint";
 import type { DesignPreset } from "@/lib/site/design";
 
@@ -9,6 +11,8 @@ export function SectionHeading({
   preset,
   align,
   onDark = false,
+  titleStyle,
+  subtitleStyle,
 }: {
   title?: string;
   subtitle?: string;
@@ -16,6 +20,8 @@ export function SectionHeading({
   preset: DesignPreset;
   align?: "center" | "left";
   onDark?: boolean;
+  titleStyle?: CSSProperties;
+  subtitleStyle?: CSSProperties;
 }) {
   if (!title && !subtitle) return null;
   const resolvedAlign = align ?? (["asymmetric", "fullBleed", "grid"].includes(preset.sectionStyle) ? "left" : "center");
@@ -33,6 +39,7 @@ export function SectionHeading({
               : "var(--site-tracking)",
             fontWeight: preset.headingWeight,
             textTransform: preset.uppercaseHeadings ? "uppercase" : "none",
+            ...titleStyle,
           }}
         >
           {title}
@@ -41,7 +48,7 @@ export function SectionHeading({
       {subtitle && (
         <p
           className={`${resolvedAlign === "center" ? "mx-auto " : ""}mt-3 max-w-2xl text-lg`}
-          style={{ color, opacity: 0.7 }}
+          style={{ color, opacity: 0.7, ...subtitleStyle }}
         >
           {subtitle}
         </p>

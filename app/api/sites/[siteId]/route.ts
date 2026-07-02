@@ -5,6 +5,7 @@ import { getUserBySessionToken, GUEST_COOKIE, hashGuestToken, SESSION_COOKIE } f
 import { prisma } from "@/lib/db";
 import { deleteSiteMedia, getSiteMedia, isSiteMediaUrl } from "@/lib/site/media";
 import { normalizeSectionSettings } from "@/lib/site/section-layout";
+import { sanitizeLink } from "@/lib/site/links";
 import { toRenderSection } from "@/lib/site/section";
 
 export const runtime = "nodejs";
@@ -32,7 +33,7 @@ const saveSectionSchema = z.object({
   subtitle: z.string().max(400).default(""),
   body: z.string().max(4000).default(""),
   ctaText: z.string().max(120).default(""),
-  ctaLink: z.string().max(2000).default(""),
+  ctaLink: z.string().max(2000).default("").transform(sanitizeLink),
   imagePrompt: z.string().max(500).default(""),
   mediaUrl: z.string().max(2000).default(""),
   altText: z.string().max(300).default(""),

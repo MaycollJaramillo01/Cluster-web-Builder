@@ -1,6 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
 import { stockImageUrl } from "@/lib/site/images";
 import { getContrastText } from "@/lib/site/theme-surface";
+import { getStyleOverride, resolveElementStyle } from "@/lib/site/element-style";
 import { SectionHeading } from "./shared";
 import type { BlockProps } from "./types";
 
@@ -39,6 +40,8 @@ export function GalleryBlock({ section, theme, preset, site }: BlockProps) {
   const items = readItems(section, site.businessType);
   const radius = preset.imageStyle === "square" || preset.imageStyle === "fullBleed" ? "0" : "var(--site-radius)";
   const monochrome = preset.imageStyle === "monochrome";
+  const titleStyle = resolveElementStyle("title", getStyleOverride(section.settings, "title"));
+  const subtitleStyle = resolveElementStyle("subtitle", getStyleOverride(section.settings, "subtitle"));
 
   const cell = (i: number, spec: CellSpec) => {
     const item = items[i % items.length];
@@ -111,7 +114,7 @@ export function GalleryBlock({ section, theme, preset, site }: BlockProps) {
   const layout = (specs: CellSpec[], grid: string, rows?: string) => (
     <section className="px-6 py-20 sm:py-24" style={{ backgroundColor: theme.background }}>
       <div className="mx-auto max-w-6xl">
-        <SectionHeading title={section.title || "Galeria"} subtitle={section.subtitle} theme={theme} preset={preset} />
+        <SectionHeading title={section.title || "Galeria"} subtitle={section.subtitle} theme={theme} preset={preset} titleStyle={titleStyle} subtitleStyle={subtitleStyle} />
         <div className={`mt-12 grid gap-3 ${grid}`} style={rows ? { gridAutoRows: rows } : undefined}>
           {specs.map((spec, i) => cell(i, spec))}
         </div>

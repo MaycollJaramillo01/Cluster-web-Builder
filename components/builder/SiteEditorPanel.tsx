@@ -76,6 +76,21 @@ type SavePayload = {
   deletedSectionIds: string[];
 };
 
+type EditorDraft = {
+  businessName: string;
+  phone: string;
+  email: string;
+  location: string;
+  primary: string;
+  secondary: string;
+  accent: string;
+  sections: RenderSection[];
+  openId: string | null;
+  deletedSectionIds: string[];
+};
+
+const AUTOSAVE_INTERVAL_MS = 4000;
+
 /* ------------------------------------------------------------------ */
 /* Section field configuration                                          */
 /* ------------------------------------------------------------------ */
@@ -607,6 +622,53 @@ export function SiteEditorPanel({
     () => ({ ...initialSite.theme, primary, secondary, accent }),
     [initialSite.theme, primary, secondary, accent]
   );
+
+  // Recupera un borrador local si el navegador se cerro con cambios sin guardar.
+  useEffect(() => {
+    if (recoveryStartedRef.current) return;
+    recoveryStartedRef.current = true;
+    if (sessionStorage.getItem(pendingSaveKey)) return;
+    const stored = localStorage.getItem(draftKey);
+    if (!stored) return;
+    // Diferido a un microtask: evita aplicar varios setState en la misma pasada sincrona del efecto.
+    queueMicrotask(() => {
+      try {
+        const draft = JSON.parse(stored) as EditorDraft;
+        setBusinessName(draft.businessName);
+        setPhone(draft.phone);
+        setEmail(draft.email);
+        setLocation(draft.location);
+        setPrimary(draft.primary);
+        setSecondary(draft.secondary);
+        setAccent(draft.accent);
+        setSections(draft.sections);
+        setOpenId(draft.openId);
+        setDeletedSectionIds(draft.deletedSectionIds);
+        setDirty(true);
+        setRecovered(true);
+      } catch {
+        localStorage.removeItem(draftKey);
+      }
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Autosave local cada 4s: solo protege contra perdida de cambios, no reemplaza el guardado real.
+  useEffect(() => {
+    if (!dirty) return;
+    const timer = setInterval(() => {
+      const draft: EditorDraft = {
+        businessName, phone, email, location, primary, secondary, accent,
+        sections, openId, deletedSectionIds,
+      };
+      try {
+        localStorage.setItem(draftKey, JSON.stringify(draft));
+      } catch {
+        // Cuota de localStorage agotada u otro error de almacenamiento: se ignora, el guardado manual sigue disponible.
+      }
+    }, AUTOSAVE_INTERVAL_MS);
+    return () => clearInterval(timer);
+  }, [dirty, businessName, phone, email, location, primary, secondary, accent, sections, openId, deletedSectionIds, draftKey]);
 
   const visibleSections = [...sections].sort((a, b) => a.order - b.order);
 

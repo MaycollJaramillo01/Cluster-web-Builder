@@ -3,6 +3,7 @@ import { BadgeCheck, Star } from "lucide-react";
 
 import { getItems } from "@/lib/site/section";
 import { ensureReadable, getContrastText, getThemeSurface } from "@/lib/site/theme-surface";
+import { getStyleOverride, resolveElementStyle } from "@/lib/site/element-style";
 import { SectionHeading } from "./shared";
 import type { BlockProps } from "./types";
 
@@ -59,6 +60,8 @@ export function TestimonialsBlock({ section, theme, preset }: BlockProps) {
   const reviews = readReviews(section);
   const surface = getThemeSurface(theme);
   const style = preset.testimonialsStyle ?? "cards";
+  const titleStyle = resolveElementStyle("title", getStyleOverride(section.settings, "title"));
+  const subtitleStyle = resolveElementStyle("subtitle", getStyleOverride(section.settings, "subtitle"));
   if (reviews.length === 0) return null;
 
   const author = (review: Review, textColor: string, mutedColor: string, avatarBg: string) => (
@@ -78,7 +81,7 @@ export function TestimonialsBlock({ section, theme, preset }: BlockProps) {
     return (
       <section className="px-6 py-20 sm:py-28" style={{ backgroundColor: surface.section }}>
         <div className="mx-auto max-w-6xl">
-          <SectionHeading title={section.title} subtitle={section.subtitle} theme={theme} preset={preset} />
+          <SectionHeading title={section.title} subtitle={section.subtitle} theme={theme} preset={preset} titleStyle={titleStyle} subtitleStyle={subtitleStyle} />
           <div className="mt-14 grid gap-10 md:grid-cols-2 lg:grid-cols-3">
             {reviews.map((review, i) => (
               <figure key={i} data-motion-item className="flex flex-col gap-5">
@@ -104,7 +107,7 @@ export function TestimonialsBlock({ section, theme, preset }: BlockProps) {
     return (
       <section className="px-6 py-20 sm:py-28" style={{ backgroundColor: theme.background }}>
         <div className="mx-auto max-w-4xl">
-          <SectionHeading title={section.title} subtitle={section.subtitle} theme={theme} preset={preset} />
+          <SectionHeading title={section.title} subtitle={section.subtitle} theme={theme} preset={preset} titleStyle={titleStyle} subtitleStyle={subtitleStyle} />
           <div className="mt-14 divide-y" style={{ borderColor: `${theme.text}14` }}>
             {reviews.map((review, i) => (
               <figure key={i} data-motion-item className="py-8">
@@ -129,7 +132,7 @@ export function TestimonialsBlock({ section, theme, preset }: BlockProps) {
     return (
       <section className="px-6 py-20 sm:py-24" style={{ backgroundColor: theme.background }}>
         <div className="mx-auto max-w-6xl">
-          <SectionHeading title={section.title} subtitle={section.subtitle} theme={theme} preset={preset} />
+          <SectionHeading title={section.title} subtitle={section.subtitle} theme={theme} preset={preset} titleStyle={titleStyle} subtitleStyle={subtitleStyle} />
           <div className="mt-12 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {reviews.map((review, i) => {
               const bg = i % 3 === 0 ? theme.primary : i % 3 === 1 ? surface.panel : theme.background;
@@ -155,7 +158,7 @@ export function TestimonialsBlock({ section, theme, preset }: BlockProps) {
     return (
       <section className="px-6 py-20 sm:py-24" style={{ backgroundColor: surface.section }}>
         <div className="mx-auto max-w-4xl">
-          <SectionHeading title={section.title} subtitle={section.subtitle} theme={theme} preset={preset} />
+          <SectionHeading title={section.title} subtitle={section.subtitle} theme={theme} preset={preset} titleStyle={titleStyle} subtitleStyle={subtitleStyle} />
           <div className="mt-12 space-y-4">
             {reviews.map((review, i) => (
               <figure key={i} data-motion-item className={`flex items-start gap-5 border p-6 ${preset.cardShadow}`} style={{ backgroundColor: surface.panel, borderColor: `${theme.text}14`, borderRadius: "var(--site-radius)" }}>
@@ -187,7 +190,7 @@ export function TestimonialsBlock({ section, theme, preset }: BlockProps) {
     return (
       <section className="px-6 py-20 sm:py-24" style={{ backgroundColor: theme.background }}>
         <div className="mx-auto max-w-6xl">
-          <SectionHeading title={section.title} subtitle={section.subtitle} theme={theme} preset={preset} />
+          <SectionHeading title={section.title} subtitle={section.subtitle} theme={theme} preset={preset} titleStyle={titleStyle} subtitleStyle={subtitleStyle} />
           <div className="mt-14 space-y-6">
             <figure data-motion-item className={`border p-8 sm:p-10 ${preset.cardShadow}`} style={{ backgroundColor: surface.panel, borderColor: `${theme.primary}22`, borderRadius: "var(--site-radius)" }}>
               <div className="flex items-center justify-between gap-3">

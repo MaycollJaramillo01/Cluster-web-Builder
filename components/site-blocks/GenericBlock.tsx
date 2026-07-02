@@ -1,5 +1,6 @@
 import { getItems } from "@/lib/site/section";
 import { getThemeSurface } from "@/lib/site/theme-surface";
+import { getStyleOverride, resolveElementStyle } from "@/lib/site/element-style";
 import { SectionHeading } from "./shared";
 import type { BlockProps } from "./types";
 
@@ -10,6 +11,8 @@ import type { BlockProps } from "./types";
 export function GenericBlock({ section, theme, preset }: BlockProps) {
   const items = getItems(section);
   const surface = getThemeSurface(theme);
+  const titleStyle = resolveElementStyle("title", getStyleOverride(section.settings, "title"));
+  const subtitleStyle = resolveElementStyle("subtitle", getStyleOverride(section.settings, "subtitle"));
   return (
     <section className="px-6 py-20 sm:py-24" style={{ backgroundColor: theme.background }}>
       <div className="mx-auto max-w-5xl">
@@ -18,6 +21,8 @@ export function GenericBlock({ section, theme, preset }: BlockProps) {
           subtitle={section.subtitle}
           theme={theme}
           preset={preset}
+          titleStyle={titleStyle}
+          subtitleStyle={subtitleStyle}
         />
         {section.body && (
           <p className="mx-auto mt-6 max-w-2xl text-center" style={{ color: surface.muted }}>

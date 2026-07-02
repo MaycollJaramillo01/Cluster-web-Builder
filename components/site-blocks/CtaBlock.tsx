@@ -2,6 +2,7 @@ import { MessageCircle, Phone } from "lucide-react";
 
 import { sectionImageUrl } from "@/lib/site/images";
 import { getContrastText } from "@/lib/site/theme-surface";
+import { getStyleOverride, resolveElementStyle } from "@/lib/site/element-style";
 import type { BlockProps } from "./types";
 
 /**
@@ -21,6 +22,10 @@ function resolveVariant(preset: BlockProps["preset"]): CtaVariant {
 export function CtaBlock({ section, theme, preset, site }: BlockProps) {
   const variant = resolveVariant(preset);
   const phoneDigits = (site.phone ?? "").replace(/[^\d]/g, "");
+  const titleStyle = resolveElementStyle("title", getStyleOverride(section.settings, "title"));
+  const subtitleStyle = resolveElementStyle("subtitle", getStyleOverride(section.settings, "subtitle"));
+  const bodyStyle = resolveElementStyle("body", getStyleOverride(section.settings, "body"));
+  const ctaTextStyle = resolveElementStyle("ctaText", getStyleOverride(section.settings, "ctaText"));
 
   const buttonBase = "inline-flex min-h-12 items-center justify-center gap-2 px-6 py-3 text-base font-semibold transition-all duration-200 hover:brightness-95 focus-visible:outline-none focus-visible:ring-4";
   const radius = preset.ctaStyle === "pill" ? "9999px" : "var(--site-btn-radius)";
@@ -36,6 +41,7 @@ export function CtaBlock({ section, theme, preset, site }: BlockProps) {
             color: getContrastText(primaryBg),
             borderRadius: radius,
             boxShadow: preset.ctaStyle === "offset" ? `5px 5px 0 ${onColor}55` : undefined,
+            ...ctaTextStyle,
           }}
         >
           {section.ctaText}
@@ -73,6 +79,7 @@ export function CtaBlock({ section, theme, preset, site }: BlockProps) {
         letterSpacing: preset.headingTracking,
         textTransform: preset.uppercaseHeadings ? "uppercase" : "none",
         color,
+        ...titleStyle,
       }}
     >
       {section.title}
@@ -87,8 +94,8 @@ export function CtaBlock({ section, theme, preset, site }: BlockProps) {
         <div className="mx-auto flex max-w-6xl flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
           <div className="max-w-xl">
             {section.title && heading(text)}
-            {section.subtitle && <p className="mt-3 text-lg" style={{ color: text, opacity: 0.85 }}>{section.subtitle}</p>}
-            {section.body && <p className="mt-2 text-base leading-7" style={{ color: text, opacity: 0.75 }}>{section.body}</p>}
+            {section.subtitle && <p className="mt-3 text-lg" style={{ color: text, opacity: 0.85, ...subtitleStyle }}>{section.subtitle}</p>}
+            {section.body && <p className="mt-2 text-base leading-7" style={{ color: text, opacity: 0.75, ...bodyStyle }}>{section.body}</p>}
           </div>
           {actions(theme.secondary, text)}
         </div>
@@ -102,7 +109,7 @@ export function CtaBlock({ section, theme, preset, site }: BlockProps) {
       <section className="px-6 py-20 sm:py-24" style={{ backgroundColor: theme.background }}>
         <div className="mx-auto flex max-w-3xl flex-col items-center gap-6 text-center">
           {section.title && heading(theme.text)}
-          {section.subtitle && <p className="max-w-xl text-lg" style={{ color: theme.text, opacity: 0.7 }}>{section.subtitle}</p>}
+          {section.subtitle && <p className="max-w-xl text-lg" style={{ color: theme.text, opacity: 0.7, ...subtitleStyle }}>{section.subtitle}</p>}
           {actions(theme.primary, theme.text)}
         </div>
       </section>
@@ -120,7 +127,7 @@ export function CtaBlock({ section, theme, preset, site }: BlockProps) {
         >
           <div className="max-w-xl">
             {section.title && heading(text)}
-            {section.subtitle && <p className="mt-3 text-lg" style={{ color: text, opacity: 0.85 }}>{section.subtitle}</p>}
+            {section.subtitle && <p className="mt-3 text-lg" style={{ color: text, opacity: 0.85, ...subtitleStyle }}>{section.subtitle}</p>}
           </div>
           {actions(theme.accent, text)}
         </div>
@@ -149,7 +156,7 @@ export function CtaBlock({ section, theme, preset, site }: BlockProps) {
       <div className="absolute inset-0" style={{ backgroundColor: useImage ? `${theme.secondary}F2` : theme.secondary }} />
       <div className={`relative mx-auto flex max-w-4xl flex-col gap-6 ${preset.sectionStyle === "asymmetric" || preset.sectionStyle === "grid" ? "items-start text-left" : "items-center text-center"}`}>
         {section.title && heading("#ffffff")}
-        {section.subtitle && <p className="max-w-2xl text-lg text-white opacity-90">{section.subtitle}</p>}
+        {section.subtitle && <p className="max-w-2xl text-lg text-white opacity-90" style={subtitleStyle}>{section.subtitle}</p>}
         {actions(theme.accent, "#ffffff")}
       </div>
     </section>

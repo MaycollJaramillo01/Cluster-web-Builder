@@ -5,6 +5,7 @@ import { CheckCircle2, Mail, MapPin, Phone, Send } from "lucide-react";
 
 import type { ContactStyle } from "@/lib/site/design";
 import { getContrastText, getThemeSurface } from "@/lib/site/theme-surface";
+import { getStyleOverride, resolveElementStyle } from "@/lib/site/element-style";
 import type { BlockProps, BlockSiteInfo } from "./types";
 
 type Status = "idle" | "sending" | "sent" | "error";
@@ -62,6 +63,9 @@ export function ContactBlock({ section, theme, preset, site }: BlockProps) {
   const infoBackground = preset.contactStyle === "floating" ? theme.primary : preset.contactStyle === "sidebar" ? theme.secondary : undefined;
   const infoText = infoBackground ? getContrastText(infoBackground) : sectionText;
   const infoMuted = infoBackground ? `${infoText}b8` : mutedText;
+  const titleStyle = resolveElementStyle("title", getStyleOverride(section.settings, "title"));
+  const bodyStyle = resolveElementStyle("body", getStyleOverride(section.settings, "body"));
+  const ctaTextStyle = resolveElementStyle("ctaText", getStyleOverride(section.settings, "ctaText"));
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -99,6 +103,8 @@ export function ContactBlock({ section, theme, preset, site }: BlockProps) {
       accentColor={infoBackground ? infoText : theme.primary}
       backgroundColor={infoBackground}
       preset={preset}
+      titleStyle={titleStyle}
+      bodyStyle={bodyStyle}
     />
   );
   const form = (
@@ -117,6 +123,7 @@ export function ContactBlock({ section, theme, preset, site }: BlockProps) {
       buttonRadius={preset.buttonRadius}
       cardShadow={preset.cardShadow}
       contactStyle={preset.contactStyle}
+      ctaTextStyle={ctaTextStyle}
     />
   );
 
@@ -130,7 +137,7 @@ export function ContactBlock({ section, theme, preset, site }: BlockProps) {
   );
 }
 
-function ContactInfo({ section, site, layout, textColor, mutedColor, accentColor, backgroundColor, preset }: {
+function ContactInfo({ section, site, layout, textColor, mutedColor, accentColor, backgroundColor, preset, titleStyle, bodyStyle }: {
   section: BlockProps["section"];
   site: BlockSiteInfo;
   layout: ContactLayout;
@@ -139,16 +146,18 @@ function ContactInfo({ section, site, layout, textColor, mutedColor, accentColor
   accentColor: string;
   backgroundColor?: string;
   preset: BlockProps["preset"];
+  titleStyle: CSSProperties;
+  bodyStyle: CSSProperties;
 }) {
   return (
     <div className={layout.info} style={{ backgroundColor }}>
       <p className="mb-4 text-xs font-bold uppercase tracking-[0.2em]" style={{ color: accentColor }}>{layout.eyebrow}</p>
       {section.title && (
-        <h2 className="text-3xl font-bold leading-tight sm:text-4xl lg:text-5xl" style={{ color: textColor, fontFamily: "var(--site-heading)", fontWeight: preset.headingWeight, textTransform: preset.uppercaseHeadings ? "uppercase" : "none" }}>
+        <h2 className="text-3xl font-bold leading-tight sm:text-4xl lg:text-5xl" style={{ color: textColor, fontFamily: "var(--site-heading)", fontWeight: preset.headingWeight, textTransform: preset.uppercaseHeadings ? "uppercase" : "none", ...titleStyle }}>
           {section.title}
         </h2>
       )}
-      {section.body && <p className="mt-5 max-w-2xl leading-relaxed" style={{ color: mutedColor }}>{section.body}</p>}
+      {section.body && <p className="mt-5 max-w-2xl leading-relaxed" style={{ color: mutedColor, ...bodyStyle }}>{section.body}</p>}
       <ContactDetails site={site} className={layout.details} textColor={textColor} mutedColor={mutedColor} accentColor={accentColor} />
     </div>
   );
@@ -177,7 +186,7 @@ function ContactDetails({ site, className, textColor, mutedColor, accentColor }:
   );
 }
 
-function ContactForm({ section, layout, fieldPrefix, status, feedback, onSubmit, theme, surface, textColor, mutedColor, radius, buttonRadius, cardShadow, contactStyle }: {
+function ContactForm({ section, layout, fieldPrefix, status, feedback, onSubmit, theme, surface, textColor, mutedColor, radius, buttonRadius, cardShadow, contactStyle, ctaTextStyle }: {
   section: BlockProps["section"];
   layout: ContactLayout;
   fieldPrefix: string;
@@ -192,6 +201,7 @@ function ContactForm({ section, layout, fieldPrefix, status, feedback, onSubmit,
   buttonRadius: string;
   cardShadow: string;
   contactStyle: ContactStyle;
+  ctaTextStyle: CSSProperties;
 }) {
   const transparent = layout.inputMode === "line";
   const brutal = layout.inputMode === "brutal";
@@ -233,7 +243,7 @@ function ContactForm({ section, layout, fieldPrefix, status, feedback, onSubmit,
       </div>
       <input name="website" tabIndex={-1} autoComplete="off" className="hidden" aria-hidden="true" />
       <div className="mt-6 flex flex-wrap items-center gap-4">
-        <button type="submit" disabled={status === "sending"} className={`inline-flex min-h-12 items-center justify-center gap-2 px-6 py-3 text-sm font-semibold transition-[filter,opacity,transform] duration-200 hover:brightness-95 active:scale-[.99] disabled:cursor-wait disabled:opacity-60 ${layout.button}`} style={{ backgroundColor: theme.primary, color: getContrastText(theme.primary), borderRadius: contactStyle === "minimalLine" || contactStyle === "editorial" ? "0" : buttonRadius }}>
+        <button type="submit" disabled={status === "sending"} className={`inline-flex min-h-12 items-center justify-center gap-2 px-6 py-3 text-sm font-semibold transition-[filter,opacity,transform] duration-200 hover:brightness-95 active:scale-[.99] disabled:cursor-wait disabled:opacity-60 ${layout.button}`} style={{ backgroundColor: theme.primary, color: getContrastText(theme.primary), borderRadius: contactStyle === "minimalLine" || contactStyle === "editorial" ? "0" : buttonRadius, ...ctaTextStyle }}>
           {status === "sent" ? <CheckCircle2 aria-hidden="true" className="h-4 w-4" /> : <Send aria-hidden="true" className="h-4 w-4" />}
           {status === "sending" ? "Enviando..." : status === "sent" ? "Mensaje enviado" : section.ctaText || "Enviar mensaje"}
         </button>

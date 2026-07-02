@@ -2,10 +2,15 @@
 import { sectionImageUrl } from "@/lib/site/images";
 import { sectionVideoUrl } from "@/lib/site/videos";
 import { ensureReadable, getContrastText } from "@/lib/site/theme-surface";
+import { getStyleOverride, resolveElementStyle } from "@/lib/site/element-style";
 import type { BlockProps } from "./types";
 import { HeroVideo } from "./HeroVideo";
 
 export function HeroBlock({ section, theme, preset, site }: BlockProps) {
+  const titleStyle = resolveElementStyle("title", getStyleOverride(section.settings, "title"));
+  const subtitleStyle = resolveElementStyle("subtitle", getStyleOverride(section.settings, "subtitle"));
+  const bodyStyle = resolveElementStyle("body", getStyleOverride(section.settings, "body"));
+  const ctaTextStyle = resolveElementStyle("ctaText", getStyleOverride(section.settings, "ctaText"));
   const heroImg = (w: number, h: number, seed: string) =>
     site.coverUrl || sectionImageUrl({
       prompt: section.imagePrompt,
@@ -29,6 +34,7 @@ export function HeroBlock({ section, theme, preset, site }: BlockProps) {
         letterSpacing: "var(--site-tracking)",
         fontWeight: preset.headingWeight,
         textTransform: preset.uppercaseHeadings ? "uppercase" : "none",
+        ...titleStyle,
       }}
     >
       {section.title}
@@ -46,6 +52,7 @@ export function HeroBlock({ section, theme, preset, site }: BlockProps) {
         borderRadius: preset.ctaStyle === "pill" ? "9999px" : "var(--site-btn-radius)",
         boxShadow: preset.ctaStyle === "offset" ? `5px 5px 0 ${theme.text}` : undefined,
         textDecoration: preset.ctaStyle === "link" ? "underline" : "none",
+        ...ctaTextStyle,
       }}
     >
       {section.ctaText}
@@ -58,9 +65,9 @@ export function HeroBlock({ section, theme, preset, site }: BlockProps) {
         <div className="pointer-events-none absolute -right-16 -top-20 h-72 w-72 rounded-full border-[28px] opacity-30" style={{ borderColor: theme.text }} />
         <div className="relative mx-auto grid max-w-6xl gap-12 lg:grid-cols-[1fr_auto] lg:items-end">
           <div style={{ color: getContrastText(theme.accent) }}>
-            <p className="mb-8 border-b-2 pb-3 text-sm font-bold uppercase tracking-[0.2em]" style={{ borderColor: "currentColor" }}>{section.subtitle || site.businessType}</p>
+            <p className="mb-8 border-b-2 pb-3 text-sm font-bold uppercase tracking-[0.2em]" style={{ borderColor: "currentColor", ...subtitleStyle }}>{section.subtitle || site.businessType}</p>
             <div className="max-w-5xl [&_h1]:text-5xl [&_h1]:sm:text-8xl">{heading}</div>
-            {section.body && <p className="mt-8 max-w-2xl text-lg font-medium">{section.body}</p>}
+            {section.body && <p className="mt-8 max-w-2xl text-lg font-medium" style={bodyStyle}>{section.body}</p>}
           </div>
           {ctaButton && <div className="pb-2">{ctaButton}</div>}
         </div>
@@ -75,8 +82,8 @@ export function HeroBlock({ section, theme, preset, site }: BlockProps) {
           <div className="lg:col-span-7" style={{ color: theme.text }}>
             <p className="mb-10 text-xs font-semibold uppercase tracking-[0.25em]" style={{ color: ensureReadable(theme.primary, theme.background) }}>{site.businessType}</p>
             <div className="[&_h1]:text-5xl [&_h1]:sm:text-7xl">{heading}</div>
-            {section.subtitle && <p className="mt-7 max-w-xl text-xl italic" style={{ opacity: 0.85 }}>{section.subtitle}</p>}
-            {section.body && <p className="mt-5 max-w-xl leading-relaxed" style={{ opacity: 0.75 }}>{section.body}</p>}
+            {section.subtitle && <p className="mt-7 max-w-xl text-xl italic" style={{ opacity: 0.85, ...subtitleStyle }}>{section.subtitle}</p>}
+            {section.body && <p className="mt-5 max-w-xl leading-relaxed" style={{ opacity: 0.75, ...bodyStyle }}>{section.body}</p>}
             {ctaButton && <div className="mt-10">{ctaButton}</div>}
           </div>
           <div className="lg:col-span-5">
@@ -99,9 +106,9 @@ export function HeroBlock({ section, theme, preset, site }: BlockProps) {
           )}
           <div className="absolute inset-0" style={{ background: `linear-gradient(90deg, ${theme.secondary} 0%, ${theme.secondary}E8 45%, ${theme.secondary}22 100%)` }} />
           <div className="relative flex min-h-[34rem] max-w-3xl flex-col justify-center p-8 text-white sm:p-14">
-            {section.subtitle && <p className="mb-5 text-sm font-semibold uppercase tracking-[0.18em]" style={{ color: ensureReadable(theme.accent, theme.secondary) }}>{section.subtitle}</p>}
+            {section.subtitle && <p className="mb-5 text-sm font-semibold uppercase tracking-[0.18em]" style={{ color: ensureReadable(theme.accent, theme.secondary), ...subtitleStyle }}>{section.subtitle}</p>}
             {heading}
-            {section.body && <p className="mt-6 max-w-xl text-lg opacity-85">{section.body}</p>}
+            {section.body && <p className="mt-6 max-w-xl text-lg opacity-85" style={bodyStyle}>{section.body}</p>}
             {ctaButton && <div className="mt-9">{ctaButton}</div>}
           </div>
         </div>
@@ -122,7 +129,7 @@ export function HeroBlock({ section, theme, preset, site }: BlockProps) {
         <div className="relative mx-auto w-full max-w-6xl px-6 pb-20 text-white sm:pb-28">
           <div className="max-w-4xl [&_h1]:text-5xl [&_h1]:sm:text-8xl">{heading}</div>
           <div className="mt-8 flex flex-col gap-7 border-t border-white/30 pt-7 md:flex-row md:items-end md:justify-between">
-            <p className="max-w-2xl text-lg opacity-90">{section.body || section.subtitle}</p>
+            <p className="max-w-2xl text-lg opacity-90" style={bodyStyle}>{section.body || section.subtitle}</p>
             {ctaButton}
           </div>
         </div>
@@ -138,12 +145,12 @@ export function HeroBlock({ section, theme, preset, site }: BlockProps) {
           <div className="mb-6 h-1 w-16" style={{ backgroundColor: theme.accent }} />
           <div style={{ color: theme.text }}>{heading}</div>
           {section.subtitle && (
-            <p className="mt-6 max-w-2xl text-lg sm:text-xl" style={{ color: theme.text, opacity: 0.7 }}>
+            <p className="mt-6 max-w-2xl text-lg sm:text-xl" style={{ color: theme.text, opacity: 0.7, ...subtitleStyle }}>
               {section.subtitle}
             </p>
           )}
           {section.body && (
-            <p className="mt-4 max-w-xl text-base" style={{ color: theme.text, opacity: 0.6 }}>
+            <p className="mt-4 max-w-xl text-base" style={{ color: theme.text, opacity: 0.6, ...bodyStyle }}>
               {section.body}
             </p>
           )}
@@ -161,12 +168,12 @@ export function HeroBlock({ section, theme, preset, site }: BlockProps) {
           <div style={{ color: theme.text }}>
             {heading}
             {section.subtitle && (
-              <p className="mt-5 text-lg" style={{ color: theme.text, opacity: 0.75 }}>
+              <p className="mt-5 text-lg" style={{ color: theme.text, opacity: 0.75, ...subtitleStyle }}>
                 {section.subtitle}
               </p>
             )}
             {section.body && (
-              <p className="mt-3 text-base" style={{ color: theme.text, opacity: 0.6 }}>
+              <p className="mt-3 text-base" style={{ color: theme.text, opacity: 0.6, ...bodyStyle }}>
                 {section.body}
               </p>
             )}
@@ -221,7 +228,7 @@ export function HeroBlock({ section, theme, preset, site }: BlockProps) {
             {section.subtitle && (
               <p
                 className="mb-6 text-[11px] font-bold uppercase tracking-[0.22em]"
-                style={{ color: ensureReadable(theme.accent, theme.secondary) }}
+                style={{ color: ensureReadable(theme.accent, theme.secondary), ...subtitleStyle }}
               >
                 {section.subtitle}
               </p>
@@ -233,6 +240,7 @@ export function HeroBlock({ section, theme, preset, site }: BlockProps) {
                 fontFamily: "var(--site-heading)",
                 fontWeight: preset.headingWeight,
                 letterSpacing: preset.headingTracking,
+                ...titleStyle,
               }}
             >
               {section.title}
@@ -253,7 +261,7 @@ export function HeroBlock({ section, theme, preset, site }: BlockProps) {
             )}
 
             {section.body && (
-              <p className="mt-7 max-w-md text-sm leading-relaxed text-white/75 sm:text-[15px]">
+              <p className="mt-7 max-w-md text-sm leading-relaxed text-white/75 sm:text-[15px]" style={bodyStyle}>
                 {section.body}
               </p>
             )}
@@ -308,8 +316,8 @@ export function HeroBlock({ section, theme, preset, site }: BlockProps) {
         <div className="absolute inset-0" style={{ background: `linear-gradient(135deg, ${theme.secondary}F2, ${theme.primary}C9 58%, ${theme.accent}99)` }} />
         <div className="relative mx-auto max-w-4xl text-center">
           {heading}
-          {section.subtitle && <p className="mt-6 text-xl opacity-95 sm:text-2xl">{section.subtitle}</p>}
-          {section.body && <p className="mx-auto mt-4 max-w-2xl text-base opacity-85">{section.body}</p>}
+          {section.subtitle && <p className="mt-6 text-xl opacity-95 sm:text-2xl" style={subtitleStyle}>{section.subtitle}</p>}
+          {section.body && <p className="mx-auto mt-4 max-w-2xl text-base opacity-85" style={bodyStyle}>{section.body}</p>}
           {ctaButton && <div className="mt-10">{ctaButton}</div>}
         </div>
       </section>
@@ -336,13 +344,13 @@ export function HeroBlock({ section, theme, preset, site }: BlockProps) {
       <div className="relative px-6 py-32 sm:py-44">
         <div className="mx-auto max-w-4xl text-center text-white">
           {section.subtitle && (
-            <span className="mb-5 inline-block rounded-md border border-white/20 bg-white/10 px-4 py-1.5 text-sm font-medium">
+            <span className="mb-5 inline-block rounded-md border border-white/20 bg-white/10 px-4 py-1.5 text-sm font-medium" style={subtitleStyle}>
               {section.subtitle}
             </span>
           )}
           {heading}
           {section.body && (
-            <p className="mx-auto mt-6 max-w-2xl text-lg opacity-90">{section.body}</p>
+            <p className="mx-auto mt-6 max-w-2xl text-lg opacity-90" style={bodyStyle}>{section.body}</p>
           )}
           {ctaButton && <div className="mt-10">{ctaButton}</div>}
         </div>

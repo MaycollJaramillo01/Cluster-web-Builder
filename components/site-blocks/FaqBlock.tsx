@@ -1,5 +1,6 @@
 import { getItems } from "@/lib/site/section";
 import { ensureReadable, getThemeSurface } from "@/lib/site/theme-surface";
+import { getStyleOverride, resolveElementStyle } from "@/lib/site/element-style";
 import { SectionHeading } from "./shared";
 import type { BlockProps } from "./types";
 
@@ -7,6 +8,8 @@ export function FaqBlock({ section, theme, preset }: BlockProps) {
   const items = getItems(section);
   const surface = getThemeSurface(theme);
   const style = preset.faqStyle ?? "accordion";
+  const titleStyle = resolveElementStyle("title", getStyleOverride(section.settings, "title"));
+  const subtitleStyle = resolveElementStyle("subtitle", getStyleOverride(section.settings, "subtitle"));
 
   // ── SPLIT: sticky heading left, accordion right ──────────────────────────
   if (style === "split") {
@@ -14,7 +17,7 @@ export function FaqBlock({ section, theme, preset }: BlockProps) {
       <section className="px-6 py-20 sm:py-28" style={{ backgroundColor: theme.background }}>
         <div className="mx-auto grid max-w-6xl gap-12 lg:grid-cols-[0.68fr_1.32fr] lg:gap-16">
           <div className="lg:sticky lg:top-28 lg:self-start">
-            <SectionHeading title={section.title} subtitle={section.subtitle} theme={theme} preset={preset} align="left" />
+            <SectionHeading title={section.title} subtitle={section.subtitle} theme={theme} preset={preset} titleStyle={titleStyle} subtitleStyle={subtitleStyle} align="left" />
             {section.body ? <p className="mt-6 max-w-xl leading-relaxed" style={{ color: surface.muted }}>{section.body}</p> : null}
             <p className="mt-10 text-xs font-bold uppercase tracking-[0.2em]" style={{ color: ensureReadable(theme.primary, theme.background) }}>
               {items.length} {items.length === 1 ? "respuesta" : "respuestas"}
@@ -44,7 +47,7 @@ export function FaqBlock({ section, theme, preset }: BlockProps) {
     return (
       <section className="px-6 py-20 sm:py-24" style={{ backgroundColor: surface.section }}>
         <div className="mx-auto max-w-6xl">
-          <SectionHeading title={section.title} subtitle={section.subtitle} theme={theme} preset={preset} />
+          <SectionHeading title={section.title} subtitle={section.subtitle} theme={theme} preset={preset} titleStyle={titleStyle} subtitleStyle={subtitleStyle} />
           <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {items.map((item, i) => (
               <article key={i} data-motion-item className={`flex flex-col gap-4 border p-6 ${preset.cardShadow}`} style={{ backgroundColor: surface.panel, borderColor: `${theme.primary}28`, borderRadius: "var(--site-radius)" }}>
@@ -66,7 +69,7 @@ export function FaqBlock({ section, theme, preset }: BlockProps) {
     return (
       <section className="px-6 py-20 sm:py-28" style={{ backgroundColor: theme.background }}>
         <div className="mx-auto max-w-3xl">
-          <SectionHeading title={section.title} subtitle={section.subtitle} theme={theme} preset={preset} />
+          <SectionHeading title={section.title} subtitle={section.subtitle} theme={theme} preset={preset} titleStyle={titleStyle} subtitleStyle={subtitleStyle} />
           <div className="mt-14 space-y-10">
             {items.map((item, i) => (
               <div key={i} data-motion-item className="border-t pt-8" style={{ borderColor: `${theme.text}18` }}>
@@ -87,7 +90,7 @@ export function FaqBlock({ section, theme, preset }: BlockProps) {
     return (
       <section className="px-6 py-20 sm:py-28" style={{ backgroundColor: theme.background }}>
         <div className="mx-auto max-w-6xl">
-          <SectionHeading title={section.title} subtitle={section.subtitle} theme={theme} preset={preset} />
+          <SectionHeading title={section.title} subtitle={section.subtitle} theme={theme} preset={preset} titleStyle={titleStyle} subtitleStyle={subtitleStyle} />
           <div className="mt-14 grid gap-8 md:grid-cols-2">
             {items.map((item, i) => (
               <article key={i} data-motion-item className="relative overflow-hidden border-t-2 pt-6" style={{ borderColor: i % 2 === 0 ? theme.primary : theme.accent }}>
@@ -111,7 +114,7 @@ export function FaqBlock({ section, theme, preset }: BlockProps) {
     return (
       <section className="px-6 py-20 sm:py-28" style={{ backgroundColor: surface.section }}>
         <div className="mx-auto max-w-6xl">
-          <SectionHeading title={section.title} subtitle={section.subtitle} theme={theme} preset={preset} />
+          <SectionHeading title={section.title} subtitle={section.subtitle} theme={theme} preset={preset} titleStyle={titleStyle} subtitleStyle={subtitleStyle} />
           <div className="mt-14 grid gap-x-10 gap-y-0 border-t md:grid-cols-2" style={{ borderColor: `${theme.text}18` }}>
             {items.map((item, i) => (
               <div key={i} data-motion-item className="border-b py-8" style={{ borderColor: `${theme.text}18` }}>
@@ -133,7 +136,7 @@ export function FaqBlock({ section, theme, preset }: BlockProps) {
     <section className="px-6 py-20 sm:py-24" style={{ backgroundColor: theme.background }}>
       <div className={`mx-auto ${useSplitLayout ? "max-w-6xl grid gap-12 lg:grid-cols-[0.68fr_1.32fr] lg:gap-16" : "max-w-4xl"}`}>
         <div className={useSplitLayout ? "lg:sticky lg:top-28 lg:self-start" : ""}>
-          <SectionHeading title={section.title} subtitle={section.subtitle} theme={theme} preset={preset} align={useSplitLayout ? "left" : undefined} />
+          <SectionHeading title={section.title} subtitle={section.subtitle} theme={theme} preset={preset} titleStyle={titleStyle} subtitleStyle={subtitleStyle} align={useSplitLayout ? "left" : undefined} />
           {section.body ? <p className={`mt-6 max-w-xl leading-relaxed ${useSplitLayout ? "" : "mx-auto text-center"}`} style={{ color: surface.muted }}>{section.body}</p> : null}
           {useSplitLayout ? <p className="mt-10 text-xs font-bold uppercase tracking-[0.2em]" style={{ color: ensureReadable(theme.primary, theme.background) }}>Respuestas directas</p> : null}
         </div>

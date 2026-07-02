@@ -3,6 +3,7 @@ import type { CSSProperties } from "react";
 import type { SiteTheme } from "@/lib/site/blueprint";
 import type { RenderSection } from "@/lib/site/section";
 import { getDesignPreset } from "@/lib/site/design";
+import { getStyleOverride, resolveElementStyle } from "@/lib/site/element-style";
 import { normalizeSectionLayout } from "@/lib/site/section-layout";
 import { getContrastText } from "@/lib/site/theme-surface";
 
@@ -133,6 +134,7 @@ export function SiteBlockRenderer({
       <Block section={section} theme={theme} preset={preset} site={site} index={section.order} />
     );
     const layout = normalizeSectionLayout(section.settings?.layout);
+    const sectionStyle = resolveElementStyle("section", getStyleOverride(section.settings, "section"));
     const laidOutContent = (
       <div
         className="site-section-layout"
@@ -140,7 +142,10 @@ export function SiteBlockRenderer({
         data-align={layout.align}
         data-background={layout.background}
         data-spacing={layout.spacing}
-        style={{ "--section-tonal": `color-mix(in srgb, ${theme.primary} 8%, ${theme.background})` } as CSSProperties}
+        style={{
+          "--section-tonal": `color-mix(in srgb, ${theme.primary} 8%, ${theme.background})`,
+          ...sectionStyle,
+        } as CSSProperties}
       >
         {content}
       </div>

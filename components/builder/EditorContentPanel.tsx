@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { ChevronDown, ChevronUp, Eye, EyeOff, Link2, Loader2, Plus, Sparkles, Trash2 } from "lucide-react";
 
 import { EditorMediaField } from "@/components/builder/EditorMediaField";
+import { EditorStylePanel } from "@/components/builder/EditorStylePanel";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import type { RenderSection } from "@/lib/site/section";
@@ -267,6 +268,7 @@ export function EditorContentPanel({
                   onChange={(value) => onUpdate(section.id, { [field.key]: value })}
                 />)}
             {section.type !== "footer" && <LayoutControls section={section} onUpdate={onUpdate} />}
+            {section.type !== "footer" && <EditorStylePanel section={section} fieldKeys={meta.fields.map((field) => field.key)} onUpdate={onUpdate} />}
             {aiError && <p role="alert" className="text-xs text-[#ffb4ab]">{aiError}</p>}
             {ITEM_META[section.type] && <SectionItemsEditor
               section={section}

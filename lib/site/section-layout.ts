@@ -1,3 +1,5 @@
+import { normalizeStyleOverrides } from "./element-style";
+
 export type SectionLayout = {
   width: "narrow" | "standard" | "wide";
   align: "left" | "center";
@@ -23,5 +25,9 @@ export function normalizeSectionLayout(value: unknown): SectionLayout {
 }
 
 export function normalizeSectionSettings(settings: Record<string, unknown>) {
-  return { ...settings, layout: normalizeSectionLayout(settings.layout) };
+  return {
+    ...settings,
+    layout: normalizeSectionLayout(settings.layout),
+    styleOverrides: normalizeStyleOverrides(settings.styleOverrides),
+  };
 }
