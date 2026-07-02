@@ -220,3 +220,8 @@
 .site-section-layout[data-width="wide"] > section > :where(div, figure) { max-width: 90rem !important; }
 .site-section-layout[data-align="center"] > section { text-align: center; }
 .site-section-layout[data-align="center"] > section :where(a, button) { margin-inline: auto; }
+
+/* Freeform sections (settings.freeform): rows collapse to one column below 640px. */
+@media (max-width: 640px) {
+  .site-freeform-row { grid-template-columns: 1fr !important; }
+}

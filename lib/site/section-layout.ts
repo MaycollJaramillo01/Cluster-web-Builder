@@ -1,4 +1,5 @@
 import { normalizeStyleOverrides } from "./element-style";
+import { normalizeFreeformLayout } from "./freeform";
 
 export type SectionLayout = {
   width: "narrow" | "standard" | "wide";
@@ -29,5 +30,6 @@ export function normalizeSectionSettings(settings: Record<string, unknown>) {
     ...settings,
     layout: normalizeSectionLayout(settings.layout),
     styleOverrides: normalizeStyleOverrides(settings.styleOverrides),
+    freeform: normalizeFreeformLayout(settings.freeform),
   };
 }

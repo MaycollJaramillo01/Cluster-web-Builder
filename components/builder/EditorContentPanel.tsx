@@ -5,6 +5,8 @@ import { ChevronDown, ChevronUp, Eye, EyeOff, Link2, Loader2, Plus, Sparkles, Tr
 
 import { EditorMediaField } from "@/components/builder/EditorMediaField";
 import { EditorStylePanel } from "@/components/builder/EditorStylePanel";
+import { fieldClass, IconButton } from "@/components/builder/editor-ui";
+import { FreeformEditor } from "@/components/builder/FreeformEditor";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import type { RenderSection } from "@/lib/site/section";
@@ -54,6 +56,7 @@ const ADDABLE_BLOCKS = [
   ["benefits", "Beneficios"],
   ["location", "Ubicación"],
   ["contact", "Contacto"],
+  ["freeform", "Sección libre (widgets)"],
 ] as const;
 
 /* ------------------------------------------------------------------ */
@@ -121,8 +124,6 @@ const ITEM_META: Record<string, ItemMeta> = {
     ],
   },
 };
-
-const fieldClass = "border-border bg-[#120c1d] text-foreground placeholder:text-muted-foreground focus:border-[#8b5cf6] focus:ring-0 transition-colors";
 
 export function EditorContentPanel({
   siteId,
@@ -267,6 +268,7 @@ export function EditorContentPanel({
                   onImprove={!section.id.startsWith("new-") && ["title", "subtitle", "body", "ctaText"].includes(field.key) ? () => void improve(section, field) : undefined}
                   onChange={(value) => onUpdate(section.id, { [field.key]: value })}
                 />)}
+            {section.type === "freeform" && <FreeformEditor section={section} onUpdate={onUpdate} />}
             {section.type !== "footer" && <LayoutControls section={section} onUpdate={onUpdate} />}
             {section.type !== "footer" && <EditorStylePanel section={section} fieldKeys={meta.fields.map((field) => field.key)} onUpdate={onUpdate} />}
             {aiError && <p role="alert" className="text-xs text-[#ffb4ab]">{aiError}</p>}
@@ -399,18 +401,3 @@ function LayoutSelect({ label, value, onChange, options }: { label: string; valu
   </label>;
 }
 
-function IconButton({ children, onClick, disabled, title }: {
-  children: React.ReactNode;
-  onClick: () => void;
-  disabled?: boolean;
-  title: string;
-}) {
-  return <button
-    type="button"
-    title={title}
-    aria-label={title}
-    onClick={onClick}
-    disabled={disabled}
-    className="flex h-11 w-11 shrink-0 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-[#2c2832] hover:text-foreground disabled:pointer-events-none disabled:opacity-25"
-  >{children}</button>;
-}

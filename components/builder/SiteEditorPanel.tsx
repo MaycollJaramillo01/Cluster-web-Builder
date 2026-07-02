@@ -17,6 +17,7 @@ import {
   HelpCircle,
   Image,
   Layout,
+  LayoutGrid,
   Layers3,
   Loader2,
   Mail,
@@ -488,6 +489,11 @@ const SECTION_META: Record<string, EditorSectionMeta> = {
       { key: "body", label: "Descripción", type: "textarea", placeholder: "Texto opcional", rows: 2 },
     ],
   },
+  freeform: {
+    icon: LayoutGrid,
+    label: "Sección libre",
+    fields: [],
+  },
 };
 
 const DEFAULT_SECTION_META: EditorSectionMeta = {
@@ -505,6 +511,7 @@ function createSectionDraft(id: string, type: string, order: number): RenderSect
     text: { title: "Nueva sección de texto", body: "Escribe aquí el contenido de esta sección." },
     image: { title: "Imagen destacada", altText: "Imagen del negocio" },
     video: { title: "Video destacado" },
+    freeform: { title: "", settings: { freeform: { rows: [{ id: crypto.randomUUID(), columns: [{ id: crypto.randomUUID(), width: 1, widgets: [] }] }] } } },
     about_us: { title: "Sobre nosotros", subtitle: "Nuestra historia", body: "Cuenta aquí la historia y experiencia del negocio." },
     cta: { title: "¿Listo para comenzar?", subtitle: "Habla con nuestro equipo.", ctaText: "Contáctanos", ctaLink: "#contact" },
     testimonials: {

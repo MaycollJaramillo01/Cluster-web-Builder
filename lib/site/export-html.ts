@@ -1,12 +1,13 @@
 import type { SiteTheme } from "@/lib/site/blueprint";
 import { getStyleOverride, resolveElementStyleString, TEXT_STYLE_COVERED_TYPES } from "@/lib/site/element-style";
+import { freeformSectionHtml } from "@/lib/site/export-freeform-html";
 import { sanitizeLink } from "@/lib/site/links";
 import type { RenderSection } from "@/lib/site/section";
 import { normalizeSectionLayout } from "@/lib/site/section-layout";
 import { socialLinksFromBlueprint } from "@/lib/site/social-links";
 import { getDesignPreset, type ContactStyle } from "@/lib/site/design";
 
-type ExportSite = {
+export type ExportSite = {
   businessName: string; businessType: string; phone: string | null; email: string | null;
   location: string | null; publicSlug: string; theme: SiteTheme; sections: RenderSection[];
   showBranding: boolean; blueprintJson?: unknown; visualStyle?: string | null;
@@ -93,6 +94,7 @@ function sectionHtml(section: RenderSection, site: ExportSite, contactStyle: Con
     return `<section class="hero" id="${escape(id)}"><p class="eyebrow"${subtitleStyle}>${escape(section.subtitle || site.businessType)}</p><h1${titleStyle}>${escape(section.title || businessName)}</h1><p${bodyStyle}>${escape(section.body || site.location || "")}</p><a class="button" href="${escape(ctaHref)}"${ctaTextStyle}>${escape(section.ctaText || "Contáctanos")}</a></section>`;
   }
   if (section.type === "contact") return contactSectionHtml(section, site, contactStyle, id, titleStyle, bodyStyle, ctaTextStyle);
+  if (section.type === "freeform") return freeformSectionHtml(section, site, id);
   if (section.type === "footer") return `<footer><strong${titleStyle}>${escape(section.title || businessName)}</strong><p${subtitleStyle}>${escape(section.subtitle)}</p></footer>`;
   if (section.type === "image") {
     const source = safeMediaUrl(section.mediaUrl);

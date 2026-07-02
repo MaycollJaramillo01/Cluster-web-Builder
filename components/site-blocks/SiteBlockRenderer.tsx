@@ -25,6 +25,7 @@ import { PricingBlock } from "./PricingBlock";
 import { TextBlock } from "./TextBlock";
 import { ImageBlock } from "./ImageBlock";
 import { VideoBlock } from "./VideoBlock";
+import { WidgetBlock } from "./WidgetBlock";
 import { Reveal } from "./Reveal";
 import { SiteNav } from "./SiteNav";
 import { SocialDock } from "./SocialDock";
@@ -51,6 +52,7 @@ const BLOCK_MAP: Record<string, BlockComponent> = {
   text: TextBlock,
   image: ImageBlock,
   video: VideoBlock,
+  freeform: WidgetBlock,
 };
 
 export type SiteBlockRendererProps = {
