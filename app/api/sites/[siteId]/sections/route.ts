@@ -3,6 +3,8 @@ import { z } from "zod";
 
 import { getUserBySessionToken, SESSION_COOKIE } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { normalizeSectionSettings } from "@/lib/site/section-layout";
+
 import { sanitizeLink } from "@/lib/site/links";
 import { toRenderSection } from "@/lib/site/section";
 
@@ -54,7 +56,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       mediaUrl: data.mediaUrl,
       altText: data.altText,
     },
-    settingsJson: data.settings as object,
+    settingsJson: normalizeSectionSettings(data.settings),
   } });
   return NextResponse.json({ ok: true, section: toRenderSection(section) }, { status: 201 });
 }

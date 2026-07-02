@@ -1,6 +1,7 @@
 import type { SiteTheme } from "@/lib/site/blueprint";
 import { sanitizeLink } from "@/lib/site/links";
 import type { RenderSection } from "@/lib/site/section";
+import { normalizeSectionLayout } from "@/lib/site/section-layout";
 import { socialLinksFromBlueprint } from "@/lib/site/social-links";
 import { getDesignPreset, type ContactStyle } from "@/lib/site/design";
 
@@ -68,6 +69,7 @@ const form=document.querySelector('#contact-form');if(form)form.addEventListener
 
 function sectionHtml(section: RenderSection, site: ExportSite, contactStyle: ContactStyle, id: string) {
   const businessName = site.businessName;
+  const layoutStyle = sectionLayoutStyle(section);
   const ctaHref = sanitizeLink(section.ctaLink) || "#contact";
   if (section.type === "hero") {
     // El hero exportado respeta el contenido editado en el editor.
@@ -77,16 +79,16 @@ function sectionHtml(section: RenderSection, site: ExportSite, contactStyle: Con
   if (section.type === "footer") return `<footer><strong>${escape(section.title || businessName)}</strong><p>${escape(section.subtitle)}</p></footer>`;
   if (section.type === "image") {
     const source = safeMediaUrl(section.mediaUrl);
-    return `<section id="${escape(id)}"><h2>${escape(section.title)}</h2>${source ? `<img src="${escape(source)}" alt="${escape(section.altText || section.title || businessName)}" style="width:100%;max-height:720px;object-fit:cover;border-radius:12px">` : ""}<p>${escape(section.body)}</p></section>`;
+    return `<section id="image"><h2>${escape(section.title)}</h2>${source ? `<img src="${escape(source)}" alt="${escape(section.altText || section.title || businessName)}" style="width:100%;max-height:720px;object-fit:cover;border-radius:12px">` : ""}<p>${escape(section.body)}</p></section>`;
   }
   if (section.type === "video") {
     const media = exportVideo(section.mediaUrl);
     const player = media?.kind === "embed" ? `<iframe src="${escape(media.url)}" title="${escape(section.title || "Video")}" allowfullscreen loading="lazy" style="width:100%;aspect-ratio:16/9;border:0"></iframe>` : media ? `<video src="${escape(media.url)}" controls preload="metadata" style="width:100%;aspect-ratio:16/9;background:#000"></video>` : "";
-    return `<section id="${escape(id)}"><h2>${escape(section.title)}</h2>${player}<p>${escape(section.body)}</p></section>`;
+    return `<section id="video"><h2>${escape(section.title)}</h2>${player}<p>${escape(section.body)}</p></section>`;
   }
   const items = Array.isArray(section.settings.items) ? section.settings.items : [];
   const cards = items.map((item) => { const record = typeof item === "object" && item ? item as Record<string, unknown> : {}; return `<article><h3>${escape(String(record.title || record.name || ""))}</h3><p>${escape(String(record.description || record.body || record.text || ""))}</p></article>`; }).join("");
-  return `<section id="${escape(id)}"><p class="eyebrow">${escape(section.subtitle)}</p><h2>${escape(section.title)}</h2><p>${escape(section.body)}</p>${cards ? `<div class="grid">${cards}</div>` : ""}${section.ctaText ? `<a class="button" href="${escape(ctaHref)}">${escape(section.ctaText)}</a>` : ""}</section>`;
+  return `<section id="${escape(section.type)}"><p class="eyebrow">${escape(section.subtitle)}</p><h2>${escape(section.title)}</h2><p>${escape(section.body)}</p>${cards ? `<div class="grid">${cards}</div>` : ""}${section.ctaText ? `<a class="button" href="${escape(section.ctaLink || "#contact")}">${escape(section.ctaText)}</a>` : ""}</section>`;
 }
 
 function safeMediaUrl(value?: string) {
@@ -109,7 +111,7 @@ function exportVideo(value?: string): { kind: "embed" | "file"; url: string } | 
   return /\.(mp4|webm)(?:$|\?)/i.test(source) ? { kind: "file", url: source } : null;
 }
 
-function contactSectionHtml(section: RenderSection, site: ExportSite, contactStyle: ContactStyle, id = "contact") {
+function contactSectionHtml(section: RenderSection, site: ExportSite, contactStyle: ContactStyle) {
   const layout = EXPORT_CONTACT_LAYOUTS[contactStyle];
   const details = [
     site.phone ? `<a href="tel:${escape(site.phone)}">${escape(site.phone)}</a>` : "",

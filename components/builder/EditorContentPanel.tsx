@@ -1,10 +1,13 @@
 "use client";
 
-import { ChevronDown, ChevronUp, Eye, EyeOff, Link2, Plus, Trash2 } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { ChevronDown, ChevronUp, Eye, EyeOff, Link2, Loader2, Plus, Sparkles, Trash2 } from "lucide-react";
 
+import { EditorMediaField } from "@/components/builder/EditorMediaField";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import type { RenderSection } from "@/lib/site/section";
+import { normalizeSectionLayout } from "@/lib/site/section-layout";
 import { cn } from "@/lib/utils";
 
 export type EditorFieldDef = {
@@ -23,6 +26,7 @@ export type EditorSectionMeta = {
 };
 
 type Props = {
+  siteId: string;
   sections: RenderSection[];
   openId: string | null;
   sectionMeta: Record<string, EditorSectionMeta>;
@@ -120,6 +124,7 @@ const ITEM_META: Record<string, ItemMeta> = {
 const fieldClass = "border-border bg-[#120c1d] text-foreground placeholder:text-muted-foreground focus:border-[#8b5cf6] focus:ring-0 transition-colors";
 
 export function EditorContentPanel({
+  siteId,
   sections,
   openId,
   sectionMeta,
@@ -131,6 +136,38 @@ export function EditorContentPanel({
   onDelete,
 }: Props) {
   const movableSections = sections.filter((section) => section.type !== "footer");
+  const [improving, setImproving] = useState<string | null>(null);
+  const [aiError, setAiError] = useState<string | null>(null);
+  const [mediaUsage, setMediaUsage] = useState<{ usedBytes: number; quotaBytes: number; files: number } | null>(null);
+
+  const refreshUsage = useCallback(() => {
+    void fetch(`/api/sites/${siteId}/media`)
+      .then((response) => response.ok ? response.json() : null)
+      .then((data) => data && setMediaUsage(data))
+      .catch(() => null);
+  }, [siteId]);
+
+  useEffect(refreshUsage, [refreshUsage]);
+
+  const improve = async (section: RenderSection, field: EditorFieldDef) => {
+    const key = `${section.id}:${field.key}`;
+    setImproving(key);
+    setAiError(null);
+    try {
+      const response = await fetch(`/api/sites/${siteId}/sections/${section.id}/improve`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ field: field.key, currentValue: section[field.key] ?? "" }),
+      });
+      const data = await response.json().catch(() => null);
+      if (!response.ok || !data?.value) throw new Error(data?.error ?? "No se pudo mejorar el texto.");
+      onUpdate(section.id, { [field.key]: data.value });
+    } catch (reason) {
+      setAiError(reason instanceof Error ? reason.message : "No se pudo mejorar el texto.");
+    } finally {
+      setImproving(null);
+    }
+  };
 
   return <>
     <div className="mb-3 flex items-center justify-between">
@@ -208,13 +245,29 @@ export function EditorContentPanel({
           </div>
 
           {open && <div className="space-y-5 border-t border-[#2c2832] bg-[#120c1d] px-4 py-5">
-            {meta.fields.map((field) => <SectionField
-              key={field.key}
-              id={`section-${section.id}-${field.key}`}
-              field={field}
-              value={(section[field.key] as string | undefined) ?? ""}
-              onChange={(value) => onUpdate(section.id, { [field.key]: value })}
-            />)}
+            {mediaUsage && (section.type === "image" || section.type === "video") && <p className="rounded-md bg-[#1d1a23] px-3 py-2 text-[11px] text-[#958ea0]">
+              Almacenamiento: {(mediaUsage.usedBytes / 1024 / 1024).toFixed(1)} de {(mediaUsage.quotaBytes / 1024 / 1024).toFixed(0)} MB · {mediaUsage.files} archivos
+            </p>}
+            {meta.fields.map((field) => field.key === "mediaUrl" && (section.type === "image" || section.type === "video")
+              ? <EditorMediaField
+                  key={field.key}
+                  siteId={siteId}
+                  kind={section.type}
+                  value={section.mediaUrl ?? ""}
+                  onChange={(value) => onUpdate(section.id, { mediaUrl: value })}
+                  onUsageChange={refreshUsage}
+                />
+              : <SectionField
+                  key={field.key}
+                  id={`section-${section.id}-${field.key}`}
+                  field={field}
+                  value={(section[field.key] as string | undefined) ?? ""}
+                  improving={improving === `${section.id}:${field.key}`}
+                  onImprove={!section.id.startsWith("new-") && ["title", "subtitle", "body", "ctaText"].includes(field.key) ? () => void improve(section, field) : undefined}
+                  onChange={(value) => onUpdate(section.id, { [field.key]: value })}
+                />)}
+            {section.type !== "footer" && <LayoutControls section={section} onUpdate={onUpdate} />}
+            {aiError && <p role="alert" className="text-xs text-[#ffb4ab]">{aiError}</p>}
             {ITEM_META[section.type] && <SectionItemsEditor
               section={section}
               meta={ITEM_META[section.type]}
@@ -295,15 +348,22 @@ function SectionItemsEditor({ section, meta, onUpdate }: {
   </div>;
 }
 
-function SectionField({ id, field, value, onChange }: {
+function SectionField({ id, field, value, onChange, onImprove, improving }: {
   id: string;
   field: EditorFieldDef;
   value: string;
   onChange: (value: string) => void;
+  onImprove?: () => void;
+  improving?: boolean;
 }) {
   return <div className="space-y-1.5">
     <div>
-      <label htmlFor={id} className="block text-xs font-medium text-[#cbc3d7]">{field.label}</label>
+      <div className="flex items-center justify-between gap-3">
+        <label htmlFor={id} className="block text-xs font-medium text-[#cbc3d7]">{field.label}</label>
+        {onImprove && <button type="button" onClick={onImprove} disabled={improving} className="flex min-h-8 items-center gap-1 rounded-md px-2 text-[11px] font-semibold text-[#c4b5fd] hover:bg-[#2c2141] disabled:opacity-60">
+          {improving ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />} Mejorar con IA
+        </button>}
+      </div>
       {field.hint && <p className="mt-0.5 flex items-center gap-1 text-[11px] text-[#5e546b]">
         {field.key === "ctaLink" && <Link2 className="h-3 w-3 shrink-0" />}{field.hint}
       </p>}
@@ -312,6 +372,29 @@ function SectionField({ id, field, value, onChange }: {
       ? <Textarea id={id} value={value} rows={field.rows ?? 3} placeholder={field.placeholder} className={fieldClass} onChange={(event) => onChange(event.target.value)} />
       : <Input id={id} value={value} placeholder={field.placeholder} className={fieldClass} onChange={(event) => onChange(event.target.value)} />}
   </div>;
+}
+
+function LayoutControls({ section, onUpdate }: { section: RenderSection; onUpdate: Props["onUpdate"] }) {
+  const current = normalizeSectionLayout(section.settings.layout);
+  const update = (key: string, value: string) => onUpdate(section.id, {
+    settings: { ...section.settings, layout: { ...current, [key]: value } },
+  });
+  return <fieldset className="space-y-3 rounded-lg border border-[#3d3549] bg-[#1d1a23] p-3">
+    <legend className="px-1 text-xs font-semibold text-[#cbc3d7]">Composición</legend>
+    <LayoutSelect label="Ancho" value={current.width ?? "standard"} onChange={(value) => update("width", value)} options={[["narrow", "Estrecho"], ["standard", "Normal"], ["wide", "Amplio"]]} />
+    <LayoutSelect label="Alineación" value={current.align ?? "left"} onChange={(value) => update("align", value)} options={[["left", "Izquierda"], ["center", "Centro"]]} />
+    <LayoutSelect label="Fondo" value={current.background ?? "plain"} onChange={(value) => update("background", value)} options={[["plain", "Plano"], ["tonal", "Tonal"]]} />
+    <LayoutSelect label="Espaciado" value={current.spacing ?? "normal"} onChange={(value) => update("spacing", value)} options={[["compact", "Compacto"], ["normal", "Normal"], ["spacious", "Amplio"]]} />
+  </fieldset>;
+}
+
+function LayoutSelect({ label, value, onChange, options }: { label: string; value: string; onChange: (value: string) => void; options: readonly (readonly [string, string])[] }) {
+  return <label className="grid grid-cols-[6rem_1fr] items-center gap-3 text-xs text-[#958ea0]">
+    {label}
+    <select value={value} onChange={(event) => onChange(event.target.value)} className="min-h-10 rounded-md border border-[#494454] bg-[#120c1d] px-2 text-xs text-[#e9ddff] outline-none focus:border-[#8b5cf6]">
+      {options.map(([option, text]) => <option key={option} value={option}>{text}</option>)}
+    </select>
+  </label>;
 }
 
 function IconButton({ children, onClick, disabled, title }: {

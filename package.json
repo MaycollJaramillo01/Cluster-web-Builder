@@ -21,6 +21,7 @@
     "test:m5-commercial": "node --import tsx --test tests/m5-commercial.test.ts",
     "test:m5-http": "node scripts/test-m5-http.mjs",
     "test:editor-blocks": "node scripts/test-editor-blocks.mjs",
+    "test:media-upload": "node scripts/test-media-upload.mjs",
     "postinstall": "prisma generate",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
@@ -31,6 +32,7 @@
   "dependencies": {
     "@prisma/client": "^6.2.1",
     "@radix-ui/react-slot": "^1.1.1",
+    "@vercel/blob": "^2.5.0",
     "clsx": "^2.1.1",
     "fflate": "^0.8.3",
     "headroom-ai": "^0.22.4",

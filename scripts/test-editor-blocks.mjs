@@ -30,6 +30,21 @@ try {
   const updated = await update.json();
   assert(update.status === 200 && updated.section?.altText === "Interior renovado", "no se editó el bloque");
 
+  const atomic = await fetch(`${baseUrl}/api/sites/${site.id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json", Cookie: cookie },
+    body: JSON.stringify({
+      site: { businessName: "QA Blocks guardado", primaryColor: "#112233", secondaryColor: "#223344", accentColor: "#ffcc00" },
+      deletedSectionIds: [],
+      sections: [{ ...updated.section, settings: { layout: { width: "narrow", align: "center", background: "tonal", spacing: "compact" } } }],
+    }),
+  });
+  const atomicallySaved = await atomic.json();
+  assert(atomic.status === 200 && atomicallySaved.sections?.[0]?.settings?.layout?.width === "narrow", "el guardado atómico no conservó el layout");
+
+  const anonymousMedia = await fetch(`${baseUrl}/api/sites/${site.id}/media`);
+  assert(anonymousMedia.status === 404, "un visitante pudo consultar la cuota de medios");
+
   const forbidden = await fetch(`${baseUrl}/api/sites/${site.id}/sections/${created.section.id}`, { method: "DELETE" });
   assert(forbidden.status === 401, "un visitante pudo eliminar el bloque");
   const remove = await fetch(`${baseUrl}/api/sites/${site.id}/sections/${created.section.id}`, { method: "DELETE", headers: { Cookie: cookie } });

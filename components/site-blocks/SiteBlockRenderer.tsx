@@ -3,6 +3,7 @@ import type { CSSProperties } from "react";
 import type { SiteTheme } from "@/lib/site/blueprint";
 import type { RenderSection } from "@/lib/site/section";
 import { getDesignPreset } from "@/lib/site/design";
+import { normalizeSectionLayout } from "@/lib/site/section-layout";
 import { getContrastText } from "@/lib/site/theme-surface";
 
 import { HeroBlock } from "./HeroBlock";
@@ -131,6 +132,19 @@ export function SiteBlockRenderer({
     const content = (
       <Block section={section} theme={theme} preset={preset} site={site} index={section.order} />
     );
+    const layout = normalizeSectionLayout(section.settings?.layout);
+    const laidOutContent = (
+      <div
+        className="site-section-layout"
+        data-width={layout.width}
+        data-align={layout.align}
+        data-background={layout.background}
+        data-spacing={layout.spacing}
+        style={{ "--section-tonal": `color-mix(in srgb, ${theme.primary} 8%, ${theme.background})` } as CSSProperties}
+      >
+        {content}
+      </div>
+    );
 
     if (editable && !section.isVisible) {
       return (
@@ -138,14 +152,14 @@ export function SiteBlockRenderer({
           <div className="pointer-events-none absolute right-3 top-3 z-10 rounded bg-slate-900/80 px-2 py-1 text-xs text-white">
             Oculta
           </div>
-          {content}
+          {laidOutContent}
         </div>
       );
     }
     const animate = !editable;
     return (
       <div id={domId} key={section.id} className={`scroll-mt-16 design-reveal design-reveal-${preset.motionStyle}`}>
-        <Reveal disabled={!animate} motion={preset.motionStyle} delay={Math.min(section.order, 6) * 40}>{content}</Reveal>
+        <Reveal disabled={!animate} motion={preset.motionStyle} delay={Math.min(section.order, 6) * 40}>{laidOutContent}</Reveal>
       </div>
     );
   };

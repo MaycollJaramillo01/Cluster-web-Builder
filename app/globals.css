@@ -207,3 +207,16 @@
 .site-flow-catalog .site-catalog-body { background-image: radial-gradient(circle at 10% 20%, color-mix(in srgb, currentColor 4%, transparent) 0 1px, transparent 1px); background-size: 24px 24px; }
 .site-flow-minimal .design-reveal + .design-reveal { border-top: 1px solid color-mix(in srgb, currentColor 12%, transparent); }
 .site-flow-local .design-reveal { position: relative; }
+
+/* Bounded per-block controls from settings.layout. */
+.site-section-layout[data-background="tonal"] > section {
+  background-color: var(--section-tonal) !important;
+}
+.site-section-layout[data-spacing="compact"] > section { padding-block: 2rem !important; }
+.site-section-layout[data-spacing="normal"] > section { padding-block: 4rem !important; }
+.site-section-layout[data-spacing="spacious"] > section { padding-block: 7rem !important; }
+.site-section-layout[data-width="narrow"] > section > :where(div, figure) { max-width: 48rem !important; }
+.site-section-layout[data-width="standard"] > section > :where(div, figure) { max-width: 72rem !important; }
+.site-section-layout[data-width="wide"] > section > :where(div, figure) { max-width: 90rem !important; }
+.site-section-layout[data-align="center"] > section { text-align: center; }
+.site-section-layout[data-align="center"] > section :where(a, button) { margin-inline: auto; }

@@ -3,6 +3,8 @@ import { z } from "zod";
 
 import { getUserBySessionToken, SESSION_COOKIE } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { isSiteMediaUrl } from "@/lib/site/media";
+import { normalizeSectionSettings } from "@/lib/site/section-layout";
 import { sanitizeLink } from "@/lib/site/links";
 import { toRenderSection } from "@/lib/site/section";
 
@@ -70,7 +72,7 @@ export async function PATCH(
         isVisible: data.isVisible ?? existing.isVisible,
         order: data.order ?? existing.order,
         content: nextContent as object,
-        settingsJson: (data.settings ?? existing.settingsJson ?? {}) as object,
+        settingsJson: normalizeSectionSettings((data.settings ?? existing.settingsJson ?? {}) as Record<string, unknown>),
       },
     });
     return NextResponse.json({ ok: true, section: toRenderSection(updated) });
@@ -91,12 +93,17 @@ export async function DELETE(
   if (!user) return NextResponse.json({ error: "Inicia sesión." }, { status: 401 });
   const section = await prisma.siteSection.findFirst({
     where: { id: sectionId, siteId, ...(user.role === "ADMIN" ? {} : { site: { is: { userId: user.id } } }) },
-    select: { id: true, type: true },
+    select: { id: true, type: true, content: true },
   });
   if (!section) return NextResponse.json({ error: "Bloque no encontrado." }, { status: 404 });
   if (section.type === "hero" || section.type === "footer") {
     return NextResponse.json({ error: "La portada y el pie de página no se pueden eliminar." }, { status: 400 });
   }
   await prisma.siteSection.delete({ where: { id: section.id } });
+  const mediaUrl = (section.content as Record<string, unknown> | null)?.mediaUrl;
+  if (isSiteMediaUrl(siteId, mediaUrl)) {
+    const { del } = await import("@vercel/blob");
+    await del(mediaUrl).catch(() => null);
+  }
   return NextResponse.json({ ok: true });
 }

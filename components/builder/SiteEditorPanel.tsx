@@ -577,7 +577,9 @@ export function SiteEditorPanel({
   const publishStartedRef = useRef(false);
   const downloadStartedRef = useRef(false);
   const pendingSaveStartedRef = useRef(false);
+  const recoveryStartedRef = useRef(false);
   const pendingSaveKey = `cluster:pending-save:${initialSite.id}`;
+  const draftKey = `cluster:editor-draft:${initialSite.id}`;
   const [panel, setPanel] = useState<"content" | "design">("content");
   const [mobileView, setMobileView] = useState<"edit" | "preview">("edit");
   const [businessName, setBusinessName] = useState(initialSite.businessName);
@@ -599,6 +601,7 @@ export function SiteEditorPanel({
   const [publicUrl, setPublicUrl] = useState(initialSite.publicUrl);
   const [error, setError] = useState<string | null>(null);
   const [deletedSectionIds, setDeletedSectionIds] = useState<string[]>([]);
+  const [recovered, setRecovered] = useState(false);
 
   const previewTheme: SiteTheme = useMemo(
     () => ({ ...initialSite.theme, primary, secondary, accent }),
@@ -660,30 +663,35 @@ export function SiteEditorPanel({
 
   // Guardado atomico: una sola peticion, una transaccion en el servidor.
   const persistSave = useCallback(async (payload: SavePayload) => {
-    const response = await fetch(`/api/sites/${initialSite.id}/content`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    const data = await response.json().catch(() => null);
-    if (!response.ok) throw new Error(data?.error ?? "No se pudo guardar. Ningún cambio fue aplicado.");
-    return data as { idMap: Record<string, string>; sections: RenderSection[] };
+      const siteResponse = await fetch(`/api/sites/${initialSite.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await siteResponse.json().catch(() => null);
+      if (!siteResponse.ok) {
+        throw new Error(data?.error ?? "No se pudieron guardar los datos del sitio.");
+      }
+
+      return data.sections as RenderSection[];
   }, [initialSite.id]);
 
+  const buildPayload = useCallback((): SavePayload => ({
+    site: {
+      businessName,
+      phone: phone || null,
+      email: email || null,
+      location: location || null,
+      primaryColor: primary,
+      secondaryColor: secondary,
+      accentColor: accent,
+    },
+    sections,
+    deletedSectionIds,
+  }), [accent, businessName, deletedSectionIds, email, location, phone, primary, secondary, sections]);
+
   const save = async () => {
-    const payload: SavePayload = {
-      site: {
-        businessName,
-        phone: phone || null,
-        email: email || null,
-        location: location || null,
-        primaryColor: primary,
-        secondaryColor: secondary,
-        accentColor: accent,
-      },
-      sections,
-      deletedSectionIds,
-    };
+    const payload = buildPayload();
 
     if (!isAuthenticated) {
       sessionStorage.setItem(pendingSaveKey, JSON.stringify(payload));
@@ -694,11 +702,11 @@ export function SiteEditorPanel({
     setSaving(true);
     setError(null);
     try {
-      const result = await persistSave(payload);
-      setSections(result.sections);
-      setOpenId((current) => (current && result.idMap[current]) || current);
+      const created = await persistSave(payload);
+      if (created.size > 0) setSections((current) => current.map((section) => created.get(section.id) ?? section));
       setDeletedSectionIds([]);
       sessionStorage.removeItem(pendingSaveKey);
+      localStorage.removeItem(draftKey);
       setDirty(false);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Error al guardar.");
@@ -706,17 +714,6 @@ export function SiteEditorPanel({
       setSaving(false);
     }
   };
-
-  // Advierte antes de cerrar la pestaña con cambios sin guardar.
-  useEffect(() => {
-    if (!dirty) return;
-    const warn = (event: BeforeUnloadEvent) => {
-      event.preventDefault();
-      event.returnValue = "";
-    };
-    window.addEventListener("beforeunload", warn);
-    return () => window.removeEventListener("beforeunload", warn);
-  }, [dirty]);
 
   useEffect(() => {
     if (!isAuthenticated || pendingSaveStartedRef.current) return;
@@ -729,13 +726,14 @@ export function SiteEditorPanel({
       void persistSave(payload)
         .then(() => {
           sessionStorage.removeItem(pendingSaveKey);
+          localStorage.removeItem(draftKey);
           window.location.replace(`/builder/${initialSite.id}`);
         })
         .catch((reason) => setError(reason instanceof Error ? reason.message : "Error al guardar."));
     } catch {
       sessionStorage.removeItem(pendingSaveKey);
     }
-  }, [initialSite.id, isAuthenticated, pendingSaveKey, persistSave]);
+  }, [draftKey, initialSite.id, isAuthenticated, pendingSaveKey, persistSave]);
 
   const publish = useCallback(async () => {
     setPublishing(true);
@@ -920,6 +918,12 @@ export function SiteEditorPanel({
             {error}
           </div>
         )}
+        {recovered && !error && (
+          <div role="status" className="flex items-center justify-center gap-3 border-t border-amber-800 bg-amber-950 px-4 py-2 text-xs text-amber-100">
+            Recuperamos cambios sin guardar de este navegador.
+            <button type="button" onClick={() => setRecovered(false)} className="font-semibold underline underline-offset-2">Entendido</button>
+          </div>
+        )}
         {!isAuthenticated && !error && (
           <div className="border-t border-[#3d3549] bg-[#1d1730] px-4 py-2 text-center text-xs text-[#d8c8f8]">
             Puedes editar libremente. Inicia sesión al guardar o publicar; este borrador expira en 72 horas.
@@ -991,6 +995,7 @@ export function SiteEditorPanel({
           <div className="p-4 lg:max-h-[calc(100dvh-121px)] lg:overflow-y-auto">
             {panel === "content" ? (
               <EditorContentPanel
+                siteId={initialSite.id}
                 sections={visibleSections}
                 openId={openId}
                 sectionMeta={SECTION_META}
