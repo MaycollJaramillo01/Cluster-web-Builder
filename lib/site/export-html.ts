@@ -111,7 +111,7 @@ function exportVideo(value?: string): { kind: "embed" | "file"; url: string } | 
   return /\.(mp4|webm)(?:$|\?)/i.test(source) ? { kind: "file", url: source } : null;
 }
 
-function contactSectionHtml(section: RenderSection, site: ExportSite, contactStyle: ContactStyle) {
+function contactSectionHtml(section: RenderSection, site: ExportSite, contactStyle: ContactStyle, id: string) {
   const layout = EXPORT_CONTACT_LAYOUTS[contactStyle];
   const details = [
     site.phone ? `<a href="tel:${escape(site.phone)}">${escape(site.phone)}</a>` : "",
