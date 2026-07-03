@@ -1,7 +1,7 @@
 "use client";
 /* eslint-disable react-hooks/refs -- dnd-kit exposes callback refs and reactive transforms as hook results. */
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type DragEvent as ReactDragEvent } from "react";
 import Link from "next/link";
 import {
   DndContext, KeyboardSensor, PointerSensor, closestCenter, useDroppable, useSensor, useSensors,
@@ -62,6 +62,22 @@ const WIDGET_GROUPS: { name: string; types: V2WidgetType[]; open?: boolean }[] =
   { name: "Negocio", types: ["brand", "nav", "business_info", "form", "social", "map"] },
   { name: "Avanzado", types: ["testimonials", "accordion", "embed", "divider", "spacer"] },
 ];
+
+function widgetDragProps(type: V2WidgetType, onEnd: () => void) {
+  return {
+    draggable: true,
+    onDragStart: (event: ReactDragEvent) => { event.dataTransfer.setData("application/x-cluster-widget", type); event.dataTransfer.effectAllowed = "copy"; },
+    onDragEnd: onEnd,
+  };
+}
+
+function sectionDragProps(key: string, onEnd: () => void) {
+  return {
+    draggable: true,
+    onDragStart: (event: ReactDragEvent) => { event.dataTransfer.setData("application/x-cluster-section", key); event.dataTransfer.effectAllowed = "copy"; },
+    onDragEnd: onEnd,
+  };
+}
 
 function sectionIcon(name: string): IconComponent {
   const value = name.toLowerCase();
@@ -139,25 +155,6 @@ export function SiteEditorV2({ initialSite }: { initialSite: EditorSiteV2 }) {
     return () => clearTimeout(timer);
   }, [message]);
 
-  // Clics dentro del lienzo (iframe): seleccionan el elemento y abren sus ajustes en el panel.
-  useEffect(() => {
-    const onCanvasMessage = (event: MessageEvent) => {
-      const data = event.data as { source?: string; kind?: string; id?: string } | null;
-      if (!data || data.source !== "cluster-canvas") return;
-      if (data.kind === "ready") {
-        const active = selectionRef.current;
-        iframeRef.current?.contentWindow?.postMessage({ source: "cluster-editor", type: "select", id: active?.id || null, scroll: false }, "*");
-        return;
-      }
-      if (!data.id || (data.kind !== "widget" && data.kind !== "column" && data.kind !== "section")) return;
-      selectionFromCanvasRef.current = true;
-      setSelection({ kind: data.kind, id: data.id });
-      setPane("edit");
-    };
-    window.addEventListener("message", onCanvasMessage);
-    return () => window.removeEventListener("message", onCanvasMessage);
-  }, []);
-
   // Selección hecha desde el panel: se refleja en el lienzo (contorno + scroll hasta el elemento).
   useEffect(() => {
     selectionRef.current = selection;
@@ -214,12 +211,28 @@ export function SiteEditorV2({ initialSite }: { initialSite: EditorSiteV2 }) {
     setTemplateId(data.templateId); setContent(data.content); setDesign(data.design); setSections(data.sections); setUndoRevision(data.revisionId); setDirty(false);
   };
 
-  const addLibrarySection = (seed: Omit<CanvasSectionV2, "id">) => {
+  const addLibrarySection = (seed: Omit<CanvasSectionV2, "id">, targetSectionId?: string, position?: "before" | "after") => {
     const copy = cloneSection(seed);
     copy.region = "main";
     mutateSections((draft) => {
-      const footer = draft.findIndex((item) => item.region === "footer");
-      draft.splice(footer >= 0 ? footer : draft.length, 0, copy);
+      const footerIndex = draft.findIndex((item) => item.region === "footer");
+      let insertAt = footerIndex >= 0 ? footerIndex : draft.length;
+      if (targetSectionId) {
+        const targetIndex = draft.findIndex((item) => item.id === targetSectionId);
+        if (targetIndex >= 0) {
+          const target = draft[targetIndex];
+          if (target.region === "header") {
+            const firstMain = draft.findIndex((item) => item.region === "main");
+            if (firstMain >= 0) insertAt = firstMain;
+          } else if (target.region === "footer") {
+            insertAt = targetIndex;
+          } else {
+            insertAt = position === "before" ? targetIndex : targetIndex + 1;
+          }
+        }
+      }
+      if (footerIndex >= 0) insertAt = Math.min(insertAt, footerIndex);
+      draft.splice(insertAt, 0, copy);
       return draft;
     });
     setRegion("main");
@@ -238,6 +251,54 @@ export function SiteEditorV2({ initialSite }: { initialSite: EditorSiteV2 }) {
     mutateSections((draft) => updateColumn(draft, target.column.id, (column) => ({ ...column, widgets: [...column.widgets, widget] })));
     setSelection({ kind: "widget", id: widget.id });
   };
+
+  // Al terminar un arrastre desde el panel, limpia la linea de insercion dentro del lienzo.
+  const clearCanvasDrop = () => iframeRef.current?.contentWindow?.postMessage({ source: "cluster-editor", type: "clear-drop" }, "*");
+
+  // Clics y drops dentro del lienzo (iframe): seleccionan o insertan elementos.
+  useEffect(() => {
+    const onCanvasMessage = (event: MessageEvent) => {
+      const data = event.data as {
+        source?: string; kind?: string; id?: string;
+        widgetType?: string; columnId?: string; index?: number;
+        sectionKey?: string; targetSectionId?: string; position?: string;
+      } | null;
+      if (!data || data.source !== "cluster-canvas") return;
+      if (data.kind === "ready") {
+        const active = selectionRef.current;
+        iframeRef.current?.contentWindow?.postMessage({ source: "cluster-editor", type: "select", id: active?.id || null, scroll: false }, "*");
+        return;
+      }
+      if (data.kind === "drop-widget" && typeof data.widgetType === "string" && typeof data.columnId === "string") {
+        const type = V2_WIDGET_TYPES.find((item) => item === data.widgetType);
+        if (!type) return;
+        const widget: WidgetV2 = { id: crypto.randomUUID(), type, data: defaultWidgetData(type) };
+        const index = typeof data.index === "number" && Number.isFinite(data.index) ? data.index : Number.MAX_SAFE_INTEGER;
+        mutateSections((draft) => updateColumn(draft, data.columnId!, (column) => {
+          const widgets = [...column.widgets];
+          widgets.splice(Math.max(0, Math.min(widgets.length, index)), 0, widget);
+          return { ...column, widgets };
+        }));
+        selectionFromCanvasRef.current = true;
+        setSelection({ kind: "widget", id: widget.id });
+        setPane("edit");
+        return;
+      }
+      if (data.kind === "drop-section" && typeof data.sectionKey === "string") {
+        const seed = SECTION_LIBRARY_V2.find((item) => item.key === data.sectionKey);
+        if (!seed) return;
+        addLibrarySection(seed, typeof data.targetSectionId === "string" ? data.targetSectionId : undefined, data.position === "before" ? "before" : "after");
+        return;
+      }
+      if (!data.id || (data.kind !== "widget" && data.kind !== "column" && data.kind !== "section")) return;
+      selectionFromCanvasRef.current = true;
+      setSelection({ kind: data.kind, id: data.id });
+      setPane("edit");
+    };
+    window.addEventListener("message", onCanvasMessage);
+    return () => window.removeEventListener("message", onCanvasMessage);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mutateSections y addLibrarySection solo usan setters estables de React.
+  }, []);
 
   const deleteSelection = () => {
     if (!selection) return;
@@ -343,7 +404,7 @@ export function SiteEditorV2({ initialSite }: { initialSite: EditorSiteV2 }) {
                   </label>
 
                   {query.trim() ? (
-                    <AddSearchResults query={query} addLibrarySection={addLibrarySection} addWidget={addWidget} />
+                    <AddSearchResults query={query} addLibrarySection={addLibrarySection} addWidget={addWidget} clearCanvasDrop={clearCanvasDrop} />
                   ) : <>
                     <details className="group mb-2 rounded-lg border border-zinc-200">
                       <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between px-3 text-sm font-semibold [&::-webkit-details-marker]:hidden">
@@ -353,7 +414,7 @@ export function SiteEditorV2({ initialSite }: { initialSite: EditorSiteV2 }) {
                       <div className="grid gap-2 p-3 pt-0">
                         {SECTION_LIBRARY_V2.map((section) => {
                           const Icon = sectionIcon(section.name);
-                          return <button key={section.key} className="v2-add" onClick={() => addLibrarySection(section)}>
+                          return <button key={section.key} className="v2-add" onClick={() => addLibrarySection(section)} {...sectionDragProps(section.key, clearCanvasDrop)}>
                             <Icon className="h-4 w-4 shrink-0 text-violet-600" />{section.name}
                           </button>;
                         })}
@@ -369,14 +430,14 @@ export function SiteEditorV2({ initialSite }: { initialSite: EditorSiteV2 }) {
                         <div className="grid grid-cols-2 gap-2 p-3 pt-0">
                           {group.types.map((type) => {
                             const Icon = WIDGET_ICONS[type];
-                            return <button key={type} className="v2-tile" onClick={() => addWidget(type)}>
+                            return <button key={type} className="v2-tile" onClick={() => addWidget(type)} {...widgetDragProps(type, clearCanvasDrop)}>
                               <Icon className="h-5 w-5 text-violet-600" />{WIDGET_LABELS[type]}
                             </button>;
                           })}
                         </div>
                       </details>
                     ))}
-                    <p className="mt-3 text-xs leading-relaxed text-zinc-400">Las secciones se agregan a la página completa. Los widgets se agregan a la columna que tengas seleccionada en el sitio.</p>
+                    <p className="mt-3 text-xs leading-relaxed text-zinc-400">Arrastra un bloque hasta el sitio, o haz clic para agregarlo. Los widgets caen en la columna donde los sueltes.</p>
                   </>}
                 </>}
 
@@ -465,16 +526,19 @@ export function SiteEditorV2({ initialSite }: { initialSite: EditorSiteV2 }) {
       .v2-add:hover{border-color:#c4b5fd;background:#f5f3ff}
       .v2-tile{display:flex;min-height:4.25rem;flex-direction:column;align-items:center;justify-content:center;gap:.4rem;border:1px solid #e4e4e7;border-radius:.5rem;padding:.5rem;font-size:.7rem;font-weight:500;line-height:1.2;text-align:center;color:#3f3f46;background:#fff}
       .v2-tile:hover{border-color:#c4b5fd;background:#f5f3ff}
+      .v2-tile[draggable=true],.v2-add[draggable=true]{cursor:grab}
+      .v2-tile[draggable=true]:active,.v2-add[draggable=true]:active{cursor:grabbing}
       .v2-field{width:100%;min-height:2.75rem;border:1px solid #d4d4d8;border-radius:.5rem;background:#fff;padding:.65rem;color:#18181b;font-size:.85rem}
       .v2-field:focus{outline:2px solid #7c3aed;outline-offset:1px}
     `}</style>
   </main>;
 }
 
-function AddSearchResults({ query, addLibrarySection, addWidget }: {
+function AddSearchResults({ query, addLibrarySection, addWidget, clearCanvasDrop }: {
   query: string;
   addLibrarySection: (seed: Omit<CanvasSectionV2, "id">) => void;
   addWidget: (type: V2WidgetType) => void;
+  clearCanvasDrop: () => void;
 }) {
   const needle = query.trim().toLowerCase();
   const sections = SECTION_LIBRARY_V2.filter((section) => section.name.toLowerCase().includes(needle));
@@ -486,7 +550,7 @@ function AddSearchResults({ query, addLibrarySection, addWidget }: {
       <div className="mb-4 grid gap-2">
         {sections.map((section) => {
           const Icon = sectionIcon(section.name);
-          return <button key={section.key} className="v2-add" onClick={() => addLibrarySection(section)}>
+          return <button key={section.key} className="v2-add" onClick={() => addLibrarySection(section)} {...sectionDragProps(section.key, clearCanvasDrop)}>
             <Icon className="h-4 w-4 shrink-0 text-violet-600" />{section.name}
           </button>;
         })}
@@ -497,7 +561,7 @@ function AddSearchResults({ query, addLibrarySection, addWidget }: {
       <div className="grid grid-cols-2 gap-2">
         {widgets.map((type) => {
           const Icon = WIDGET_ICONS[type];
-          return <button key={type} className="v2-tile" onClick={() => addWidget(type)}>
+          return <button key={type} className="v2-tile" onClick={() => addWidget(type)} {...widgetDragProps(type, clearCanvasDrop)}>
             <Icon className="h-5 w-5 text-violet-600" />{WIDGET_LABELS[type]}
           </button>;
         })}
