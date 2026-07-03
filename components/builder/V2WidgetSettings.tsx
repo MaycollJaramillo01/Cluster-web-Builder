@@ -79,7 +79,7 @@ export function V2WidgetSettings({ siteId, widget, content, setContent, updateWi
     }
 
     case "image": return <>
-      <EditorMediaField siteId={siteId} kind="image" value={readMedia()} onChange={writeMedia} onUsageChange={() => undefined} />
+      <EditorMediaField tone="light" siteId={siteId} kind="image" value={readMedia()} onChange={writeMedia} onUsageChange={() => undefined} />
       <TextControl label="Descripción de la imagen" value={String(widget.data?.alt ?? "")} onChange={(value) => writeData({ alt: value })}
         placeholder="Qué se ve en la imagen" hint="Ayuda a la accesibilidad y al SEO" />
       <SelectControl label="Estilo" value={widget.variant || "cover"} onChange={(value) => updateWidget({ variant: value })}
@@ -88,7 +88,7 @@ export function V2WidgetSettings({ siteId, widget, content, setContent, updateWi
     </>;
 
     case "video": return <>
-      <EditorMediaField siteId={siteId} kind="video" value={readMedia()} onChange={writeMedia} onUsageChange={() => undefined} />
+      <EditorMediaField tone="light" siteId={siteId} kind="video" value={readMedia()} onChange={writeMedia} onUsageChange={() => undefined} />
       <TextControl label="O pega una URL" value={readMedia()} onChange={writeMedia}
         placeholder="YouTube, Vimeo o archivo MP4" hint="Los enlaces de YouTube se insertan automáticamente" />
     </>;
@@ -109,7 +109,7 @@ export function V2WidgetSettings({ siteId, widget, content, setContent, updateWi
     case "brand": return <>
       <TextControl label="Nombre del negocio" value={content.business.name} onChange={(value) => writeSlot("business.name", value)} hint="Se usa en todo el sitio" />
       <p className="v2-settings-sublabel">Logo</p>
-      <EditorMediaField siteId={siteId} kind="image" value={content.business.logo} onChange={(src) => writeSlot("business.logo", src)} onUsageChange={() => undefined} />
+      <EditorMediaField tone="light" siteId={siteId} kind="image" value={content.business.logo} onChange={(src) => writeSlot("business.logo", src)} onUsageChange={() => undefined} />
     </>;
 
     case "business_info": return <>

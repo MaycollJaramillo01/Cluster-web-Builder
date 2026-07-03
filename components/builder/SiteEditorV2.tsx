@@ -11,10 +11,10 @@ import { SortableContext, sortableKeyboardCoordinates, useSortable, verticalList
 import { CSS } from "@dnd-kit/utilities";
 import {
   ArrowLeft, BadgeCheck, Briefcase, Building2, ChevronDown, ChevronLeft, ChevronUp, Code2, ExternalLink,
-  GripVertical, Heading1, HelpCircle, Image as ImageIcon, Layers, LayoutGrid, LayoutTemplate, List as ListIcon,
+  Globe, GripVertical, Heading1, HelpCircle, Image as ImageIcon, Layers, LayoutGrid, LayoutTemplate, List as ListIcon,
   Mail, MapPin, Megaphone, Menu as MenuIcon, Minus, Monitor, MousePointerClick, MoveVertical, Palette,
   PanelsTopLeft, Plus, Presentation, Redo2, Save, Search, Share2, Smartphone, Star, Text as TextIcon,
-  Trash2, Users, Video as VideoIcon,
+  Trash2, Undo2, Users, Video as VideoIcon,
 } from "lucide-react";
 
 import { V2WidgetSettings } from "@/components/builder/V2WidgetSettings";
@@ -38,6 +38,7 @@ type EditorSiteV2 = {
 };
 
 type Selection = { kind: "section" | "row" | "column" | "widget"; id: string } | null;
+type HistorySnapshot = { content: SiteContentV2; design: ThemeTokensV2; sections: CanvasSectionV2[]; templateId: V2TemplateId };
 type DragData = { kind: "section" | "row" | "widget"; sectionId: string; rowId?: string; columnId?: string; id: string };
 type DropData = Omit<DragData, "kind"> & { kind: DragData["kind"] | "column" };
 type PanelTab = "add" | "structure" | "design";
@@ -63,18 +64,38 @@ const WIDGET_GROUPS: { name: string; types: V2WidgetType[]; open?: boolean }[] =
   { name: "Avanzado", types: ["testimonials", "accordion", "embed", "divider", "spacer"] },
 ];
 
+// Chip visible que acompaña al cursor durante el arrastre; sin esto el navegador
+// muestra solo la mano y el usuario no sabe qué esta arrastrando.
+function attachDragGhost(event: ReactDragEvent, label: string) {
+  const ghost = document.createElement("div");
+  ghost.textContent = label;
+  ghost.style.cssText = "position:fixed;top:-100px;left:-100px;z-index:9999;display:flex;align-items:center;gap:6px;padding:8px 14px;background:#7c3aed;color:#fff;font:600 13px system-ui,sans-serif;border-radius:8px;box-shadow:0 8px 24px rgba(24,24,27,.3);pointer-events:none;white-space:nowrap";
+  document.body.appendChild(ghost);
+  event.dataTransfer.setDragImage(ghost, 18, 18);
+  // El navegador captura la imagen al terminar dragstart; despues el nodo ya puede retirarse.
+  setTimeout(() => ghost.remove(), 0);
+}
+
 function widgetDragProps(type: V2WidgetType, onEnd: () => void) {
   return {
     draggable: true,
-    onDragStart: (event: ReactDragEvent) => { event.dataTransfer.setData("application/x-cluster-widget", type); event.dataTransfer.effectAllowed = "copy"; },
+    onDragStart: (event: ReactDragEvent) => {
+      event.dataTransfer.setData("application/x-cluster-widget", type);
+      event.dataTransfer.effectAllowed = "copy";
+      attachDragGhost(event, WIDGET_LABELS[type]);
+    },
     onDragEnd: onEnd,
   };
 }
 
-function sectionDragProps(key: string, onEnd: () => void) {
+function sectionDragProps(key: string, name: string, onEnd: () => void) {
   return {
     draggable: true,
-    onDragStart: (event: ReactDragEvent) => { event.dataTransfer.setData("application/x-cluster-section", key); event.dataTransfer.effectAllowed = "copy"; },
+    onDragStart: (event: ReactDragEvent) => {
+      event.dataTransfer.setData("application/x-cluster-section", key);
+      event.dataTransfer.effectAllowed = "copy";
+      attachDragGhost(event, name);
+    },
     onDragEnd: onEnd,
   };
 }
@@ -120,11 +141,22 @@ export function SiteEditorV2({ initialSite }: { initialSite: EditorSiteV2 }) {
   const [device, setDevice] = useState<"desktop" | "mobile">("desktop");
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [publishing, setPublishing] = useState(false);
+  const [status, setStatus] = useState(initialSite.status);
+  const [publicUrl, setPublicUrl] = useState(initialSite.publicUrl);
   const [message, setMessage] = useState("");
   const [undoRevision, setUndoRevision] = useState<string | null>(null);
+  const [, setHistoryVersion] = useState(0);
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const selectionFromCanvasRef = useRef(false);
   const selectionRef = useRef<Selection>(null);
+  // Historial local para deshacer/rehacer. stateRef siempre refleja el estado actual.
+  const historyRef = useRef<{ past: HistorySnapshot[]; future: HistorySnapshot[]; lastPush: number }>({ past: [], future: [], lastPush: 0 });
+  const stateRef = useRef<HistorySnapshot>({ content, design, sections, templateId });
+  useEffect(() => { stateRef.current = { content, design, sections, templateId }; });
+  // Entradas del preview con debounce: evita regenerar el iframe en cada tecla.
+  const [previewInputs, setPreviewInputs] = useState<Pick<HistorySnapshot, "content" | "design" | "sections">>({ content, design, sections });
+  const previewScrollRef = useRef(0);
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
@@ -155,6 +187,69 @@ export function SiteEditorV2({ initialSite }: { initialSite: EditorSiteV2 }) {
     return () => clearTimeout(timer);
   }, [message]);
 
+  // Guarda el estado actual en el historial antes de aplicar un cambio.
+  // Las rafagas de tecleo (<800ms entre cambios) se agrupan en una sola entrada.
+  const pushHistory = () => {
+    const history = historyRef.current;
+    // eslint-disable-next-line react-hooks/purity -- solo se invoca desde manejadores de eventos, nunca durante el render.
+    const now = Date.now();
+    if (now - history.lastPush < 800 && history.past.length) { history.lastPush = now; return; }
+    history.past.push(structuredClone(stateRef.current));
+    if (history.past.length > 50) history.past.shift();
+    history.future = [];
+    history.lastPush = now;
+    setHistoryVersion((version) => version + 1);
+  };
+
+  const applySnapshot = (snapshot: HistorySnapshot) => {
+    setContent(snapshot.content); setDesign(snapshot.design); setSections(snapshot.sections); setTemplateId(snapshot.templateId);
+    setDirty(true);
+  };
+
+  const undo = () => {
+    const history = historyRef.current;
+    const snapshot = history.past.pop();
+    if (!snapshot) return;
+    history.future.push(structuredClone(stateRef.current));
+    history.lastPush = 0;
+    applySnapshot(snapshot);
+    setHistoryVersion((version) => version + 1);
+  };
+
+  const redo = () => {
+    const history = historyRef.current;
+    const snapshot = history.future.pop();
+    if (!snapshot) return;
+    history.past.push(structuredClone(stateRef.current));
+    history.lastPush = 0;
+    applySnapshot(snapshot);
+    setHistoryVersion((version) => version + 1);
+  };
+
+  // Ctrl+Z / Ctrl+Shift+Z / Ctrl+Y. En campos de texto se respeta el deshacer nativo del navegador.
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (!(event.ctrlKey || event.metaKey)) return;
+      const target = event.target as HTMLElement | null;
+      if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)) return;
+      const key = event.key.toLowerCase();
+      if (key === "z" && !event.shiftKey) { event.preventDefault(); undo(); }
+      else if (key === "y" || (key === "z" && event.shiftKey)) { event.preventDefault(); redo(); }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- undo/redo solo usan refs y setters estables.
+  }, []);
+
+  // Regenera el preview 250ms despues del ultimo cambio y conserva la posicion de scroll.
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      previewScrollRef.current = iframeRef.current?.contentWindow?.scrollY ?? previewScrollRef.current;
+      setPreviewInputs({ content, design, sections });
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [content, design, sections]);
+
   // Selección hecha desde el panel: se refleja en el lienzo (contorno + scroll hasta el elemento).
   useEffect(() => {
     selectionRef.current = selection;
@@ -164,8 +259,9 @@ export function SiteEditorV2({ initialSite }: { initialSite: EditorSiteV2 }) {
   }, [selection]);
 
   const rendered = useMemo(() => renderSiteV2({
-    content, design, sections, leadEndpoint: `/api/public/sites/${initialSite.publicSlug}/leads`, editable: true,
-  }), [content, design, sections, initialSite.publicSlug]);
+    content: previewInputs.content, design: previewInputs.design, sections: previewInputs.sections,
+    leadEndpoint: `/api/public/sites/${initialSite.publicSlug}/leads`, editable: true,
+  }), [previewInputs, initialSite.publicSlug]);
   const regionSections = sections.filter((item) => item.region === region);
   const selectedWidget = findWidget(sections, selection?.kind === "widget" ? selection.id : "");
   const selectedColumn = findColumn(sections, selection?.kind === "column" ? selection.id : selectedWidget?.column.id || "");
@@ -173,11 +269,15 @@ export function SiteEditorV2({ initialSite }: { initialSite: EditorSiteV2 }) {
   const selectedRow = selection?.kind === "row" ? findRow(sections, selection.id) : null;
 
   const mutateSections = (mutator: (draft: CanvasSectionV2[]) => CanvasSectionV2[]) => {
+    pushHistory();
     setSections((current) => mutator(structuredClone(current)));
     setDirty(true);
   };
 
-  const save = async () => {
+  const applyContent = (next: SiteContentV2) => { pushHistory(); setContent(next); setDirty(true); };
+  const applyDesign = (next: ThemeTokensV2) => { pushHistory(); setDesign(next); setDirty(true); };
+
+  const save = async (): Promise<boolean> => {
     setSaving(true); setMessage("");
     try {
       const response = await fetch(`/api/sites/${initialSite.id}`, {
@@ -190,8 +290,30 @@ export function SiteEditorV2({ initialSite }: { initialSite: EditorSiteV2 }) {
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.error || "No se pudo guardar.");
       setSections(data.sections); setDirty(false); localStorage.removeItem(draftKey); setMessage("Cambios guardados.");
-    } catch (reason) { setMessage(reason instanceof Error ? reason.message : "No se pudo guardar."); }
+      return true;
+    } catch (reason) { setMessage(reason instanceof Error ? reason.message : "No se pudo guardar."); return false; }
     finally { setSaving(false); }
+  };
+
+  const publish = async () => {
+    setPublishing(true); setMessage("");
+    try {
+      if (dirty && !(await save())) return;
+      const response = await fetch(`/api/sites/${initialSite.id}/publish`, { method: "POST" });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || "No se pudo publicar.");
+      // Al publicar un borrador que reemplaza a un sitio existente, el servidor fusiona
+      // ambos y el sitio queda bajo otro ID: hay que reabrir el editor en esa direccion.
+      if (data.site?.id && data.site.id !== initialSite.id) {
+        localStorage.removeItem(draftKey);
+        window.location.href = `/builder/${data.site.id}`;
+        return;
+      }
+      setStatus("PUBLISHED");
+      if (data.site?.publicUrl) setPublicUrl(data.site.publicUrl);
+      setMessage("Tu sitio ya está publicado.");
+    } catch (reason) { setMessage(reason instanceof Error ? reason.message : "No se pudo publicar."); }
+    finally { setPublishing(false); }
   };
 
   const applyTemplate = async (nextId: V2TemplateId) => {
@@ -199,6 +321,7 @@ export function SiteEditorV2({ initialSite }: { initialSite: EditorSiteV2 }) {
     const response = await fetch(`/api/sites/${initialSite.id}/template`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ templateId: nextId }) });
     const data = await response.json().catch(() => ({}));
     if (!response.ok) return setMessage(data.error || "No se pudo cambiar la plantilla.");
+    pushHistory();
     setTemplateId(data.templateId); setDesign(data.design); setSections(data.sections); setUndoRevision(data.revisionId); setSelection(null); setDirty(false);
     setMessage("Plantilla aplicada. Puedes deshacer este cambio.");
   };
@@ -208,6 +331,7 @@ export function SiteEditorV2({ initialSite }: { initialSite: EditorSiteV2 }) {
     const response = await fetch(`/api/sites/${initialSite.id}/revisions/${undoRevision}/restore`, { method: "POST" });
     const data = await response.json().catch(() => ({}));
     if (!response.ok) return setMessage(data.error || "No se pudo restaurar.");
+    pushHistory();
     setTemplateId(data.templateId); setContent(data.content); setDesign(data.design); setSections(data.sections); setUndoRevision(data.revisionId); setDirty(false);
   };
 
@@ -269,6 +393,8 @@ export function SiteEditorV2({ initialSite }: { initialSite: EditorSiteV2 }) {
         iframeRef.current?.contentWindow?.postMessage({ source: "cluster-editor", type: "select", id: active?.id || null, scroll: false }, "*");
         return;
       }
+      if (data.kind === "undo") { undo(); return; }
+      if (data.kind === "redo") { redo(); return; }
       if (data.kind === "drop-widget" && typeof data.widgetType === "string" && typeof data.columnId === "string") {
         const type = V2_WIDGET_TYPES.find((item) => item === data.widgetType);
         if (!type) return;
@@ -349,13 +475,20 @@ export function SiteEditorV2({ initialSite }: { initialSite: EditorSiteV2 }) {
         ))}
       </div>
       <div className="flex shrink-0 items-center gap-2">
+        <button className="v2-btn px-2.5" aria-label="Deshacer" title="Deshacer (Ctrl+Z)" disabled={!historyRef.current.past.length} onClick={undo}><Undo2 className="h-4 w-4" /></button>
+        <button className="v2-btn px-2.5" aria-label="Rehacer" title="Rehacer (Ctrl+Y)" disabled={!historyRef.current.future.length} onClick={redo}><Redo2 className="h-4 w-4" /></button>
         {undoRevision && <button className="v2-btn" onClick={undoTemplate}><Redo2 className="h-4 w-4" /><span className="hidden sm:inline">Deshacer plantilla</span></button>}
-        {initialSite.status === "PUBLISHED" && initialSite.publicUrl && (
-          <a href={initialSite.publicUrl} target="_blank" rel="noreferrer" className="v2-btn"><ExternalLink className="h-4 w-4" /><span className="hidden sm:inline">Ver sitio</span></a>
+        {status === "PUBLISHED" && publicUrl && (
+          <a href={publicUrl} target="_blank" rel="noreferrer" className="v2-btn"><ExternalLink className="h-4 w-4" /><span className="hidden sm:inline">Ver sitio</span></a>
         )}
-        <button className="v2-btn border-violet-600 bg-violet-600 text-white hover:bg-violet-700" disabled={saving} onClick={save}>
+        <button className="v2-btn" disabled={saving || publishing} onClick={() => void save()}>
           <Save className="h-4 w-4" />{saving ? "Guardando…" : "Guardar"}
         </button>
+        {status !== "PUBLISHED" && (
+          <button className="v2-btn border-violet-600 bg-violet-600 text-white hover:bg-violet-700" disabled={publishing || saving} onClick={publish}>
+            <Globe className="h-4 w-4" />{publishing ? "Publicando…" : "Publicar"}
+          </button>
+        )}
       </div>
     </header>
 
@@ -378,7 +511,7 @@ export function SiteEditorV2({ initialSite }: { initialSite: EditorSiteV2 }) {
               </div>
               <div className="min-h-0 flex-1 overflow-y-auto p-4">
                 <SelectionPanel
-                  siteId={initialSite.id} content={content} setContent={(next) => { setContent(next); setDirty(true); }}
+                  siteId={initialSite.id} content={content} setContent={applyContent}
                   selection={selection} selectedWidget={selectedWidget} selectedColumn={selectedColumn}
                   selectedSection={selectedSection} selectedRow={selectedRow}
                   addRow={addRow} mutate={mutateSections}
@@ -414,7 +547,7 @@ export function SiteEditorV2({ initialSite }: { initialSite: EditorSiteV2 }) {
                       <div className="grid gap-2 p-3 pt-0">
                         {SECTION_LIBRARY_V2.map((section) => {
                           const Icon = sectionIcon(section.name);
-                          return <button key={section.key} className="v2-add" onClick={() => addLibrarySection(section)} {...sectionDragProps(section.key, clearCanvasDrop)}>
+                          return <button key={section.key} className="v2-add" onClick={() => addLibrarySection(section)} {...sectionDragProps(section.key, section.name, clearCanvasDrop)}>
                             <Icon className="h-4 w-4 shrink-0 text-violet-600" />{section.name}
                           </button>;
                         })}
@@ -482,7 +615,7 @@ export function SiteEditorV2({ initialSite }: { initialSite: EditorSiteV2 }) {
                         {COLOR_LABELS[key]}
                         <span className="flex items-center gap-2 text-zinc-500">
                           {design[key]}
-                          <input type="color" className="h-7 w-9 cursor-pointer rounded border border-zinc-200" value={design[key]} onChange={(event) => { setDesign({ ...design, [key]: event.target.value }); setDirty(true); }} />
+                          <input type="color" className="h-7 w-9 cursor-pointer rounded border border-zinc-200" value={design[key]} onChange={(event) => applyDesign({ ...design, [key]: event.target.value })} />
                         </span>
                       </label>
                     ))}
@@ -504,7 +637,8 @@ export function SiteEditorV2({ initialSite }: { initialSite: EditorSiteV2 }) {
           </div>
           <div className="min-h-0 flex-1 overflow-auto p-3 sm:p-6">
             <div className={`mx-auto h-full overflow-hidden rounded-xl border border-zinc-300 bg-white shadow-lg transition-[max-width] ${device === "mobile" ? "max-w-[400px]" : "max-w-[1440px]"}`}>
-              <iframe ref={iframeRef} title="Vista previa del sitio, haz clic para editar" className="h-full w-full" srcDoc={rendered.html} />
+              <iframe ref={iframeRef} title="Vista previa del sitio, haz clic para editar" className="h-full w-full" srcDoc={rendered.html}
+                onLoad={(event) => event.currentTarget.contentWindow?.scrollTo(0, previewScrollRef.current)} />
             </div>
           </div>
         </section>
@@ -550,7 +684,7 @@ function AddSearchResults({ query, addLibrarySection, addWidget, clearCanvasDrop
       <div className="mb-4 grid gap-2">
         {sections.map((section) => {
           const Icon = sectionIcon(section.name);
-          return <button key={section.key} className="v2-add" onClick={() => addLibrarySection(section)} {...sectionDragProps(section.key, clearCanvasDrop)}>
+          return <button key={section.key} className="v2-add" onClick={() => addLibrarySection(section)} {...sectionDragProps(section.key, section.name, clearCanvasDrop)}>
             <Icon className="h-4 w-4 shrink-0 text-violet-600" />{section.name}
           </button>;
         })}
