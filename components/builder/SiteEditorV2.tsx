@@ -2,13 +2,17 @@
 /* eslint-disable react-hooks/refs -- dnd-kit exposes callback refs and reactive transforms as hook results. */
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import {
   DndContext, KeyboardSensor, PointerSensor, closestCenter, useDroppable, useSensor, useSensors,
   type DragEndEvent,
 } from "@dnd-kit/core";
 import { SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { ChevronDown, ChevronUp, GripVertical, Plus, Redo2, Save, Trash2 } from "lucide-react";
+import {
+  ArrowLeft, ChevronDown, ChevronUp, ExternalLink, GripVertical, Layers, LayoutTemplate,
+  Monitor, Palette, Plus, Redo2, Save, Smartphone, Trash2,
+} from "lucide-react";
 
 import { EditorMediaField } from "@/components/builder/EditorMediaField";
 import { renderSiteV2 } from "@/lib/site/v2-render";
@@ -33,12 +37,29 @@ type EditorSiteV2 = {
 type Selection = { kind: "section" | "row" | "column" | "widget"; id: string } | null;
 type DragData = { kind: "section" | "row" | "widget"; sectionId: string; rowId?: string; columnId?: string; id: string };
 type DropData = Omit<DragData, "kind"> & { kind: DragData["kind"] | "column" };
+type PanelTab = "add" | "structure" | "design";
 
 const WIDGET_LABELS: Record<V2WidgetType, string> = {
   brand: "Marca", nav: "Navegación", heading: "Título", text: "Texto", image: "Imagen", video: "Video",
   button: "Botón", business_info: "Datos del negocio", list: "Lista", gallery: "Galería", testimonials: "Reseñas",
   accordion: "Acordeón", form: "Formulario", social: "Redes", map: "Mapa", divider: "Divisor", spacer: "Espacio",
 };
+
+const REGION_LABELS: Record<CanvasSectionV2["region"], string> = {
+  header: "Encabezado", main: "Contenido", footer: "Pie de página",
+};
+
+const COLOR_LABELS: Record<keyof Pick<ThemeTokensV2, "primary" | "secondary" | "accent" | "background" | "text" | "muted">, string> = {
+  primary: "Color principal", secondary: "Color secundario", accent: "Color de acento",
+  background: "Fondo", text: "Texto", muted: "Texto suave",
+};
+
+const ROW_LAYOUTS: { layout: number[]; label: string }[] = [
+  { layout: [12], label: "1 columna" },
+  { layout: [6, 6], label: "2 columnas" },
+  { layout: [4, 4, 4], label: "3 columnas" },
+  { layout: [8, 4], label: "Ancha + angosta" },
+];
 
 export function SiteEditorV2({ initialSite }: { initialSite: EditorSiteV2 }) {
   const [content, setContent] = useState(initialSite.content);
@@ -47,6 +68,9 @@ export function SiteEditorV2({ initialSite }: { initialSite: EditorSiteV2 }) {
   const [templateId, setTemplateId] = useState(initialSite.templateId);
   const [region, setRegion] = useState<CanvasSectionV2["region"]>("main");
   const [selection, setSelection] = useState<Selection>(null);
+  const [tab, setTab] = useState<PanelTab>("add");
+  const [pane, setPane] = useState<"edit" | "preview">("edit");
+  const [device, setDevice] = useState<"desktop" | "mobile">("desktop");
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
@@ -74,6 +98,12 @@ export function SiteEditorV2({ initialSite }: { initialSite: EditorSiteV2 }) {
     const timer = setTimeout(() => localStorage.setItem(draftKey, JSON.stringify({ content, design, sections, templateId })), 3500);
     return () => clearTimeout(timer);
   }, [content, design, sections, templateId, dirty, draftKey]);
+
+  useEffect(() => {
+    if (!message) return;
+    const timer = setTimeout(() => setMessage(""), 5000);
+    return () => clearTimeout(timer);
+  }, [message]);
 
   const rendered = useMemo(() => renderSiteV2({
     content, design, sections, leadEndpoint: `/api/public/sites/${initialSite.publicSlug}/leads`,
@@ -123,13 +153,16 @@ export function SiteEditorV2({ initialSite }: { initialSite: EditorSiteV2 }) {
 
   const addLibrarySection = (seed: Omit<CanvasSectionV2, "id">) => {
     const copy = cloneSection(seed);
-    copy.region = region;
+    copy.region = "main";
     mutateSections((draft) => {
       const footer = draft.findIndex((item) => item.region === "footer");
-      draft.splice(region === "main" && footer >= 0 ? footer : draft.length, 0, copy);
+      draft.splice(footer >= 0 ? footer : draft.length, 0, copy);
       return draft;
     });
+    setRegion("main");
     setSelection({ kind: "section", id: copy.id });
+    setTab("structure");
+    setMessage(`Sección "${seed.name}" agregada.`);
   };
 
   const addRow = (sectionId: string, layout: number[]) => mutateSections((draft) => draft.map((section) => section.id === sectionId ? {
@@ -138,7 +171,7 @@ export function SiteEditorV2({ initialSite }: { initialSite: EditorSiteV2 }) {
 
   const addWidget = (type: V2WidgetType) => {
     const target = selectedColumn || firstColumn(sections, region);
-    if (!target) return setMessage("Selecciona una columna antes de agregar un widget.");
+    if (!target) return setMessage("Selecciona una columna en Estructura antes de agregar un widget.");
     const widget: WidgetV2 = { id: crypto.randomUUID(), type, data: defaultWidgetData(type) };
     mutateSections((draft) => updateColumn(draft, target.column.id, (column) => ({ ...column, widgets: [...column.widgets, widget] })));
     setSelection({ kind: "widget", id: widget.id });
@@ -152,53 +185,167 @@ export function SiteEditorV2({ initialSite }: { initialSite: EditorSiteV2 }) {
     mutateSections((draft) => reorderCanvas(draft, from, to));
   };
 
-  return <main className="min-h-dvh bg-[#0d0a12] text-white">
-    <header className="flex min-h-16 items-center justify-between border-b border-[#31283e] px-4">
-      <div><b>Editor V2</b><span className="ml-3 text-xs text-[#a99db7]">{dirty ? "Cambios pendientes" : "Guardado"}</span></div>
-      <div className="flex gap-2">
-        {undoRevision && <button className="v2-editor-button" onClick={undoTemplate}><Redo2 className="h-4 w-4" /> Deshacer plantilla</button>}
-        <button className="v2-editor-button bg-violet-600" disabled={saving} onClick={save}><Save className="h-4 w-4" /> {saving ? "Guardando…" : "Guardar"}</button>
+  const panelTabs: { id: PanelTab; label: string; icon: typeof Plus }[] = [
+    { id: "add", label: "Agregar", icon: Plus },
+    { id: "structure", label: "Estructura", icon: Layers },
+    { id: "design", label: "Diseño", icon: Palette },
+  ];
+
+  return <main className="flex h-dvh flex-col bg-zinc-100 text-zinc-900">
+    <header className="flex h-14 shrink-0 items-center justify-between gap-3 border-b border-zinc-200 bg-white px-3 sm:px-4">
+      <div className="flex min-w-0 items-center gap-3">
+        <Link href="/dashboard" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900" aria-label="Volver al panel">
+          <ArrowLeft className="h-4 w-4" />
+        </Link>
+        <div className="min-w-0">
+          <p className="truncate text-sm font-semibold leading-tight">{content.business.name || "Mi sitio"}</p>
+          <p className="text-xs leading-tight text-zinc-500">{dirty ? "Cambios sin guardar" : "Todo guardado"}</p>
+        </div>
+      </div>
+      <div className="flex xl:hidden items-center rounded-lg bg-zinc-100 p-1" role="tablist" aria-label="Vista del editor">
+        {([["edit", "Editar"], ["preview", "Vista previa"]] as const).map(([id, label]) => (
+          <button key={id} role="tab" aria-selected={pane === id} onClick={() => setPane(id)}
+            className={`rounded-md px-3 py-1.5 text-xs font-medium ${pane === id ? "bg-white text-zinc-900 shadow-sm" : "text-zinc-500"}`}>
+            {label}
+          </button>
+        ))}
+      </div>
+      <div className="flex shrink-0 items-center gap-2">
+        {undoRevision && <button className="v2-btn" onClick={undoTemplate}><Redo2 className="h-4 w-4" /><span className="hidden sm:inline">Deshacer plantilla</span></button>}
+        {initialSite.status === "PUBLISHED" && initialSite.publicUrl && (
+          <a href={initialSite.publicUrl} target="_blank" rel="noreferrer" className="v2-btn"><ExternalLink className="h-4 w-4" /><span className="hidden sm:inline">Ver sitio</span></a>
+        )}
+        <button className="v2-btn border-violet-600 bg-violet-600 text-white hover:bg-violet-700" disabled={saving} onClick={save}>
+          <Save className="h-4 w-4" />{saving ? "Guardando…" : "Guardar"}
+        </button>
       </div>
     </header>
-    {message && <p role="status" className="border-b border-[#31283e] bg-[#17111f] px-4 py-2 text-sm text-[#d7c9e8]">{message}</p>}
+
     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
-      <div className="grid min-h-[calc(100dvh-4rem)] grid-cols-1 xl:grid-cols-[330px_minmax(0,1fr)_330px]">
-        <aside className="border-r border-[#31283e] bg-[#120e18] p-4">
-          <div className="mb-5 grid grid-cols-3 gap-1 rounded-lg bg-[#21192b] p-1">
-            {(["header", "main", "footer"] as const).map((item) => <button key={item} onClick={() => setRegion(item)} className={`min-h-10 rounded-md text-xs capitalize ${region === item ? "bg-violet-600" : "text-[#b8adc5]"}`}>{item}</button>)}
+      <div className="grid min-h-0 flex-1 grid-cols-1 xl:grid-cols-[320px_minmax(0,1fr)_300px]">
+
+        <aside className={`${pane === "edit" ? "flex" : "hidden"} min-h-0 flex-col border-r border-zinc-200 bg-white xl:flex`}>
+          <div className="grid shrink-0 grid-cols-3 border-b border-zinc-200" role="tablist" aria-label="Herramientas">
+            {panelTabs.map(({ id, label, icon: Icon }) => (
+              <button key={id} role="tab" aria-selected={tab === id} onClick={() => setTab(id)}
+                className={`flex min-h-12 flex-col items-center justify-center gap-0.5 text-xs font-medium ${tab === id ? "border-b-2 border-violet-600 text-violet-700" : "text-zinc-500 hover:text-zinc-800"}`}>
+                <Icon className="h-4 w-4" />{label}
+              </button>
+            ))}
           </div>
-          <h2 className="v2-editor-label">Plantillas completas</h2>
-          <div className="mb-6 grid grid-cols-2 gap-2">{getAllTemplatesV2().map((template) => <button key={template.id} onClick={() => applyTemplate(template.id)} className={`rounded-lg border p-3 text-left text-xs ${templateId === template.id ? "border-violet-500 bg-violet-500/10" : "border-[#3b3048]"}`}><b className="block text-sm">{template.name}</b>{template.description}</button>)}</div>
-          {region === "main" && <><h2 className="v2-editor-label">Biblioteca de secciones</h2><div className="mb-6 grid gap-2">{SECTION_LIBRARY_V2.map((section) => <button key={section.key} className="v2-editor-add" onClick={() => addLibrarySection(section)}><Plus className="h-4 w-4" />{section.name}</button>)}</div></>}
-          <h2 className="v2-editor-label">Estructura</h2>
-          <SortableContext items={regionSections.map((section) => `section:${section.id}`)} strategy={verticalListSortingStrategy}>
-            <div className="space-y-2">{regionSections.map((section) => <SectionTree key={section.id} section={section} selection={selection} setSelection={setSelection} addRow={addRow} mutate={mutateSections} />)}</div>
-          </SortableContext>
-          <h2 className="v2-editor-label mt-6">Widgets</h2>
-          <div className="grid grid-cols-2 gap-2">{V2_WIDGET_TYPES.map((type) => <button key={type} className="v2-editor-add" onClick={() => addWidget(type)}><Plus className="h-3.5 w-3.5" />{WIDGET_LABELS[type]}</button>)}</div>
+
+          <div className="min-h-0 flex-1 overflow-y-auto p-4">
+            {tab === "add" && <>
+              <h2 className="v2-label">Secciones listas para usar</h2>
+              <p className="mb-3 text-xs text-zinc-500">Haz clic para agregarlas a tu página.</p>
+              <div className="mb-6 grid gap-2">
+                {SECTION_LIBRARY_V2.map((section) => (
+                  <button key={section.key} className="v2-add" onClick={() => addLibrarySection(section)}>
+                    <Plus className="h-4 w-4 shrink-0 text-violet-600" />{section.name}
+                  </button>
+                ))}
+              </div>
+              <h2 className="v2-label">Widgets</h2>
+              <p className="mb-3 text-xs text-zinc-500">Elementos sueltos. Se agregan a la columna seleccionada en Estructura.</p>
+              <div className="grid grid-cols-2 gap-2">
+                {V2_WIDGET_TYPES.map((type) => (
+                  <button key={type} className="v2-add" onClick={() => addWidget(type)}>
+                    <Plus className="h-3.5 w-3.5 shrink-0 text-violet-600" />{WIDGET_LABELS[type]}
+                  </button>
+                ))}
+              </div>
+            </>}
+
+            {tab === "structure" && <>
+              <h2 className="v2-label">Parte de la página</h2>
+              <div className="mb-4 grid grid-cols-3 gap-1 rounded-lg bg-zinc-100 p-1">
+                {(["header", "main", "footer"] as const).map((item) => (
+                  <button key={item} onClick={() => setRegion(item)}
+                    className={`min-h-9 rounded-md px-1 text-xs font-medium ${region === item ? "bg-white text-zinc-900 shadow-sm" : "text-zinc-500"}`}>
+                    {REGION_LABELS[item]}
+                  </button>
+                ))}
+              </div>
+              {regionSections.length === 0 && (
+                <p className="rounded-lg border border-dashed border-zinc-300 p-4 text-center text-xs text-zinc-500">
+                  Aún no hay secciones aquí. Ve a la pestaña Agregar para sumar una.
+                </p>
+              )}
+              <SortableContext items={regionSections.map((section) => `section:${section.id}`)} strategy={verticalListSortingStrategy}>
+                <div className="space-y-2">{regionSections.map((section) => <SectionTree key={section.id} section={section} selection={selection} setSelection={setSelection} addRow={addRow} mutate={mutateSections} />)}</div>
+              </SortableContext>
+            </>}
+
+            {tab === "design" && <>
+              <h2 className="v2-label">Plantilla</h2>
+              <p className="mb-3 text-xs text-zinc-500">Cambia la composición completa. Tu contenido se conserva.</p>
+              <div className="mb-6 grid gap-2">
+                {getAllTemplatesV2().map((template) => (
+                  <button key={template.id} onClick={() => applyTemplate(template.id)}
+                    className={`rounded-lg border p-3 text-left text-xs leading-relaxed ${templateId === template.id ? "border-violet-600 bg-violet-50 text-zinc-900" : "border-zinc-200 text-zinc-600 hover:border-zinc-300"}`}>
+                    <span className="mb-0.5 flex items-center gap-1.5 text-sm font-semibold text-zinc-900"><LayoutTemplate className="h-3.5 w-3.5 text-violet-600" />{template.name}</span>
+                    {template.description}
+                  </button>
+                ))}
+              </div>
+              <h2 className="v2-label">Colores del sitio</h2>
+              <p className="mb-3 text-xs text-zinc-500">Se aplican a todo el sitio publicado.</p>
+              <div className="grid gap-2">
+                {(Object.keys(COLOR_LABELS) as (keyof typeof COLOR_LABELS)[]).map((key) => (
+                  <label key={key} className="flex min-h-11 cursor-pointer items-center justify-between rounded-lg border border-zinc-200 px-3 text-xs font-medium">
+                    {COLOR_LABELS[key]}
+                    <span className="flex items-center gap-2 text-zinc-500">
+                      {design[key]}
+                      <input type="color" className="h-7 w-9 cursor-pointer rounded border border-zinc-200" value={design[key]} onChange={(event) => { setDesign({ ...design, [key]: event.target.value }); setDirty(true); }} />
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </>}
+          </div>
         </aside>
 
-        <section className="min-w-0 bg-[#201927] p-3 sm:p-6">
-          <div className="mx-auto h-[calc(100dvh-8rem)] max-w-[1440px] overflow-hidden rounded-xl border border-[#453653] bg-white shadow-2xl">
-            <iframe title="Vista previa real del sitio" className="h-full w-full" srcDoc={rendered.html} />
+        <section className={`${pane === "preview" ? "flex" : "hidden"} min-h-0 min-w-0 flex-col xl:flex`}>
+          <div className="flex h-11 shrink-0 items-center justify-center gap-1 border-b border-zinc-200 bg-white/60">
+            {([["desktop", Monitor, "Escritorio"], ["mobile", Smartphone, "Móvil"]] as const).map(([id, Icon, label]) => (
+              <button key={id} onClick={() => setDevice(id)} aria-label={`Vista previa en ${label.toLowerCase()}`} aria-pressed={device === id}
+                className={`flex h-8 items-center gap-1.5 rounded-md px-3 text-xs font-medium ${device === id ? "bg-zinc-200 text-zinc-900" : "text-zinc-500 hover:text-zinc-800"}`}>
+                <Icon className="h-4 w-4" />{label}
+              </button>
+            ))}
+          </div>
+          <div className="min-h-0 flex-1 overflow-auto p-3 sm:p-6">
+            <div className={`mx-auto h-full overflow-hidden rounded-xl border border-zinc-300 bg-white shadow-lg transition-[max-width] ${device === "mobile" ? "max-w-[400px]" : "max-w-[1440px]"}`}>
+              <iframe title="Vista previa real del sitio" className="h-full w-full" srcDoc={rendered.html} />
+            </div>
           </div>
         </section>
 
-        <aside className="border-l border-[#31283e] bg-[#120e18] p-4">
+        <aside className={`${pane === "edit" ? "block" : "hidden"} min-h-0 overflow-y-auto border-t border-zinc-200 bg-white p-4 xl:block xl:border-l xl:border-t-0`}>
           <Inspector
             siteId={initialSite.id} content={content} setContent={(next) => { setContent(next); setDirty(true); }}
-            design={design} setDesign={(next) => { setDesign(next); setDirty(true); }}
             selected={selectedWidget} column={selectedColumn}
             mutate={mutateSections}
           />
         </aside>
       </div>
     </DndContext>
+
+    {message && (
+      <p role="status" className="pointer-events-none fixed bottom-4 left-1/2 z-50 -translate-x-1/2 rounded-full bg-zinc-900 px-4 py-2 text-xs font-medium text-white shadow-lg">
+        {message}
+      </p>
+    )}
+
     <style jsx global>{`
-      .v2-editor-label{display:block;margin-bottom:.6rem;font-size:.7rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#a78bfa}
-      .v2-editor-button,.v2-editor-add{display:flex;min-height:2.5rem;align-items:center;justify-content:center;gap:.4rem;border:1px solid #443650;border-radius:.5rem;padding:.5rem .75rem;font-size:.75rem}
-      .v2-editor-add{justify-content:flex-start;text-align:left;color:#d9cee4;background:#1b1522}
-      .v2-field{width:100%;min-height:2.75rem;border:1px solid #443650;border-radius:.5rem;background:#1b1522;padding:.65rem;color:white;font-size:.85rem}
+      .v2-label{display:block;margin-bottom:.35rem;font-size:.8rem;font-weight:700;color:#18181b}
+      .v2-btn{display:flex;min-height:2.25rem;align-items:center;justify-content:center;gap:.4rem;border:1px solid #e4e4e7;border-radius:.5rem;padding:.4rem .75rem;font-size:.75rem;font-weight:500;color:#3f3f46;background:#fff}
+      .v2-btn:hover{background:#fafafa}
+      .v2-btn:disabled{opacity:.6}
+      .v2-add{display:flex;min-height:2.5rem;align-items:center;gap:.5rem;border:1px solid #e4e4e7;border-radius:.5rem;padding:.5rem .75rem;font-size:.75rem;font-weight:500;text-align:left;color:#3f3f46;background:#fff}
+      .v2-add:hover{border-color:#c4b5fd;background:#f5f3ff}
+      .v2-field{width:100%;min-height:2.75rem;border:1px solid #d4d4d8;border-radius:.5rem;background:#fff;padding:.65rem;color:#18181b;font-size:.85rem}
+      .v2-field:focus{outline:2px solid #7c3aed;outline-offset:1px}
     `}</style>
   </main>;
 }
@@ -208,51 +355,79 @@ function SectionTree({ section, selection, setSelection, addRow, mutate }: {
   addRow: (id: string, layout: number[]) => void; mutate: (fn: (draft: CanvasSectionV2[]) => CanvasSectionV2[]) => void;
 }) {
   const sortable = useSortable({ id: `section:${section.id}`, data: { kind: "section", sectionId: section.id, id: section.id } satisfies DragData });
-  return <div ref={sortable.setNodeRef} style={{ transform: CSS.Transform.toString(sortable.transform), transition: sortable.transition }} className="rounded-lg border border-[#3a2e46] bg-[#19131f] p-2">
+  const selected = selection?.id === section.id;
+  return <div ref={sortable.setNodeRef} style={{ transform: CSS.Transform.toString(sortable.transform), transition: sortable.transition }}
+    className={`rounded-lg border bg-white p-2 ${selected ? "border-violet-600" : "border-zinc-200"}`}>
     <div className="flex items-center gap-1">
-      <button {...sortable.attributes} {...sortable.listeners} className="p-2 text-[#8f819e]" aria-label="Arrastrar sección"><GripVertical className="h-4 w-4" /></button>
-      <button className={`flex-1 text-left text-sm ${selection?.id === section.id ? "text-violet-300" : ""}`} onClick={() => setSelection({ kind: "section", id: section.id })}>{section.name}</button>
-      {section.region === "main" && <button title="Eliminar sección" className="p-2" onClick={() => mutate((draft) => draft.filter((item) => item.id !== section.id))}><Trash2 className="h-4 w-4" /></button>}
+      <button {...sortable.attributes} {...sortable.listeners} className="cursor-grab p-2 text-zinc-400 hover:text-zinc-600" aria-label="Arrastrar sección"><GripVertical className="h-4 w-4" /></button>
+      <button className={`min-w-0 flex-1 truncate text-left text-sm font-medium ${selected ? "text-violet-700" : "text-zinc-800"}`} onClick={() => setSelection({ kind: "section", id: section.id })}>{section.name}</button>
+      {section.region === "main" && <button title="Eliminar sección" aria-label="Eliminar sección" className="p-2 text-zinc-400 hover:text-red-600" onClick={() => mutate((draft) => draft.filter((item) => item.id !== section.id))}><Trash2 className="h-4 w-4" /></button>}
     </div>
     <SortableContext items={section.rows.map((row) => `row:${row.id}`)} strategy={verticalListSortingStrategy}>
-      <div className="space-y-2 pl-4">{section.rows.map((row) => <RowTree key={row.id} sectionId={section.id} row={row} selection={selection} setSelection={setSelection} mutate={mutate} />)}</div>
+      <div className="space-y-2 pl-3">{section.rows.map((row) => <RowTree key={row.id} sectionId={section.id} row={row} selection={selection} setSelection={setSelection} mutate={mutate} />)}</div>
     </SortableContext>
-    <div className="mt-2 flex gap-1 pl-4">{[[12], [6, 6], [4, 4, 4], [8, 4]].map((layout) => <button key={layout.join("-")} className="rounded border border-[#40344a] px-2 py-1 text-[10px]" onClick={() => addRow(section.id, layout)}>{layout.join("+")}</button>)}</div>
+    <div className="mt-2 flex flex-wrap gap-1 pl-3">
+      {ROW_LAYOUTS.map(({ layout, label }) => (
+        <button key={label} className="rounded border border-zinc-200 px-2 py-1 text-[11px] text-zinc-500 hover:border-violet-300 hover:text-violet-700" onClick={() => addRow(section.id, layout)}>
+          + {label}
+        </button>
+      ))}
+    </div>
   </div>;
 }
 
 function RowTree({ sectionId, row, selection, setSelection, mutate }: { sectionId: string; row: CanvasRowV2; selection: Selection; setSelection: (value: Selection) => void; mutate: (fn: (draft: CanvasSectionV2[]) => CanvasSectionV2[]) => void }) {
   const sortable = useSortable({ id: `row:${row.id}`, data: { kind: "row", sectionId, rowId: row.id, id: row.id } satisfies DragData });
-  return <div ref={sortable.setNodeRef} style={{ transform: CSS.Transform.toString(sortable.transform), transition: sortable.transition }} className="rounded border border-[#33283d] p-1.5">
-    <div className="mb-1 flex items-center text-[11px] text-[#9d91aa]"><button {...sortable.attributes} {...sortable.listeners} className="p-1"><GripVertical className="h-3 w-3" /></button><button onClick={() => setSelection({ kind: "row", id: row.id })}>Fila</button><button className="ml-auto p-1" onClick={() => mutate((draft) => draft.map((section) => section.id === sectionId ? { ...section, rows: section.rows.filter((item) => item.id !== row.id) } : section))}><Trash2 className="h-3 w-3" /></button></div>
+  return <div ref={sortable.setNodeRef} style={{ transform: CSS.Transform.toString(sortable.transform), transition: sortable.transition }} className="rounded-md border border-zinc-200 bg-zinc-50 p-1.5">
+    <div className="mb-1 flex items-center text-[11px] text-zinc-500">
+      <button {...sortable.attributes} {...sortable.listeners} className="cursor-grab p-1" aria-label="Arrastrar fila"><GripVertical className="h-3 w-3" /></button>
+      <button className={selection?.id === row.id ? "font-semibold text-violet-700" : ""} onClick={() => setSelection({ kind: "row", id: row.id })}>Fila</button>
+      <button className="ml-auto p-1 hover:text-red-600" aria-label="Eliminar fila" onClick={() => mutate((draft) => draft.map((section) => section.id === sectionId ? { ...section, rows: section.rows.filter((item) => item.id !== row.id) } : section))}><Trash2 className="h-3 w-3" /></button>
+    </div>
     <div className="grid gap-1" style={{ gridTemplateColumns: `repeat(${row.columns.length},minmax(0,1fr))` }}>{row.columns.map((column) => <ColumnTree key={column.id} sectionId={sectionId} rowId={row.id} column={column} selection={selection} setSelection={setSelection} mutate={mutate} />)}</div>
   </div>;
 }
 
 function ColumnTree({ sectionId, rowId, column, selection, setSelection, mutate }: { sectionId: string; rowId: string; column: CanvasColumnV2; selection: Selection; setSelection: (value: Selection) => void; mutate: (fn: (draft: CanvasSectionV2[]) => CanvasSectionV2[]) => void }) {
   const drop = useDroppable({ id: `column:${column.id}`, data: { kind: "column", sectionId, rowId, columnId: column.id, id: column.id } });
-  return <div ref={drop.setNodeRef} className={`min-w-0 rounded border p-1 ${selection?.id === column.id ? "border-violet-500" : drop.isOver ? "border-violet-400 bg-violet-500/10" : "border-[#42344e]"}`}>
-    <button className="mb-1 block w-full text-left text-[9px] text-[#81758d]" onClick={() => setSelection({ kind: "column", id: column.id })}>{column.span.desktop}/12</button>
+  return <div ref={drop.setNodeRef} className={`min-w-0 rounded border bg-white p-1 ${selection?.id === column.id ? "border-violet-600" : drop.isOver ? "border-violet-400 bg-violet-50" : "border-zinc-200"}`}>
+    <button className="mb-1 block w-full text-left text-[10px] font-medium text-zinc-400 hover:text-violet-700" onClick={() => setSelection({ kind: "column", id: column.id })}>Columna</button>
     <SortableContext items={column.widgets.map((widget) => `widget:${widget.id}`)} strategy={verticalListSortingStrategy}>{column.widgets.map((widget, index) => <WidgetTree key={widget.id} widget={widget} index={index} sectionId={sectionId} rowId={rowId} columnId={column.id} selection={selection} setSelection={setSelection} mutate={mutate} />)}</SortableContext>
-    {!column.widgets.length && <span className="block py-2 text-center text-[9px] text-[#6e6279]">Soltar aquí</span>}
+    {!column.widgets.length && <span className="block py-2 text-center text-[10px] text-zinc-400">Suelta un widget aquí</span>}
   </div>;
 }
 
 function WidgetTree({ widget, index, sectionId, rowId, columnId, selection, setSelection, mutate }: { widget: WidgetV2; index: number; sectionId: string; rowId: string; columnId: string; selection: Selection; setSelection: (value: Selection) => void; mutate: (fn: (draft: CanvasSectionV2[]) => CanvasSectionV2[]) => void }) {
   const sortable = useSortable({ id: `widget:${widget.id}`, data: { kind: "widget", sectionId, rowId, columnId, id: widget.id } satisfies DragData });
   const move = (direction: -1 | 1) => mutate((draft) => updateColumn(draft, columnId, (column) => ({ ...column, widgets: moveAt(column.widgets, index, index + direction) })));
-  return <div ref={sortable.setNodeRef} style={{ transform: CSS.Transform.toString(sortable.transform), transition: sortable.transition }} className={`mb-1 flex items-center rounded bg-[#241b2c] text-[10px] ${selection?.id === widget.id ? "ring-1 ring-violet-500" : ""}`}>
-    <button {...sortable.attributes} {...sortable.listeners} className="p-1"><GripVertical className="h-3 w-3" /></button><button className="min-w-0 flex-1 truncate text-left" onClick={() => setSelection({ kind: "widget", id: widget.id })}>{WIDGET_LABELS[widget.type]}</button>
-    <button aria-label="Subir" className="p-1" disabled={index === 0} onClick={() => move(-1)}><ChevronUp className="h-3 w-3" /></button><button aria-label="Bajar" className="p-1" onClick={() => move(1)}><ChevronDown className="h-3 w-3" /></button>
-    <button aria-label="Eliminar" className="p-1" onClick={() => mutate((draft) => updateColumn(draft, columnId, (column) => ({ ...column, widgets: column.widgets.filter((item) => item.id !== widget.id) })))}><Trash2 className="h-3 w-3" /></button>
+  return <div ref={sortable.setNodeRef} style={{ transform: CSS.Transform.toString(sortable.transform), transition: sortable.transition }}
+    className={`mb-1 flex items-center rounded border text-[11px] ${selection?.id === widget.id ? "border-violet-600 bg-violet-50 text-violet-800" : "border-zinc-200 bg-zinc-50 text-zinc-600"}`}>
+    <button {...sortable.attributes} {...sortable.listeners} className="cursor-grab p-1" aria-label="Arrastrar widget"><GripVertical className="h-3 w-3" /></button>
+    <button className="min-w-0 flex-1 truncate text-left" onClick={() => setSelection({ kind: "widget", id: widget.id })}>{WIDGET_LABELS[widget.type]}</button>
+    <button aria-label="Subir" className="p-1 disabled:opacity-30" disabled={index === 0} onClick={() => move(-1)}><ChevronUp className="h-3 w-3" /></button>
+    <button aria-label="Bajar" className="p-1" onClick={() => move(1)}><ChevronDown className="h-3 w-3" /></button>
+    <button aria-label="Eliminar" className="p-1 hover:text-red-600" onClick={() => mutate((draft) => updateColumn(draft, columnId, (column) => ({ ...column, widgets: column.widgets.filter((item) => item.id !== widget.id) })))}><Trash2 className="h-3 w-3" /></button>
   </div>;
 }
 
-function Inspector({ siteId, content, setContent, design, setDesign, selected, column, mutate }: { siteId: string; content: SiteContentV2; setContent: (value: SiteContentV2) => void; design: ThemeTokensV2; setDesign: (value: ThemeTokensV2) => void; selected: ReturnType<typeof findWidget>; column: ReturnType<typeof findColumn>; mutate: (fn: (draft: CanvasSectionV2[]) => CanvasSectionV2[]) => void }) {
+function Inspector({ siteId, content, setContent, selected, column, mutate }: { siteId: string; content: SiteContentV2; setContent: (value: SiteContentV2) => void; selected: ReturnType<typeof findWidget>; column: ReturnType<typeof findColumn>; mutate: (fn: (draft: CanvasSectionV2[]) => CanvasSectionV2[]) => void }) {
   const [improving, setImproving] = useState(false);
   const [aiError, setAiError] = useState("");
-  if (!selected && !column) return <><h2 className="v2-editor-label">Diseño global</h2>{(["primary", "secondary", "accent", "background", "text", "muted"] as const).map((key) => <label key={key} className="mb-3 flex items-center justify-between text-xs capitalize">{key}<input type="color" value={design[key]} onChange={(event) => setDesign({ ...design, [key]: event.target.value })} /></label>)}</>;
-  if (!selected && column) return <><h2 className="v2-editor-label">Columna</h2>{(["desktop", "tablet"] as const).map((breakpoint) => <label key={breakpoint} className="mb-3 block text-xs capitalize">Ancho {breakpoint}<select className="v2-field mt-1" value={column.column.span[breakpoint]} onChange={(event) => mutate((draft) => updateColumn(draft, column.column.id, (item) => ({ ...item, span: { ...item.span, [breakpoint]: Number(event.target.value) } as CanvasColumnV2["span"] })))}>{[1,2,3,4,5,6,7,8,9,12].map((value) => <option key={value} value={value}>{value}/12</option>)}</select></label>)}</>;
+  if (!selected && !column) return <div className="flex h-full flex-col items-center justify-center gap-2 text-center">
+    <Layers className="h-8 w-8 text-zinc-300" />
+    <p className="text-sm font-medium text-zinc-700">Nada seleccionado</p>
+    <p className="max-w-[22ch] text-xs leading-relaxed text-zinc-500">Haz clic en una sección, columna o widget en la pestaña Estructura para editarlo aquí.</p>
+  </div>;
+  if (!selected && column) return <>
+    <h2 className="v2-label">Columna</h2>
+    <p className="mb-3 text-xs text-zinc-500">Define cuánto espacio ocupa (de 12 partes disponibles).</p>
+    {(["desktop", "tablet"] as const).map((breakpoint) => <label key={breakpoint} className="mb-3 block text-xs font-medium">
+      Ancho en {breakpoint === "desktop" ? "escritorio" : "tablet"}
+      <select className="v2-field mt-1" value={column.column.span[breakpoint]} onChange={(event) => mutate((draft) => updateColumn(draft, column.column.id, (item) => ({ ...item, span: { ...item.span, [breakpoint]: Number(event.target.value) } as CanvasColumnV2["span"] })))}>
+        {[1,2,3,4,5,6,7,8,9,12].map((value) => <option key={value} value={value}>{value} de 12</option>)}
+      </select>
+    </label>)}
+  </>;
   if (!selected) return null;
   const widget = selected.widget;
   const value = widget.slot ? resolveContentSlot(content, widget.slot) : widget.data?.text || widget.data?.src || "";
@@ -268,14 +443,29 @@ function Inspector({ siteId, content, setContent, design, setDesign, selected, c
     setImproving(false);
   };
   return <>
-    <h2 className="v2-editor-label">{WIDGET_LABELS[widget.type]}</h2>
-    {widget.slot && typeof value === "string" && <label className="mb-4 block text-xs">Contenido<textarea className="v2-field mt-1 min-h-28" value={stringValue} onChange={(event) => setContent(setContentSlot(content, widget.slot as V2ContentSlot, event.target.value))} /><button type="button" disabled={improving} onClick={improve} className="mt-2 min-h-10 rounded-md border border-violet-500 px-3 text-xs text-violet-200">{improving ? "Mejorando…" : "Mejorar con IA"}</button>{aiError && <span className="mt-2 block text-red-300">{aiError}</span>}</label>}
-    {!widget.slot && ["heading", "text", "button"].includes(widget.type) && <label className="mb-4 block text-xs">Contenido<textarea className="v2-field mt-1" value={stringValue} onChange={(event) => updateWidget({ data: { ...widget.data, text: event.target.value } })} /></label>}
+    <h2 className="v2-label">{WIDGET_LABELS[widget.type]}</h2>
+    {widget.slot && typeof value === "string" && <label className="mb-4 block text-xs font-medium">Contenido
+      <textarea className="v2-field mt-1 min-h-28" value={stringValue} onChange={(event) => setContent(setContentSlot(content, widget.slot as V2ContentSlot, event.target.value))} />
+      <button type="button" disabled={improving} onClick={improve} className="mt-2 min-h-10 rounded-md border border-violet-600 px-3 text-xs font-medium text-violet-700 hover:bg-violet-50 disabled:opacity-60">{improving ? "Mejorando…" : "Mejorar con IA"}</button>
+      {aiError && <span className="mt-2 block font-normal text-red-600">{aiError}</span>}
+    </label>}
+    {!widget.slot && ["heading", "text", "button"].includes(widget.type) && <label className="mb-4 block text-xs font-medium">Contenido<textarea className="v2-field mt-1" value={stringValue} onChange={(event) => updateWidget({ data: { ...widget.data, text: event.target.value } })} /></label>}
     {(widget.type === "image" || widget.type === "video") && !widget.slot && <EditorMediaField siteId={siteId} kind={widget.type} value={String(widget.data?.src || "")} onChange={(src) => updateWidget({ data: { ...widget.data, src } })} onUsageChange={() => undefined} />}
-    <label className="mb-4 block text-xs">Variante<input className="v2-field mt-1" value={widget.variant || ""} onChange={(event) => updateWidget({ variant: event.target.value.slice(0, 40) })} /></label>
-    <h3 className="v2-editor-label mt-5">Estilo cerrado</h3>
-    <label className="mb-3 block text-xs">Alineación<select className="v2-field mt-1" value={widget.style?.desktop?.align || "left"} onChange={(event) => updateWidget({ style: { ...widget.style, desktop: { ...widget.style?.desktop, align: event.target.value as "left" | "center" | "right" } } })}><option>left</option><option>center</option><option>right</option></select></label>
-    <label className="mb-3 block text-xs">Espaciado<select className="v2-field mt-1" value={widget.style?.desktop?.padding || "none"} onChange={(event) => updateWidget({ style: { ...widget.style, desktop: { ...widget.style?.desktop, padding: event.target.value as "none" | "sm" | "md" | "lg" | "xl" } } })}><option>none</option><option>sm</option><option>md</option><option>lg</option><option>xl</option></select></label>
+    <h3 className="v2-label mt-5">Estilo</h3>
+    <label className="mb-3 block text-xs font-medium">Alineación
+      <select className="v2-field mt-1" value={widget.style?.desktop?.align || "left"} onChange={(event) => updateWidget({ style: { ...widget.style, desktop: { ...widget.style?.desktop, align: event.target.value as "left" | "center" | "right" } } })}>
+        <option value="left">Izquierda</option><option value="center">Centrada</option><option value="right">Derecha</option>
+      </select>
+    </label>
+    <label className="mb-3 block text-xs font-medium">Espaciado
+      <select className="v2-field mt-1" value={widget.style?.desktop?.padding || "none"} onChange={(event) => updateWidget({ style: { ...widget.style, desktop: { ...widget.style?.desktop, padding: event.target.value as "none" | "sm" | "md" | "lg" | "xl" } } })}>
+        <option value="none">Sin espacio</option><option value="sm">Pequeño</option><option value="md">Medio</option><option value="lg">Grande</option><option value="xl">Extra grande</option>
+      </select>
+    </label>
+    <details className="mt-4">
+      <summary className="cursor-pointer text-xs font-medium text-zinc-500">Avanzado</summary>
+      <label className="mt-3 block text-xs font-medium">Variante<input className="v2-field mt-1" value={widget.variant || ""} onChange={(event) => updateWidget({ variant: event.target.value.slice(0, 40) })} /></label>
+    </details>
   </>;
 }
 
