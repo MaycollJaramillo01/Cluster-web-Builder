@@ -10,8 +10,11 @@ import {
 import { SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import {
-  ArrowLeft, ChevronDown, ChevronLeft, ChevronUp, ExternalLink, GripVertical, Layers, LayoutTemplate,
-  Monitor, Palette, Plus, Redo2, Save, Smartphone, Trash2,
+  ArrowLeft, BadgeCheck, Briefcase, Building2, ChevronDown, ChevronLeft, ChevronUp, Code2, ExternalLink,
+  GripVertical, Heading1, HelpCircle, Image as ImageIcon, Layers, LayoutGrid, LayoutTemplate, List as ListIcon,
+  Mail, MapPin, Megaphone, Menu as MenuIcon, Minus, Monitor, MousePointerClick, MoveVertical, Palette,
+  PanelsTopLeft, Plus, Presentation, Redo2, Save, Search, Share2, Smartphone, Star, Text as TextIcon,
+  Trash2, Users, Video as VideoIcon,
 } from "lucide-react";
 
 import { V2WidgetSettings } from "@/components/builder/V2WidgetSettings";
@@ -46,6 +49,32 @@ const WIDGET_LABELS: Record<V2WidgetType, string> = {
   embed: "Código insertado",
 };
 
+type IconComponent = typeof Plus;
+
+const WIDGET_ICONS: Record<V2WidgetType, IconComponent> = {
+  brand: BadgeCheck, nav: MenuIcon, heading: Heading1, text: TextIcon, image: ImageIcon, video: VideoIcon,
+  button: MousePointerClick, business_info: Building2, list: ListIcon, gallery: LayoutGrid, testimonials: Star,
+  accordion: HelpCircle, form: Mail, social: Share2, map: MapPin, divider: Minus, spacer: MoveVertical, embed: Code2,
+};
+
+const WIDGET_GROUPS: { name: string; types: V2WidgetType[]; open?: boolean }[] = [
+  { name: "Básico", types: ["heading", "text", "image", "video", "button", "list", "gallery"], open: true },
+  { name: "Negocio", types: ["brand", "nav", "business_info", "form", "social", "map"] },
+  { name: "Avanzado", types: ["testimonials", "accordion", "embed", "divider", "spacer"] },
+];
+
+function sectionIcon(name: string): IconComponent {
+  const value = name.toLowerCase();
+  if (value.includes("hero")) return Presentation;
+  if (value.includes("about") || value.includes("nosotros")) return Users;
+  if (value.includes("servicio")) return Briefcase;
+  if (value.includes("galer")) return ImageIcon;
+  if (value.includes("cta")) return Megaphone;
+  if (value.includes("testimoni")) return Star;
+  if (value.includes("contact")) return Mail;
+  return PanelsTopLeft;
+}
+
 const REGION_LABELS: Record<CanvasSectionV2["region"], string> = {
   header: "Encabezado", main: "Contenido", footer: "Pie de página",
 };
@@ -70,6 +99,7 @@ export function SiteEditorV2({ initialSite }: { initialSite: EditorSiteV2 }) {
   const [region, setRegion] = useState<CanvasSectionV2["region"]>("main");
   const [selection, setSelection] = useState<Selection>(null);
   const [tab, setTab] = useState<PanelTab>("add");
+  const [query, setQuery] = useState("");
   const [pane, setPane] = useState<"edit" | "preview">("preview");
   const [device, setDevice] = useState<"desktop" | "mobile">("desktop");
   const [dirty, setDirty] = useState(false);
@@ -307,24 +337,47 @@ export function SiteEditorV2({ initialSite }: { initialSite: EditorSiteV2 }) {
 
               <div className="min-h-0 flex-1 overflow-y-auto p-4">
                 {tab === "add" && <>
-                  <p className="mb-4 rounded-lg bg-violet-50 p-3 text-xs leading-relaxed text-violet-900">Haz clic en cualquier parte del sitio a la derecha para editarla. Desde aquí puedes agregar secciones nuevas.</p>
-                  <h2 className="v2-label">Secciones listas para usar</h2>
-                  <div className="mb-6 mt-2 grid gap-2">
-                    {SECTION_LIBRARY_V2.map((section) => (
-                      <button key={section.key} className="v2-add" onClick={() => addLibrarySection(section)}>
-                        <Plus className="h-4 w-4 shrink-0 text-violet-600" />{section.name}
-                      </button>
+                  <label className="relative mb-4 block">
+                    <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
+                    <input className="v2-field pl-9" placeholder="Buscar bloque..." value={query} onChange={(event) => setQuery(event.target.value)} aria-label="Buscar bloque" />
+                  </label>
+
+                  {query.trim() ? (
+                    <AddSearchResults query={query} addLibrarySection={addLibrarySection} addWidget={addWidget} />
+                  ) : <>
+                    <details className="group mb-2 rounded-lg border border-zinc-200">
+                      <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between px-3 text-sm font-semibold [&::-webkit-details-marker]:hidden">
+                        Secciones completas
+                        <ChevronDown className="h-4 w-4 text-zinc-400 transition-transform group-open:rotate-180" />
+                      </summary>
+                      <div className="grid gap-2 p-3 pt-0">
+                        {SECTION_LIBRARY_V2.map((section) => {
+                          const Icon = sectionIcon(section.name);
+                          return <button key={section.key} className="v2-add" onClick={() => addLibrarySection(section)}>
+                            <Icon className="h-4 w-4 shrink-0 text-violet-600" />{section.name}
+                          </button>;
+                        })}
+                      </div>
+                    </details>
+
+                    {WIDGET_GROUPS.map((group) => (
+                      <details key={group.name} className="group mb-2 rounded-lg border border-zinc-200" open={group.open}>
+                        <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between px-3 text-sm font-semibold [&::-webkit-details-marker]:hidden">
+                          {group.name}
+                          <ChevronDown className="h-4 w-4 text-zinc-400 transition-transform group-open:rotate-180" />
+                        </summary>
+                        <div className="grid grid-cols-2 gap-2 p-3 pt-0">
+                          {group.types.map((type) => {
+                            const Icon = WIDGET_ICONS[type];
+                            return <button key={type} className="v2-tile" onClick={() => addWidget(type)}>
+                              <Icon className="h-5 w-5 text-violet-600" />{WIDGET_LABELS[type]}
+                            </button>;
+                          })}
+                        </div>
+                      </details>
                     ))}
-                  </div>
-                  <h2 className="v2-label">Widgets</h2>
-                  <p className="mb-3 text-xs text-zinc-500">Elementos sueltos. Haz clic primero en una columna del sitio y luego en el widget.</p>
-                  <div className="grid grid-cols-2 gap-2">
-                    {V2_WIDGET_TYPES.map((type) => (
-                      <button key={type} className="v2-add" onClick={() => addWidget(type)}>
-                        <Plus className="h-3.5 w-3.5 shrink-0 text-violet-600" />{WIDGET_LABELS[type]}
-                      </button>
-                    ))}
-                  </div>
+                    <p className="mt-3 text-xs leading-relaxed text-zinc-400">Las secciones se agregan a la página completa. Los widgets se agregan a la columna que tengas seleccionada en el sitio.</p>
+                  </>}
                 </>}
 
                 {tab === "structure" && <>
@@ -410,10 +463,47 @@ export function SiteEditorV2({ initialSite }: { initialSite: EditorSiteV2 }) {
       .v2-btn:disabled{opacity:.6}
       .v2-add{display:flex;min-height:2.5rem;align-items:center;gap:.5rem;border:1px solid #e4e4e7;border-radius:.5rem;padding:.5rem .75rem;font-size:.75rem;font-weight:500;text-align:left;color:#3f3f46;background:#fff}
       .v2-add:hover{border-color:#c4b5fd;background:#f5f3ff}
+      .v2-tile{display:flex;min-height:4.25rem;flex-direction:column;align-items:center;justify-content:center;gap:.4rem;border:1px solid #e4e4e7;border-radius:.5rem;padding:.5rem;font-size:.7rem;font-weight:500;line-height:1.2;text-align:center;color:#3f3f46;background:#fff}
+      .v2-tile:hover{border-color:#c4b5fd;background:#f5f3ff}
       .v2-field{width:100%;min-height:2.75rem;border:1px solid #d4d4d8;border-radius:.5rem;background:#fff;padding:.65rem;color:#18181b;font-size:.85rem}
       .v2-field:focus{outline:2px solid #7c3aed;outline-offset:1px}
     `}</style>
   </main>;
+}
+
+function AddSearchResults({ query, addLibrarySection, addWidget }: {
+  query: string;
+  addLibrarySection: (seed: Omit<CanvasSectionV2, "id">) => void;
+  addWidget: (type: V2WidgetType) => void;
+}) {
+  const needle = query.trim().toLowerCase();
+  const sections = SECTION_LIBRARY_V2.filter((section) => section.name.toLowerCase().includes(needle));
+  const widgets = V2_WIDGET_TYPES.filter((type) => WIDGET_LABELS[type].toLowerCase().includes(needle));
+  if (!sections.length && !widgets.length) return <p className="rounded-lg border border-dashed border-zinc-300 p-4 text-center text-xs text-zinc-500">No encontramos bloques con ese nombre.</p>;
+  return <>
+    {sections.length > 0 && <>
+      <h2 className="v2-label">Secciones</h2>
+      <div className="mb-4 grid gap-2">
+        {sections.map((section) => {
+          const Icon = sectionIcon(section.name);
+          return <button key={section.key} className="v2-add" onClick={() => addLibrarySection(section)}>
+            <Icon className="h-4 w-4 shrink-0 text-violet-600" />{section.name}
+          </button>;
+        })}
+      </div>
+    </>}
+    {widgets.length > 0 && <>
+      <h2 className="v2-label">Widgets</h2>
+      <div className="grid grid-cols-2 gap-2">
+        {widgets.map((type) => {
+          const Icon = WIDGET_ICONS[type];
+          return <button key={type} className="v2-tile" onClick={() => addWidget(type)}>
+            <Icon className="h-5 w-5 text-violet-600" />{WIDGET_LABELS[type]}
+          </button>;
+        })}
+      </div>
+    </>}
+  </>;
 }
 
 function SelectionPanel({ siteId, content, setContent, selection, selectedWidget, selectedColumn, selectedSection, selectedRow, addRow, mutate }: {
