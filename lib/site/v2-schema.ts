@@ -58,6 +58,7 @@ export type ThemeTokensV2 = {
 export type StyleTokensV2 = {
   color?: string;
   background?: string;
+  backgroundImage?: string;
   align?: "left" | "center" | "right";
   fontSize?: "xs" | "sm" | "md" | "lg" | "xl" | "2xl" | "display";
   fontWeight?: "normal" | "medium" | "semibold" | "bold" | "black";
@@ -107,7 +108,9 @@ export type TemplateDefinitionV2 = {
 
 const hex = z.string().regex(/^#[0-9a-fA-F]{6}$/);
 const styleSchema = z.object({
-  color: hex.optional(), background: hex.optional(), align: z.enum(["left", "center", "right"]).optional(),
+  color: hex.optional(), background: hex.optional(),
+  backgroundImage: z.string().max(2000).transform((value) => sanitizeLink(value)).optional(),
+  align: z.enum(["left", "center", "right"]).optional(),
   fontSize: z.enum(["xs", "sm", "md", "lg", "xl", "2xl", "display"]).optional(),
   fontWeight: z.enum(["normal", "medium", "semibold", "bold", "black"]).optional(),
   padding: z.enum(["none", "sm", "md", "lg", "xl"]).optional(), gap: z.enum(["none", "sm", "md", "lg", "xl"]).optional(),
@@ -115,7 +118,7 @@ const styleSchema = z.object({
   width: z.enum(["content", "wide", "full"]).optional(),
 }).strip();
 const responsiveStyleSchema = z.object({ desktop: styleSchema.optional(), tablet: styleSchema.optional(), mobile: styleSchema.optional() }).strip();
-const widgetSchema = z.object({
+export const widgetV2Schema = z.object({
   id: z.string().min(1).max(80), type: z.enum(V2_WIDGET_TYPES), slot: z.enum(V2_CONTENT_SLOTS).optional(),
   data: z.record(z.unknown()).optional(), variant: z.string().max(40).optional(), style: responsiveStyleSchema.optional(),
 }).strip();
@@ -123,7 +126,7 @@ const spanSchema = z.object({
   desktop: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4), z.literal(5), z.literal(6), z.literal(7), z.literal(8), z.literal(9), z.literal(12)]),
   tablet: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4), z.literal(5), z.literal(6), z.literal(7), z.literal(12)]), mobile: z.literal(12),
 });
-const columnSchema = z.object({ id: z.string().min(1).max(80), span: spanSchema, widgets: z.array(widgetSchema).max(30), style: responsiveStyleSchema.optional() }).strip();
+const columnSchema = z.object({ id: z.string().min(1).max(80), span: spanSchema, widgets: z.array(widgetV2Schema).max(30), style: responsiveStyleSchema.optional() }).strip();
 const rowSchema = z.object({ id: z.string().min(1).max(80), columns: z.array(columnSchema).min(1).max(4), style: responsiveStyleSchema.optional() }).strip();
 export const canvasSectionSchema = z.object({
   schemaVersion: z.literal(2), id: z.string().min(1).max(80), key: z.string().min(1).max(80), name: z.string().min(1).max(120),
@@ -165,6 +168,11 @@ export function normalizeCanvasSectionsV2(value: unknown): CanvasSectionV2[] {
     allIds.forEach((id) => ids.add(id));
     return true;
   });
+}
+
+export function normalizeWidgetV2(value: unknown): WidgetV2 | null {
+  const parsed = widgetV2Schema.safeParse(value);
+  return parsed.success ? parsed.data : null;
 }
 
 export function normalizeThemeV2(value: unknown): ThemeTokensV2 {

@@ -11,16 +11,18 @@ import { SortableContext, sortableKeyboardCoordinates, useSortable, verticalList
 import { CSS } from "@dnd-kit/utilities";
 import {
   ArrowDown, ArrowLeft, ArrowUp, BadgeCheck, Briefcase, Building2, ChevronDown, ChevronLeft, ChevronUp,
-  Code2, Copy, ExternalLink, Globe, GripVertical, Heading1, HelpCircle, Image as ImageIcon, Layers,
+  ClipboardPaste, Code2, Copy, ExternalLink, Globe, GripVertical, Heading1, HelpCircle, Image as ImageIcon, Layers,
   LayoutGrid, LayoutTemplate, List as ListIcon, Mail, MapPin, Megaphone, Menu as MenuIcon, Minus, Monitor,
-  MousePointerClick, MoveVertical, Palette, PanelsTopLeft, Pencil, Plus, Presentation, Redo2, Save, Search,
+  MousePointerClick, MoveVertical, Paintbrush, Palette, PanelsTopLeft, Pencil, Plus, Presentation, Redo2, Save, Search,
   Share2, Smartphone, Star, Text as TextIcon, Trash2, Undo2, Users, Video as VideoIcon,
 } from "lucide-react";
 
 import { V2WidgetSettings } from "@/components/builder/V2WidgetSettings";
+import { EditorMediaField } from "@/components/builder/EditorMediaField";
+import { readV2Clipboard, V2_CLIPBOARD_KEY, type V2Clipboard } from "@/lib/site/v2-clipboard";
 import { renderSiteV2 } from "@/lib/site/v2-render";
 import {
-  V2_WIDGET_TYPES,
+  setContentSlot, V2_WIDGET_TYPES,
   type CanvasColumnV2, type CanvasRowV2, type CanvasSectionV2, type SiteContentV2,
   type ThemeTokensV2, type V2TemplateId, type V2WidgetType, type WidgetV2,
 } from "@/lib/site/v2-schema";
@@ -129,6 +131,30 @@ const ROW_LAYOUTS: { layout: number[]; label: string }[] = [
   { layout: [8, 4], label: "Ancha + angosta" },
 ];
 
+const FONT_PAIRS = [
+  { name: "Moderna", headingFont: "Arial, Helvetica, sans-serif", bodyFont: "Arial, Helvetica, sans-serif" },
+  { name: "Editorial", headingFont: "Georgia, 'Times New Roman', serif", bodyFont: "Arial, Helvetica, sans-serif" },
+  { name: "Clásica", headingFont: "'Palatino Linotype', Palatino, serif", bodyFont: "Georgia, 'Times New Roman', serif" },
+  { name: "Humanista", headingFont: "'Trebuchet MS', Arial, sans-serif", bodyFont: "'Segoe UI', Arial, sans-serif" },
+  { name: "Técnica", headingFont: "'Courier New', monospace", bodyFont: "'Segoe UI', Arial, sans-serif" },
+  { name: "Impacto", headingFont: "Impact, 'Arial Black', sans-serif", bodyFont: "Arial, Helvetica, sans-serif" },
+] as const;
+
+const RADIUS_OPTIONS: { value: ThemeTokensV2["radius"]; label: string }[] = [
+  { value: "none", label: "Rectas" }, { value: "sm", label: "Suaves" }, { value: "md", label: "Redondeadas" },
+  { value: "lg", label: "Muy redondeadas" }, { value: "pill", label: "Píldora" },
+];
+
+const MOTION_OPTIONS: { value: ThemeTokensV2["motion"]; label: string }[] = [
+  { value: "none", label: "Sin animación" }, { value: "subtle", label: "Sutil" },
+  { value: "stagger", label: "Escalonada" }, { value: "cinematic", label: "Cinemática" },
+];
+
+function sanitizeInlineText(value: unknown, type: V2WidgetType) {
+  const max = type === "text" ? 4000 : 240;
+  return String(value ?? "").replace(/<[^>]*>/g, "").replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, "").trim().slice(0, max);
+}
+
 export function SiteEditorV2({ initialSite }: { initialSite: EditorSiteV2 }) {
   const [content, setContent] = useState(initialSite.content);
   const [design, setDesign] = useState(initialSite.design);
@@ -147,6 +173,7 @@ export function SiteEditorV2({ initialSite }: { initialSite: EditorSiteV2 }) {
   const [publicUrl, setPublicUrl] = useState(initialSite.publicUrl);
   const [message, setMessage] = useState("");
   const [menu, setMenu] = useState<ContextMenuState>(null);
+  const [clipboard, setClipboard] = useState<V2Clipboard | null>(null);
   const [undoRevision, setUndoRevision] = useState<string | null>(null);
   const [, setHistoryVersion] = useState(0);
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
@@ -164,6 +191,13 @@ export function SiteEditorV2({ initialSite }: { initialSite: EditorSiteV2 }) {
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
   const draftKey = `cluster:v2-draft:${initialSite.id}`;
+
+  useEffect(() => {
+    const refresh = () => setClipboard(readV2Clipboard(localStorage));
+    refresh();
+    window.addEventListener("storage", refresh);
+    return () => window.removeEventListener("storage", refresh);
+  }, []);
 
   useEffect(() => {
     const raw = localStorage.getItem(draftKey);
@@ -191,11 +225,11 @@ export function SiteEditorV2({ initialSite }: { initialSite: EditorSiteV2 }) {
 
   // Guarda el estado actual en el historial antes de aplicar un cambio.
   // Las rafagas de tecleo (<800ms entre cambios) se agrupan en una sola entrada.
-  const pushHistory = () => {
+  const pushHistory = (force = false) => {
     const history = historyRef.current;
     // eslint-disable-next-line react-hooks/purity -- solo se invoca desde manejadores de eventos, nunca durante el render.
     const now = Date.now();
-    if (now - history.lastPush < 800 && history.past.length) { history.lastPush = now; return; }
+    if (!force && now - history.lastPush < 800 && history.past.length) { history.lastPush = now; return; }
     history.past.push(structuredClone(stateRef.current));
     if (history.past.length > 50) history.past.shift();
     history.future = [];
@@ -388,7 +422,7 @@ export function SiteEditorV2({ initialSite }: { initialSite: EditorSiteV2 }) {
         source?: string; kind?: string; id?: string;
         widgetType?: string; columnId?: string; index?: number;
         sectionKey?: string; targetSectionId?: string; position?: string;
-        targetKind?: string; x?: number; y?: number;
+        targetKind?: string; x?: number; y?: number; value?: string;
       } | null;
       if (!data || data.source !== "cluster-canvas") return;
       if (data.kind === "ready") {
@@ -398,6 +432,16 @@ export function SiteEditorV2({ initialSite }: { initialSite: EditorSiteV2 }) {
       }
       if (data.kind === "undo") { undo(); return; }
       if (data.kind === "redo") { redo(); return; }
+      if (data.kind === "edit-text" && typeof data.id === "string") {
+        const found = findWidget(stateRef.current.sections, data.id);
+        if (!found || (found.widget.type !== "heading" && found.widget.type !== "text" && found.widget.type !== "button")) return;
+        const value = sanitizeInlineText(data.value, found.widget.type);
+        pushHistory(true);
+        if (found.widget.slot) setContent(setContentSlot(stateRef.current.content, found.widget.slot, value));
+        else setSections((current) => updateWidgetById(current, data.id!, (widget) => ({ ...widget, data: { ...widget.data, text: value } })));
+        setDirty(true);
+        return;
+      }
       if (data.kind === "context" && typeof data.id === "string" && (data.targetKind === "widget" || data.targetKind === "column" || data.targetKind === "section")) {
         const rect = iframeRef.current?.getBoundingClientRect();
         setMenu({
@@ -454,6 +498,45 @@ export function SiteEditorV2({ initialSite }: { initialSite: EditorSiteV2 }) {
     }));
     setSelection({ kind: "widget", id: copy.id });
     setMessage("Widget duplicado.");
+  };
+
+  const copyToClipboard = (id: string, mode: V2Clipboard["mode"]) => {
+    const found = findWidget(sections, id);
+    if (!found) return;
+    const value: V2Clipboard = { mode, widget: structuredClone(found.widget) };
+    localStorage.setItem(V2_CLIPBOARD_KEY, JSON.stringify(value));
+    setClipboard(value);
+    setMessage(mode === "widget" ? "Widget copiado." : "Estilo copiado.");
+  };
+
+  const pasteWidget = (target: { kind: "widget" | "column"; id: string }) => {
+    if (clipboard?.mode !== "widget") return;
+    const copy = structuredClone(clipboard.widget);
+    copy.id = crypto.randomUUID();
+    const targetWidget = target.kind === "widget" ? findWidget(sections, target.id) : null;
+    const columnId = target.kind === "column" ? target.id : targetWidget?.column.id;
+    if (!columnId) return;
+    mutateSections((draft) => updateColumn(draft, columnId, (column) => {
+      const widgets = [...column.widgets];
+      const targetIndex = target.kind === "widget" ? widgets.findIndex((item) => item.id === target.id) : widgets.length - 1;
+      widgets.splice(Math.max(0, targetIndex + 1), 0, copy);
+      return { ...column, widgets };
+    }));
+    setSelection({ kind: "widget", id: copy.id });
+    setMessage("Widget pegado.");
+  };
+
+  const pasteStyle = (id: string) => {
+    if (clipboard?.mode !== "style") return;
+    const found = findWidget(sections, id);
+    if (!found) return;
+    const sameType = found.widget.type === clipboard.widget.type;
+    mutateSections((draft) => updateWidgetById(draft, id, (widget) => ({
+      ...widget,
+      style: clipboard.widget.style ? structuredClone(clipboard.widget.style) : undefined,
+      ...(sameType ? { variant: clipboard.widget.variant } : {}),
+    })));
+    setMessage(sameType ? "Estilo y variante aplicados." : "Estilo aplicado; la variante se conservó porque los widgets son distintos.");
   };
 
   const duplicateSection = (id: string) => {
@@ -711,6 +794,26 @@ export function SiteEditorV2({ initialSite }: { initialSite: EditorSiteV2 }) {
                       </label>
                     ))}
                   </div>
+                  <h2 className="v2-label mt-6">Tipografía</h2>
+                  <p className="mb-3 text-xs text-zinc-500">Pares seguros que también funcionan en el sitio publicado.</p>
+                  <select className="v2-field" value={FONT_PAIRS.findIndex((pair) => pair.headingFont === design.headingFont && pair.bodyFont === design.bodyFont)}
+                    onChange={(event) => {
+                      const pair = FONT_PAIRS[Number(event.target.value)];
+                      if (pair) applyDesign({ ...design, headingFont: pair.headingFont, bodyFont: pair.bodyFont });
+                    }}>
+                    {!FONT_PAIRS.some((pair) => pair.headingFont === design.headingFont && pair.bodyFont === design.bodyFont) && <option value={-1}>Tipografía de la plantilla</option>}
+                    {FONT_PAIRS.map((pair, index) => <option key={pair.name} value={index}>{pair.name}</option>)}
+                  </select>
+
+                  <h2 className="v2-label mt-6">Esquinas</h2>
+                  <select className="v2-field" value={design.radius} onChange={(event) => applyDesign({ ...design, radius: event.target.value as ThemeTokensV2["radius"] })}>
+                    {RADIUS_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                  </select>
+
+                  <h2 className="v2-label mt-6">Animación</h2>
+                  <select className="v2-field" value={design.motion} onChange={(event) => applyDesign({ ...design, motion: event.target.value as ThemeTokensV2["motion"] })}>
+                    {MOTION_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                  </select>
                 </>}
               </div>
             </>
@@ -743,6 +846,7 @@ export function SiteEditorV2({ initialSite }: { initialSite: EditorSiteV2 }) {
           menu={menu} sections={sections} close={() => setMenu(null)}
           select={(kind, id) => { setSelection({ kind, id }); setPane("edit"); }}
           duplicateWidget={duplicateWidget} duplicateSection={duplicateSection}
+          clipboard={clipboard} copyToClipboard={copyToClipboard} pasteWidget={pasteWidget} pasteStyle={pasteStyle}
           moveWidgetById={moveWidgetById} moveSectionById={moveSectionById}
           deleteWidgetById={deleteWidgetById} deleteColumnById={deleteColumnById}
           deleteRowById={deleteRowById} deleteSectionById={deleteSectionById}
@@ -775,13 +879,17 @@ export function SiteEditorV2({ initialSite }: { initialSite: EditorSiteV2 }) {
 
 type MenuEntry = { label: string; icon: IconComponent; onClick: () => void; danger?: boolean } | "sep";
 
-function CanvasContextMenu({ menu, sections, close, select, duplicateWidget, duplicateSection, moveWidgetById, moveSectionById, deleteWidgetById, deleteColumnById, deleteRowById, deleteSectionById }: {
+function CanvasContextMenu({ menu, sections, close, select, duplicateWidget, duplicateSection, clipboard, copyToClipboard, pasteWidget, pasteStyle, moveWidgetById, moveSectionById, deleteWidgetById, deleteColumnById, deleteRowById, deleteSectionById }: {
   menu: NonNullable<ContextMenuState>;
   sections: CanvasSectionV2[];
   close: () => void;
   select: (kind: NonNullable<Selection>["kind"], id: string) => void;
   duplicateWidget: (id: string) => void;
   duplicateSection: (id: string) => void;
+  clipboard: V2Clipboard | null;
+  copyToClipboard: (id: string, mode: V2Clipboard["mode"]) => void;
+  pasteWidget: (target: { kind: "widget" | "column"; id: string }) => void;
+  pasteStyle: (id: string) => void;
   moveWidgetById: (id: string, direction: -1 | 1) => void;
   moveSectionById: (id: string, direction: -1 | 1) => void;
   deleteWidgetById: (id: string) => void;
@@ -807,6 +915,12 @@ function CanvasContextMenu({ menu, sections, close, select, duplicateWidget, dup
     entries.push(
       { label: `Editar ${title.toLowerCase()}`, icon: Pencil, onClick: () => select("widget", id) },
       { label: "Duplicar widget", icon: Copy, onClick: () => duplicateWidget(id) },
+      "sep",
+      { label: "Copiar widget", icon: Copy, onClick: () => copyToClipboard(id, "widget") },
+      ...(clipboard?.mode === "widget" ? [{ label: "Pegar después", icon: ClipboardPaste, onClick: () => pasteWidget({ kind: "widget", id }) } satisfies Exclude<MenuEntry, "sep">] : []),
+      { label: "Copiar estilo", icon: Paintbrush, onClick: () => copyToClipboard(id, "style") },
+      ...(clipboard?.mode === "style" ? [{ label: "Pegar estilo", icon: ClipboardPaste, onClick: () => pasteStyle(id) } satisfies Exclude<MenuEntry, "sep">] : []),
+      "sep",
       { label: "Mover arriba", icon: ArrowUp, onClick: () => moveWidgetById(id, -1) },
       { label: "Mover abajo", icon: ArrowDown, onClick: () => moveWidgetById(id, 1) },
       "sep",
@@ -820,6 +934,7 @@ function CanvasContextMenu({ menu, sections, close, select, duplicateWidget, dup
     const lastColumn = foundColumn.row.columns.length === 1;
     entries.push(
       { label: "Editar columna", icon: Pencil, onClick: () => select("column", id) },
+      ...(clipboard?.mode === "widget" ? [{ label: "Pegar aquí", icon: ClipboardPaste, onClick: () => pasteWidget({ kind: "column", id }) } satisfies Exclude<MenuEntry, "sep">] : []),
       "sep",
       { label: `Seleccionar sección (${foundColumn.section.name})`, icon: Layers, onClick: () => select("section", foundColumn.section.id) },
       "sep",
@@ -894,16 +1009,43 @@ function SelectionPanel({ siteId, content, setContent, selection, selectedWidget
   addRow: (id: string, layout: number[]) => void;
   mutate: (fn: (draft: CanvasSectionV2[]) => CanvasSectionV2[]) => void;
 }) {
-  if (selection.kind === "section" && selectedSection) return <>
-    <p className="mb-4 text-xs leading-relaxed text-zinc-500">Haz clic en un texto, imagen o botón dentro de la sección para editarlo directamente.</p>
-    <h3 className="v2-label">Agregar fila a esta sección</h3>
-    <div className="mt-2 grid gap-2">
-      {ROW_LAYOUTS.map(({ layout, label }) => (
-        <button key={label} className="v2-add" onClick={() => addRow(selectedSection.id, layout)}><Plus className="h-4 w-4 shrink-0 text-violet-600" />{label}</button>
-      ))}
-    </div>
-    <p className="mt-4 text-xs text-zinc-500">Para mover la sección, usa la pestaña Estructura y arrástrala.</p>
-  </>;
+  if (selection.kind === "section" && selectedSection) {
+    const desktop = selectedSection.style?.desktop || {};
+    const updateSectionStyle = (patch: Partial<typeof desktop>) => mutate((draft) => draft.map((section) => section.id === selectedSection.id ? {
+      ...section,
+      style: { ...section.style, desktop: { ...section.style?.desktop, ...patch } },
+    } : section));
+    return <>
+      <p className="mb-4 text-xs leading-relaxed text-zinc-500">Haz clic en un texto, imagen o botón dentro de la sección para editarlo directamente.</p>
+      <h3 className="v2-label">Fondo de la sección</h3>
+      <label className="mb-4 flex min-h-11 items-center justify-between rounded-lg border border-zinc-200 px-3 text-xs font-medium">
+        Color
+        <span className="flex items-center gap-2">
+          {desktop.background && <button type="button" className="text-xs text-zinc-500 underline" onClick={() => updateSectionStyle({ background: undefined })}>Quitar</button>}
+          <input type="color" className="h-7 w-9 cursor-pointer rounded border border-zinc-200" value={desktop.background || "#ffffff"} onChange={(event) => updateSectionStyle({ background: event.target.value })} />
+        </span>
+      </label>
+      <EditorMediaField siteId={siteId} kind="image" tone="light" value={desktop.backgroundImage || ""} onChange={(url) => updateSectionStyle({ backgroundImage: url || undefined })} onUsageChange={() => undefined} />
+
+      <h3 className="v2-label mt-5">Espaciado vertical</h3>
+      <select className="v2-field mb-4" value={desktop.padding || "lg"} onChange={(event) => updateSectionStyle({ padding: event.target.value as NonNullable<typeof desktop.padding> })}>
+        <option value="none">Sin espacio</option><option value="sm">Compacto</option><option value="md">Medio</option><option value="lg">Amplio</option><option value="xl">Muy amplio</option>
+      </select>
+
+      <h3 className="v2-label">Ancho del contenido</h3>
+      <select className="v2-field mb-6" value={desktop.width || "wide"} onChange={(event) => updateSectionStyle({ width: event.target.value as NonNullable<typeof desktop.width> })}>
+        <option value="content">Contenido</option><option value="wide">Amplio</option><option value="full">Ancho completo</option>
+      </select>
+
+      <h3 className="v2-label">Agregar fila a esta sección</h3>
+      <div className="mt-2 grid gap-2">
+        {ROW_LAYOUTS.map(({ layout, label }) => (
+          <button key={label} className="v2-add" onClick={() => addRow(selectedSection.id, layout)}><Plus className="h-4 w-4 shrink-0 text-violet-600" />{label}</button>
+        ))}
+      </div>
+      <p className="mt-4 text-xs text-zinc-500">Para mover la sección, usa la pestaña Estructura y arrástrala.</p>
+    </>;
+  }
 
   if (selection.kind === "row" && selectedRow) return <>
     <p className="mb-4 text-xs leading-relaxed text-zinc-500">Una fila agrupa columnas. Haz clic en una columna del sitio para ajustar su ancho o agregarle widgets.</p>

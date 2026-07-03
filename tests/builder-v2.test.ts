@@ -2,8 +2,9 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { renderSiteV2 } from "../lib/site/v2-render";
+import { parseV2Clipboard } from "../lib/site/v2-clipboard";
 import { getAllTemplatesV2, instantiateTemplateV2, LEGACY_TEMPLATE_MIGRATION, SECTION_LIBRARY_V2 } from "../lib/site/v2-templates";
-import { normalizeCanvasSectionsV2, normalizeSiteContentV2, V2_TEMPLATE_IDS, V2_WIDGET_TYPES } from "../lib/site/v2-schema";
+import { normalizeCanvasSectionsV2, normalizeSiteContentV2, normalizeWidgetV2, V2_TEMPLATE_IDS, V2_WIDGET_TYPES } from "../lib/site/v2-schema";
 
 const content = normalizeSiteContentV2({
   business: { name: "Taller Norte", type: "Arquitectura", location: "Managua", phone: "+505 8000 0000", email: "hola@example.com" },
@@ -53,4 +54,36 @@ test("los 46 presets V1 tienen destino y la biblioteca no repite keys", () => {
   assert.equal(Object.keys(LEGACY_TEMPLATE_MIGRATION).length, 46);
   assert.equal(new Set(SECTION_LIBRARY_V2.map((section) => section.key)).size, SECTION_LIBRARY_V2.length);
   for (const result of Object.values(LEGACY_TEMPLATE_MIGRATION)) assert.ok(V2_TEMPLATE_IDS.includes(result.template));
+});
+
+test("el portapapeles V2 valida el widget antes de pegar", () => {
+  const widget = { id: "copied", type: "button", variant: "outline", data: { text: "Cotizar" }, style: { desktop: { align: "center", padding: "md" } } };
+  assert.deepEqual(parseV2Clipboard({ mode: "widget", widget })?.widget, widget);
+  assert.equal(parseV2Clipboard({ mode: "widget", widget: { ...widget, type: "script" } }), null);
+  assert.equal(parseV2Clipboard({ mode: "unknown", widget }), null);
+  assert.equal(normalizeWidgetV2({ ...widget, id: "" }), null);
+});
+
+test("el modo editable solo se inyecta en el preview del editor", () => {
+  const document = instantiateTemplateV2("conversion", content);
+  const publicRender = renderSiteV2({ content: document.content, design: document.template.theme, sections: document.sections, leadEndpoint: "/api/leads" });
+  const editorRender = renderSiteV2({ content: document.content, design: document.template.theme, sections: document.sections, leadEndpoint: "/api/leads", editable: true });
+  assert.doesNotMatch(publicRender.html, /data-editable-text|cluster-canvas|contenteditable/);
+  assert.match(editorRender.html, /data-editable-text="1"/);
+  assert.match(editorRender.script, /kind:'edit-text'/);
+  assert.match(editorRender.script, /innerText/);
+});
+
+test("el fondo de imagen se valida y genera CSS seguro", () => {
+  const document = instantiateTemplateV2("minimal", content);
+  document.sections[1].style = { desktop: { background: "#112233", backgroundImage: "https://images.example.com/fondo.webp", padding: "xl", width: "wide" } };
+  const normalized = normalizeCanvasSectionsV2(document.sections);
+  assert.equal(normalized[1].style?.desktop?.backgroundImage, "https://images.example.com/fondo.webp");
+  const rendered = renderSiteV2({ content: document.content, design: document.template.theme, sections: normalized, leadEndpoint: "/api/leads" });
+  assert.match(rendered.css, /background-image:url\("https:\/\/images\.example\.com\/fondo\.webp"\)/);
+
+  document.sections[1].style = { desktop: { backgroundImage: "javascript:alert(1)" } };
+  const unsafe = normalizeCanvasSectionsV2(document.sections);
+  assert.equal(unsafe[1].style?.desktop?.backgroundImage, "");
+  assert.doesNotMatch(renderSiteV2({ content: document.content, design: document.template.theme, sections: unsafe, leadEndpoint: "/api/leads" }).css, /javascript:/);
 });

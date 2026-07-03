@@ -31,8 +31,11 @@ const WIDTH = { content: "760px", wide: "1200px", full: "none" } as const;
 
 function tokensCss(style?: StyleTokensV2) {
   if (!style) return "";
+  const backgroundImage = safeUrl(style.backgroundImage);
+  const cssBackgroundImage = backgroundImage.replace(/["'()\\\s]/g, (character) => encodeURIComponent(character));
   return [
     style.color && `color:${style.color}`, style.background && `background:${style.background}`,
+    backgroundImage && `background-image:url("${cssBackgroundImage}")`, backgroundImage && "background-size:cover", backgroundImage && "background-position:center",
     style.align && `text-align:${style.align}`, style.fontSize && `font-size:${FONT_SIZE[style.fontSize]}`,
     style.fontWeight && `font-weight:${FONT_WEIGHT[style.fontWeight]}`, style.padding && `padding:${SPACE[style.padding]}`,
     style.gap && `gap:${SPACE[style.gap]}`, style.radius && `border-radius:${RADIUS[style.radius]}`,
@@ -52,9 +55,10 @@ function responsiveCss(selector: string, style?: ResponsiveStyleV2) {
 function valueFor(widget: WidgetV2, content: SiteContentV2) { return widget.slot ? resolveContentSlot(content, widget.slot) : widget.data?.value ?? widget.data?.src ?? widget.data?.text; }
 function widgetSelector(widget: WidgetV2) { return `[data-widget-id="${widget.id.replace(/[^a-zA-Z0-9_-]/g, "")}"]`; }
 
-function widgetHtml(widget: WidgetV2, content: SiteContentV2, theme: ThemeTokensV2, leadEndpoint: string): string {
+function widgetHtml(widget: WidgetV2, content: SiteContentV2, theme: ThemeTokensV2, leadEndpoint: string, editable = false): string {
   const value = valueFor(widget, content);
-  const attr = `data-widget-id="${escapeHtml(widget.id)}" data-widget-type="${widget.type}"`;
+  const inlineEditable = editable && (widget.type === "heading" || widget.type === "text" || widget.type === "button");
+  const attr = `data-widget-id="${escapeHtml(widget.id)}" data-widget-type="${widget.type}"${inlineEditable ? ' data-editable-text="1"' : ""}`;
   switch (widget.type) {
     case "brand": {
       const name = String(value || content.business.name);
@@ -134,8 +138,8 @@ function widgetHtml(widget: WidgetV2, content: SiteContentV2, theme: ThemeTokens
   }
 }
 
-function sectionHtml(section: CanvasSectionV2, content: SiteContentV2, theme: ThemeTokensV2, leadEndpoint: string) {
-  const rows = section.rows.map((row) => `<div class="v2-row" data-row-id="${escapeHtml(row.id)}">${row.columns.map((column) => `<div class="v2-column" data-column-id="${escapeHtml(column.id)}" style="--span-d:${column.span.desktop};--span-t:${column.span.tablet};--span-m:${column.span.mobile}">${column.widgets.map((widget) => widgetHtml(widget, content, theme, leadEndpoint)).join("")}</div>`).join("")}</div>`).join("");
+function sectionHtml(section: CanvasSectionV2, content: SiteContentV2, theme: ThemeTokensV2, leadEndpoint: string, editable = false) {
+  const rows = section.rows.map((row) => `<div class="v2-row" data-row-id="${escapeHtml(row.id)}">${row.columns.map((column) => `<div class="v2-column" data-column-id="${escapeHtml(column.id)}" style="--span-d:${column.span.desktop};--span-t:${column.span.tablet};--span-m:${column.span.mobile}">${column.widgets.map((widget) => widgetHtml(widget, content, theme, leadEndpoint, editable)).join("")}</div>`).join("")}</div>`).join("");
   return `<section id="${escapeHtml(section.key)}" class="v2-section v2-region-${section.region}" data-section-id="${escapeHtml(section.id)}"><div class="v2-section-inner">${rows}</div></section>`;
 }
 
@@ -159,6 +163,7 @@ const editorCss = `[data-widget-id],[data-column-id],[data-section-id]{cursor:po
 .v2-ed-hover{outline:1px dashed #8b5cf6;outline-offset:2px}
 .v2-ed-selected{outline:2px solid #7c3aed!important;outline-offset:2px;position:relative}
 .v2-ed-selected[data-v2-label]::before{content:attr(data-v2-label);position:absolute;top:-1.45rem;left:-2px;z-index:999;background:#7c3aed;color:#fff;font:600 .65rem/1 system-ui,sans-serif;padding:.28rem .5rem;border-radius:.25rem .25rem 0 0;white-space:nowrap;pointer-events:none}
+[data-editable-text="1"][contenteditable="true"]{cursor:text;outline:2px solid #7c3aed!important;outline-offset:3px;caret-color:#7c3aed}
 .v2-column:not(:has([data-widget-id])){min-height:56px;outline:1px dashed #d4d4d8;outline-offset:-4px;border-radius:6px}
 .v2-ed-drop-line{position:absolute;height:4px;background:#7c3aed;border-radius:2px;z-index:9999;pointer-events:none;display:none}
 .v2-ed-drop-target{outline:2px dashed #7c3aed!important;outline-offset:2px}`;
@@ -167,13 +172,17 @@ function editorScript() {
   const labels = `{brand:'Marca',nav:'Navegaci\\u00f3n',heading:'T\\u00edtulo',text:'Texto',image:'Imagen',video:'Video',button:'Bot\\u00f3n',business_info:'Datos del negocio',list:'Lista',gallery:'Galer\\u00eda',testimonials:'Rese\\u00f1as',accordion:'Acorde\\u00f3n',form:'Formulario',social:'Redes',map:'Mapa',divider:'Divisor',spacer:'Espacio',embed:'C\\u00f3digo insertado'}`;
   return `(function(){
 var LABELS=${labels};
+var editing=null;
 document.querySelectorAll('[data-widget-type]').forEach(function(node){node.setAttribute('data-v2-label',LABELS[node.getAttribute('data-widget-type')]||'Elemento');});
 function pick(target){if(!(target instanceof Element))return null;return target.closest('[data-widget-id]')||target.closest('[data-column-id]')||target.closest('[data-section-id]');}
 function kindOf(node){return node.hasAttribute('data-widget-id')?'widget':node.hasAttribute('data-column-id')?'column':'section';}
 function idOf(node){return node.getAttribute('data-widget-id')||node.getAttribute('data-column-id')||node.getAttribute('data-section-id');}
 function select(node){document.querySelectorAll('.v2-ed-selected').forEach(function(item){item.classList.remove('v2-ed-selected');});if(node)node.classList.add('v2-ed-selected');}
-document.addEventListener('mouseover',function(event){var target=pick(event.target);document.querySelectorAll('.v2-ed-hover').forEach(function(item){item.classList.remove('v2-ed-hover');});if(target&&!target.classList.contains('v2-ed-selected'))target.classList.add('v2-ed-hover');});
-document.addEventListener('click',function(event){event.preventDefault();event.stopPropagation();var target=pick(event.target);if(!target)return;select(target);parent.postMessage({source:'cluster-canvas',kind:kindOf(target),id:idOf(target)},'*');},true);
+function finishEditing(){if(!editing)return;var node=editing;editing=null;node.removeAttribute('contenteditable');parent.postMessage({source:'cluster-canvas',kind:'edit-text',id:idOf(node),value:node.innerText},'*');}
+document.addEventListener('dblclick',function(event){var target=event.target instanceof Element?event.target.closest('[data-editable-text="1"]'):null;if(!target)return;event.preventDefault();event.stopPropagation();if(editing&&editing!==target)finishEditing();editing=target;select(target);target.setAttribute('contenteditable','true');target.focus();var range=document.createRange();range.selectNodeContents(target);var selection=window.getSelection();selection.removeAllRanges();selection.addRange(range);parent.postMessage({source:'cluster-canvas',kind:'widget',id:idOf(target)},'*');},true);
+document.addEventListener('blur',function(event){if(editing&&event.target===editing)finishEditing();},true);
+document.addEventListener('mouseover',function(event){if(editing)return;var target=pick(event.target);document.querySelectorAll('.v2-ed-hover').forEach(function(item){item.classList.remove('v2-ed-hover');});if(target&&!target.classList.contains('v2-ed-selected'))target.classList.add('v2-ed-hover');});
+document.addEventListener('click',function(event){if(editing)return;event.preventDefault();event.stopPropagation();var target=pick(event.target);if(!target)return;select(target);parent.postMessage({source:'cluster-canvas',kind:kindOf(target),id:idOf(target)},'*');},true);
 document.addEventListener('submit',function(event){event.preventDefault();event.stopPropagation();},true);
 var dropLine=document.createElement('div');dropLine.className='v2-ed-drop-line';document.body.appendChild(dropLine);
 function dragKind(event){var types=event.dataTransfer?Array.prototype.slice.call(event.dataTransfer.types):[];if(types.indexOf('application/x-cluster-widget')>=0)return 'widget';if(types.indexOf('application/x-cluster-section')>=0)return 'section';return null;}
@@ -189,8 +198,8 @@ if(kind==='widget'){var column=columnFor(event);if(column){var info=widgetInsert
 else{var section=event.target instanceof Element?event.target.closest('[data-section-id]'):null;var payload={source:'cluster-canvas',kind:'drop-section',sectionKey:event.dataTransfer.getData('application/x-cluster-section')};if(section){var bounds=section.getBoundingClientRect();payload.targetSectionId=section.getAttribute('data-section-id');payload.position=event.clientY<bounds.top+bounds.height/2?'before':'after';}parent.postMessage(payload,'*');}
 clearDrop();});
 document.addEventListener('dragleave',function(event){if(!event.relatedTarget)clearDrop();});
-document.addEventListener('keydown',function(event){if(!(event.ctrlKey||event.metaKey))return;var key=event.key.toLowerCase();if(key!=='z'&&key!=='y')return;event.preventDefault();parent.postMessage({source:'cluster-canvas',kind:(key==='y'||event.shiftKey)?'redo':'undo'},'*');});
-document.addEventListener('contextmenu',function(event){var target=pick(event.target);if(!target)return;event.preventDefault();select(target);parent.postMessage({source:'cluster-canvas',kind:'context',targetKind:kindOf(target),id:idOf(target),x:event.clientX,y:event.clientY},'*');});
+document.addEventListener('keydown',function(event){if(editing&&(event.key==='Enter'||event.key==='Escape')){event.preventDefault();editing.blur();return;}if(!(event.ctrlKey||event.metaKey))return;var key=event.key.toLowerCase();if(key!=='z'&&key!=='y')return;event.preventDefault();parent.postMessage({source:'cluster-canvas',kind:(key==='y'||event.shiftKey)?'redo':'undo'},'*');});
+document.addEventListener('contextmenu',function(event){if(editing){event.preventDefault();return;}var target=pick(event.target);if(!target)return;event.preventDefault();select(target);parent.postMessage({source:'cluster-canvas',kind:'context',targetKind:kindOf(target),id:idOf(target),x:event.clientX,y:event.clientY},'*');});
 window.addEventListener('message',function(event){var data=event.data||{};if(data.source!=='cluster-editor')return;
 if(data.type==='clear-drop')return clearDrop();
 if(data.type!=='select')return;if(!data.id)return select(null);var node=document.querySelector('[data-widget-id="'+data.id+'"],[data-column-id="'+data.id+'"],[data-section-id="'+data.id+'"],[data-row-id="'+data.id+'"]');select(node);if(node&&data.scroll)node.scrollIntoView({block:'center',behavior:'smooth'});});
@@ -209,7 +218,7 @@ export function renderSiteV2(input: RenderSiteV2Input): RenderedSiteV2 {
     const rank = { header: 0, main: 1, footer: 2 } as const;
     return rank[left.region] - rank[right.region];
   });
-  const body = `<div id="top" class="v2-site v2-motion-${theme.motion}">${sections.map((section) => sectionHtml(section, content, theme, input.leadEndpoint)).join("")}${input.showBranding ? `<div style="padding:14px;text-align:center;font-size:12px;color:var(--muted)">Creado con Cluster</div>` : ""}</div>`;
+  const body = `<div id="top" class="v2-site v2-motion-${theme.motion}">${sections.map((section) => sectionHtml(section, content, theme, input.leadEndpoint, input.editable)).join("")}${input.showBranding ? `<div style="padding:14px;text-align:center;font-size:12px;color:var(--muted)">Creado con Cluster</div>` : ""}</div>`;
   const css = `${baseCss(theme)}${dynamicCss(sections)}${mobileSafetyCss}${input.editable ? editorCss : ""}`;
   const script = `${formScript()}${input.editable ? editorScript() : ""}`;
   const title = content.seo.title || content.business.name;
