@@ -7,6 +7,12 @@ import { deleteSiteMedia, getSiteMedia, isSiteMediaUrl } from "@/lib/site/media"
 import { normalizeSectionSettings } from "@/lib/site/section-layout";
 import { sanitizeLink } from "@/lib/site/links";
 import { toRenderSection } from "@/lib/site/section";
+import {
+  normalizeCanvasSectionsV2,
+  normalizeSiteContentV2,
+  normalizeThemeV2,
+  V2_TEMPLATE_IDS,
+} from "@/lib/site/v2-schema";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -48,6 +54,15 @@ const atomicSaveSchema = z.object({
   deletedSectionIds: z.array(z.string().min(1).max(120)).max(40).default([]),
 });
 
+const v2SaveSchema = z.object({
+  builderVersion: z.literal(2),
+  site: updateSiteSchema,
+  templateId: z.enum(V2_TEMPLATE_IDS),
+  content: z.unknown(),
+  design: z.unknown(),
+  sections: z.array(z.unknown()).min(3).max(40),
+});
+
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ siteId: string }> }
@@ -86,8 +101,13 @@ export async function GET(
       primaryColor: site.primaryColor,
       secondaryColor: site.secondaryColor,
       accentColor: site.accentColor,
+      builderVersion: site.builderVersion,
+      templateId: site.templateId,
+      content: site.contentJson,
+      design: site.designJson,
+      replacesSiteId: site.replacesSiteId,
     },
-    sections: site.sections.map(toRenderSection),
+    sections: site.builderVersion === 2 ? site.sections.map((section) => section.content) : site.sections.map(toRenderSection),
   });
 }
 
@@ -134,14 +154,88 @@ export async function PUT(
   const { siteId } = await params;
   const user = await getUserBySessionToken(req.cookies.get(SESSION_COOKIE)?.value);
   if (!user) return NextResponse.json({ error: "Inicia sesión." }, { status: 401 });
-  const parsed = atomicSaveSchema.safeParse(await req.json().catch(() => null));
+  const body = await req.json().catch(() => null);
+
+  if (body?.builderVersion === 2) {
+    const parsedV2 = v2SaveSchema.safeParse(body);
+    if (!parsedV2.success) {
+      return NextResponse.json({ error: parsedV2.error.errors[0]?.message ?? "Documento V2 inválido." }, { status: 400 });
+    }
+
+    const ownedV2 = await prisma.site.findFirst({
+      where: { id: siteId, ...(user.role === "ADMIN" ? {} : { userId: user.id }) },
+      select: { id: true, builderVersion: true },
+    });
+    if (!ownedV2) return NextResponse.json({ error: "Proyecto no encontrado." }, { status: 404 });
+    if (ownedV2.builderVersion !== 2) {
+      return NextResponse.json({ error: "Este proyecto V1 debe migrarse antes de editarlo.", code: "LEGACY_READ_ONLY" }, { status: 409 });
+    }
+
+    const content = normalizeSiteContentV2(parsedV2.data.content);
+    const design = normalizeThemeV2(parsedV2.data.design);
+    const sections = normalizeCanvasSectionsV2(parsedV2.data.sections);
+    if (sections.length !== parsedV2.data.sections.length) {
+      return NextResponse.json({ error: "El documento contiene bloques o estilos no permitidos." }, { status: 400 });
+    }
+    const regions = sections.map((section) => section.region);
+    if (regions.filter((region) => region === "header").length !== 1 || regions.filter((region) => region === "footer").length !== 1 || !regions.includes("main")) {
+      return NextResponse.json({ error: "El sitio necesita un header, contenido principal y un footer." }, { status: 400 });
+    }
+
+    const before = await prisma.siteSection.findMany({ where: { siteId }, select: { content: true } });
+    const oldMedia = collectMediaUrls(before.map((section) => section.content), siteId);
+
+    await prisma.$transaction(async (tx) => {
+      await tx.site.update({
+        where: { id: siteId },
+        data: {
+          ...parsedV2.data.site,
+          templateId: parsedV2.data.templateId,
+          contentJson: content as object,
+          designJson: design as object,
+          primaryColor: design.primary,
+          secondaryColor: design.secondary,
+          accentColor: design.accent,
+        },
+      });
+      await tx.siteSection.deleteMany({ where: { siteId } });
+      await tx.siteSection.createMany({
+        data: sections.map((section, order) => ({
+          id: section.id,
+          siteId,
+          type: "canvas",
+          title: section.key,
+          order,
+          isVisible: true,
+          content: section as object,
+          settingsJson: {},
+        })),
+      });
+    });
+
+    const newMedia = collectMediaUrls([content, sections], siteId);
+    const staleMedia = [...oldMedia].filter((url) => !newMedia.has(url));
+    if (staleMedia.length) {
+      const { del } = await import("@vercel/blob");
+      await del(staleMedia).catch(() => null);
+    }
+    return NextResponse.json({ ok: true, builderVersion: 2, templateId: parsedV2.data.templateId, content, design, sections });
+  }
+
+  const parsed = atomicSaveSchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: parsed.error.errors[0]?.message ?? "Datos inválidos." }, { status: 400 });
 
   const owned = await prisma.site.findFirst({
     where: { id: siteId, ...(user.role === "ADMIN" ? {} : { userId: user.id }) },
-    select: { id: true },
+    select: { id: true, builderVersion: true, status: true },
   });
   if (!owned) return NextResponse.json({ error: "Proyecto no encontrado." }, { status: 404 });
+  if (owned.builderVersion === 1 && owned.status === "PUBLISHED") {
+    return NextResponse.json({
+      error: "Los sitios V1 publicados son de solo lectura. Crea una copia V2 para editarlos.",
+      code: "LEGACY_READ_ONLY",
+    }, { status: 409 });
+  }
 
   const deleted = parsed.data.deletedSectionIds.length
     ? await prisma.siteSection.findMany({
@@ -206,6 +300,20 @@ export async function PUT(
     await del(staleMedia).catch(() => null);
   }
   return NextResponse.json({ ok: true, sections: sections.map(toRenderSection) });
+}
+
+function collectMediaUrls(values: unknown[], siteId: string) {
+  const urls = new Set<string>();
+  const visit = (value: unknown) => {
+    if (typeof value === "string") {
+      if (isSiteMediaUrl(siteId, value)) urls.add(value);
+      return;
+    }
+    if (Array.isArray(value)) return value.forEach(visit);
+    if (value && typeof value === "object") Object.values(value as Record<string, unknown>).forEach(visit);
+  };
+  values.forEach(visit);
+  return urls;
 }
 
 export async function DELETE(

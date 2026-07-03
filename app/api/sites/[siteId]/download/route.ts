@@ -8,6 +8,7 @@ import { trackProductEvent } from "@/lib/product-events";
 import { exportSiteHtml } from "@/lib/site/export-html";
 import { toRenderSection } from "@/lib/site/section";
 import { themeFromSite } from "@/lib/site/theme";
+import { renderSiteV2 } from "@/lib/site/v2-render";
 
 export const runtime = "nodejs";
 
@@ -21,7 +22,9 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
   const endpoint = `${request.nextUrl.origin}/api/public/sites/${site.publicSlug}/leads`;
   const showBranding = user.planStatus !== "ACTIVE";
-  const html = exportSiteHtml({ ...site, showBranding, theme: themeFromSite(site), sections: site.sections.map(toRenderSection) }, endpoint);
+  const html = site.builderVersion === 2
+    ? renderSiteV2({ content: site.contentJson, design: site.designJson, sections: site.sections.map((section) => section.content), leadEndpoint: endpoint, showBranding }).html
+    : exportSiteHtml({ ...site, showBranding, theme: themeFromSite(site), sections: site.sections.map(toRenderSection) }, endpoint);
   const readme = showBranding
     ? "Abre index.html o súbelo a cualquier hosting estático. El formulario envía los contactos a Cluster mientras el proyecto permanezca publicado."
     : "Abre index.html o súbelo a cualquier hosting estático. El formulario requiere que el proyecto permanezca publicado.";

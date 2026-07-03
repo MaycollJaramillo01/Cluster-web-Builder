@@ -7,6 +7,7 @@ import { prisma } from "@/lib/db";
 import { toRenderSection } from "@/lib/site/section";
 import { themeFromSite } from "@/lib/site/theme";
 import { SitePreview } from "@/components/builder/SitePreview";
+import { SitePreviewV2 } from "@/components/builder/SitePreviewV2";
 import { isDesignStyle } from "@/lib/site/template-selection";
 import { socialLinksFromBlueprint } from "@/lib/site/social-links";
 import { orderSectionsForTemplate } from "@/lib/site/template-layout";
@@ -40,9 +41,10 @@ export async function generateMetadata({
     | { site?: { seo?: { title?: string; metaDescription?: string } } }
     | null;
   const seo = blueprint?.site?.seo;
+  const v2Seo = (site.contentJson as { seo?: { title?: string; description?: string } } | null)?.seo;
   return {
-    title: seo?.title || site.businessName,
-    description: seo?.metaDescription || undefined,
+    title: v2Seo?.title || seo?.title || site.businessName,
+    description: v2Seo?.description || seo?.metaDescription || undefined,
   };
 }
 
@@ -73,8 +75,17 @@ export default async function PreviewPage({
 
   if (!site) notFound();
 
-  const theme = themeFromSite(site);
   const query = await searchParams;
+  if (site.builderVersion === 2) {
+    return <main><SitePreviewV2
+      content={site.contentJson}
+      design={site.designJson}
+      sections={site.sections.map((section) => section.content)}
+      leadEndpoint={`/api/public/sites/${site.publicSlug}/leads`}
+    /></main>;
+  }
+
+  const theme = themeFromSite(site);
   const requestedStyle = query.style;
   const visualStyle = requestedStyle && isDesignStyle(requestedStyle) ? requestedStyle : site.visualStyle;
   const orderedSections = orderSectionsForTemplate(site.sections, visualStyle);

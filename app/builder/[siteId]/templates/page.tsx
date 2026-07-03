@@ -9,6 +9,8 @@ import { TemplatePicker } from "@/components/builder/TemplatePicker";
 import { getCurrentUser, GUEST_COOKIE, hashGuestToken } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { getTemplateCandidates } from "@/lib/site/template-selection";
+import { TemplatePickerV2 } from "@/components/builder/TemplatePickerV2";
+import { normalizeSiteContentV2, V2_TEMPLATE_IDS } from "@/lib/site/v2-schema";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Elige un diseño | Cluster Web Builder", robots: { index: false, follow: false } };
@@ -27,7 +29,7 @@ export default async function TemplatesPage({ params }: { params: Promise<{ site
         ...(guestTokenHash ? [{ userId: null, guestTokenHash, guestExpiresAt: { gt: new Date() } }] : []),
       ] }),
     },
-    select: { id: true, businessName: true, businessType: true, visualStyle: true },
+    select: { id: true, businessName: true, businessType: true, visualStyle: true, builderVersion: true, templateId: true, contentJson: true },
   });
   if (!site) notFound();
 
@@ -46,7 +48,13 @@ export default async function TemplatesPage({ params }: { params: Promise<{ site
           <h1 className="mt-3 font-[var(--font-outfit)] text-3xl font-semibold tracking-[-0.03em] sm:text-5xl">Elige cómo se verá {site.businessName}</h1>
           <p className="mt-4 max-w-2xl text-base leading-7 text-muted-foreground">El contenido y tu paleta se mantienen. Solo cambia la composición, la tipografía y el estilo visual.</p>
         </div>
-        <TemplatePicker siteId={site.id} candidates={candidates} initialStyle={site.visualStyle} />
+        {site.builderVersion === 2
+          ? <TemplatePickerV2
+              siteId={site.id}
+              content={normalizeSiteContentV2(site.contentJson)}
+              initialTemplate={(V2_TEMPLATE_IDS as readonly string[]).includes(String(site.templateId)) ? site.templateId as (typeof V2_TEMPLATE_IDS)[number] : "conversion"}
+            />
+          : <TemplatePicker siteId={site.id} candidates={candidates} initialStyle={site.visualStyle} />}
       </section>
     </main>
   );

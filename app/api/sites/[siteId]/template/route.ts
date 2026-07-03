@@ -5,8 +5,11 @@ import { getUserBySessionToken, GUEST_COOKIE, hashGuestToken, SESSION_COOKIE } f
 import { prisma } from "@/lib/db";
 import { isDesignStyle } from "@/lib/site/template-selection";
 import { orderSectionsForTemplate } from "@/lib/site/template-layout";
+import { instantiateTemplateV2 } from "@/lib/site/v2-templates";
+import { normalizeCanvasSectionsV2, V2_TEMPLATE_IDS } from "@/lib/site/v2-schema";
 
 const schema = z.object({ visualStyle: z.string().refine(isDesignStyle, "Plantilla no válida.") });
+const v2Schema = z.object({ templateId: z.enum(V2_TEMPLATE_IDS) });
 
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ siteId: string }> }) {
   const { siteId } = await params;
@@ -14,8 +17,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
   const guestTokenHash = hashGuestToken(request.cookies.get(GUEST_COOKIE)?.value);
   if (!user && !guestTokenHash) return NextResponse.json({ error: "Proyecto no encontrado." }, { status: 404 });
 
-  const parsed = schema.safeParse(await request.json().catch(() => null));
-  if (!parsed.success) return NextResponse.json({ error: parsed.error.errors[0]?.message || "Plantilla no válida." }, { status: 400 });
+  const body = await request.json().catch(() => null);
 
   const site = await prisma.site.findFirst({
     where: {
@@ -28,6 +30,32 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     include: { sections: { orderBy: { order: "asc" } } },
   });
   if (!site) return NextResponse.json({ error: "Proyecto no encontrado." }, { status: 404 });
+
+  if (site.builderVersion === 2) {
+    const parsedV2 = v2Schema.safeParse(body);
+    if (!parsedV2.success) return NextResponse.json({ error: "Plantilla V2 no válida." }, { status: 400 });
+    const currentSections = normalizeCanvasSectionsV2(site.sections.map((section) => section.content));
+    const next = instantiateTemplateV2(parsedV2.data.templateId, site.contentJson, currentSections);
+    const snapshot = JSON.parse(JSON.stringify({
+      site: { templateId: site.templateId, contentJson: site.contentJson, designJson: site.designJson },
+      sections: site.sections.map((section) => section.content),
+    }));
+
+    const revision = await prisma.$transaction(async (tx) => {
+      const created = await tx.siteRevision.create({ data: { siteId: site.id, reason: "template-change", snapshotJson: snapshot } });
+      await tx.site.update({ where: { id: site.id }, data: { templateId: next.template.id, designJson: next.template.theme as object } });
+      await tx.siteSection.deleteMany({ where: { siteId: site.id } });
+      await tx.siteSection.createMany({ data: next.sections.map((section, order) => ({
+        id: section.id, siteId: site.id, type: "canvas", title: section.key, order, isVisible: true,
+        content: section as object, settingsJson: {},
+      })) });
+      return created;
+    });
+    return NextResponse.json({ ok: true, builderVersion: 2, templateId: next.template.id, design: next.template.theme, sections: next.sections, revisionId: revision.id });
+  }
+
+  const parsed = schema.safeParse(body);
+  if (!parsed.success) return NextResponse.json({ error: parsed.error.errors[0]?.message || "Plantilla no válida." }, { status: 400 });
 
   const orderedSections = orderSectionsForTemplate(site.sections, parsed.data.visualStyle);
   await prisma.$transaction([

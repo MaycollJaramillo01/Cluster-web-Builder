@@ -86,6 +86,13 @@ model Site {
   businessType String
   goal         String?
   visualStyle  String?
+  builderVersion Int      @default(1)
+  templateId     String?
+  contentJson    Json?
+  designJson     Json?
+  replacesSiteId String?  @unique
+  replacesSite   Site?    @relation("SiteReplacement", fields: [replacesSiteId], references: [id], onDelete: SetNull)
+  replacementDraft Site?  @relation("SiteReplacement")
   location     String?
   phone        String?
   email        String?
@@ -110,6 +117,7 @@ model Site {
   sections  SiteSection[]
   leads     Lead[]
   views     SiteView[]
+  revisions SiteRevision[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -117,6 +125,17 @@ model Site {
   @@index([userId])
   @@index([guestTokenHash])
   @@index([guestExpiresAt])
+}
+
+model SiteRevision {
+  id           String   @id @default(cuid())
+  siteId       String
+  site         Site     @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  reason       String
+  snapshotJson Json
+  createdAt    DateTime @default(now())
+
+  @@index([siteId, createdAt])
 }
 
 model Lead {

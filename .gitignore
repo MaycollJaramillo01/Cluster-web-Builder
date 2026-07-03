@@ -42,3 +42,6 @@ yarn-error.log*
 
 .vercel
 test-results/*.log
+
+# verified local database exports
+/.tmp/

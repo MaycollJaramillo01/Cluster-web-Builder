@@ -1,0 +1,52 @@
+{
+  "generatedAt": "2026-07-03T01:03:02.024Z",
+  "viewportTargets": [
+    "1440x900",
+    "768x1024",
+    "390x844"
+  ],
+  "templates": [
+    {
+      "id": "conversion",
+      "sections": 7,
+      "rows": 7,
+      "widgets": 21,
+      "motion": "stagger"
+    },
+    {
+      "id": "editorial",
+      "sections": 8,
+      "rows": 9,
+      "widgets": 19,
+      "motion": "subtle"
+    },
+    {
+      "id": "catalog",
+      "sections": 8,
+      "rows": 8,
+      "widgets": 17,
+      "motion": "stagger"
+    },
+    {
+      "id": "local",
+      "sections": 8,
+      "rows": 8,
+      "widgets": 20,
+      "motion": "subtle"
+    },
+    {
+      "id": "immersive",
+      "sections": 8,
+      "rows": 8,
+      "widgets": 17,
+      "motion": "cinematic"
+    },
+    {
+      "id": "minimal",
+      "sections": 7,
+      "rows": 7,
+      "widgets": 18,
+      "motion": "none"
+    }
+  ]
+}

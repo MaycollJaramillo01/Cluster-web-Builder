@@ -7,6 +7,7 @@ import { createPublicSlug } from "@/lib/site/public-url";
 import { normalizeSocialLinks } from "@/lib/site/social-links";
 import { applyPageStructure } from "@/lib/site/structure";
 import { trackProductEvent } from "@/lib/product-events";
+import { migrateLegacySiteDocument } from "@/lib/site/v2-migrate";
 
 type GuestAccess = { tokenHash: string; expiresAt: Date } | null;
 
@@ -35,6 +36,27 @@ export async function persistGeneratedSite({
   };
   blueprint.site.socialLinks = normalizeSocialLinks(input.socialLinks);
 
+  const v2 = migrateLegacySiteDocument({
+    businessName: input.businessName,
+    businessType: resolveBusinessTypeLabel(input),
+    location: input.location === "Zona por definir" ? null : input.location || null,
+    phone: input.phone || null,
+    email: input.email || null,
+    logoUrl: input.assets?.logoDataUrl || null,
+    coverUrl: input.assets?.coverDataUrl || null,
+    visualStyle: plan.selectedDesignStyle,
+    blueprintJson: blueprint,
+    primaryColor: theme.primary,
+    secondaryColor: theme.secondary,
+    accentColor: theme.accent,
+  }, sections.map((section) => ({
+    type: section.type,
+    title: section.title,
+    content: section.content,
+    settingsJson: section.settings,
+    order: section.order,
+  })));
+
   await prisma.site.deleteMany({ where: { userId: null, guestExpiresAt: { lt: new Date() } } });
   const site = await prisma.site.create({
     data: {
@@ -45,6 +67,10 @@ export async function persistGeneratedSite({
       businessType: resolveBusinessTypeLabel(input),
       goal: input.goal,
       visualStyle: plan.selectedDesignStyle,
+      builderVersion: 2,
+      templateId: v2.templateId,
+      contentJson: v2.content as object,
+      designJson: v2.design as object,
       location: input.location === "Zona por definir" ? null : input.location || null,
       phone: input.phone || null,
       email: input.email || null,
@@ -59,13 +85,13 @@ export async function persistGeneratedSite({
       coverUrl: input.assets?.coverDataUrl || null,
       blueprintJson: blueprint as object,
       sections: {
-        create: sections.map((section) => ({
-          type: section.type,
-          title: section.title,
+        create: v2.sections.map((section) => ({
+          type: "canvas",
+          title: section.name,
           order: section.order,
-          isVisible: section.isVisible,
-          content: section.content as object,
-          settingsJson: section.settings as object,
+          isVisible: true,
+          content: section as object,
+          settingsJson: {},
         })),
       },
     },
