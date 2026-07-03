@@ -14,12 +14,12 @@ import {
   Monitor, Palette, Plus, Redo2, Save, Smartphone, Trash2,
 } from "lucide-react";
 
-import { EditorMediaField } from "@/components/builder/EditorMediaField";
+import { V2WidgetSettings } from "@/components/builder/V2WidgetSettings";
 import { renderSiteV2 } from "@/lib/site/v2-render";
 import {
-  resolveContentSlot, setContentSlot, V2_WIDGET_TYPES,
+  V2_WIDGET_TYPES,
   type CanvasColumnV2, type CanvasRowV2, type CanvasSectionV2, type SiteContentV2,
-  type ThemeTokensV2, type V2ContentSlot, type V2TemplateId, type V2WidgetType, type WidgetV2,
+  type ThemeTokensV2, type V2TemplateId, type V2WidgetType, type WidgetV2,
 } from "@/lib/site/v2-schema";
 import { getAllTemplatesV2, SECTION_LIBRARY_V2 } from "@/lib/site/v2-templates";
 
@@ -43,6 +43,7 @@ const WIDGET_LABELS: Record<V2WidgetType, string> = {
   brand: "Marca", nav: "Navegación", heading: "Título", text: "Texto", image: "Imagen", video: "Video",
   button: "Botón", business_info: "Datos del negocio", list: "Lista", gallery: "Galería", testimonials: "Reseñas",
   accordion: "Acordeón", form: "Formulario", social: "Redes", map: "Mapa", divider: "Divisor", spacer: "Espacio",
+  embed: "Código insertado",
 };
 
 const REGION_LABELS: Record<CanvasSectionV2["region"], string> = {
@@ -423,9 +424,6 @@ function SelectionPanel({ siteId, content, setContent, selection, selectedWidget
   addRow: (id: string, layout: number[]) => void;
   mutate: (fn: (draft: CanvasSectionV2[]) => CanvasSectionV2[]) => void;
 }) {
-  const [improving, setImproving] = useState(false);
-  const [aiError, setAiError] = useState("");
-
   if (selection.kind === "section" && selectedSection) return <>
     <p className="mb-4 text-xs leading-relaxed text-zinc-500">Haz clic en un texto, imagen o botón dentro de la sección para editarlo directamente.</p>
     <h3 className="v2-label">Agregar fila a esta sección</h3>
@@ -455,42 +453,8 @@ function SelectionPanel({ siteId, content, setContent, selection, selectedWidget
 
   if (selection.kind !== "widget" || !selectedWidget) return null;
   const widget = selectedWidget.widget;
-  const value = widget.slot ? resolveContentSlot(content, widget.slot) : widget.data?.text || widget.data?.src || "";
   const updateWidget = (patch: Partial<WidgetV2>) => mutate((draft) => updateWidgetById(draft, widget.id, (item) => ({ ...item, ...patch })));
-  const stringValue = typeof value === "string" ? value : "";
-  const improve = async () => {
-    if (!widget.slot || typeof value !== "string") return;
-    setImproving(true); setAiError("");
-    const response = await fetch(`/api/sites/${siteId}/improve-content`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ slot: widget.slot, currentValue: value }) });
-    const data = await response.json().catch(() => ({}));
-    if (response.ok && data.value) setContent(setContentSlot(content, widget.slot, data.value));
-    else setAiError(data.error || "No se pudo mejorar el texto.");
-    setImproving(false);
-  };
-  return <>
-    {widget.slot && typeof value === "string" && <label className="mb-4 block text-xs font-medium">Contenido
-      <textarea className="v2-field mt-1 min-h-28" value={stringValue} onChange={(event) => setContent(setContentSlot(content, widget.slot as V2ContentSlot, event.target.value))} />
-      <button type="button" disabled={improving} onClick={improve} className="mt-2 min-h-10 rounded-md border border-violet-600 px-3 text-xs font-medium text-violet-700 hover:bg-violet-50 disabled:opacity-60">{improving ? "Mejorando…" : "Mejorar con IA"}</button>
-      {aiError && <span className="mt-2 block font-normal text-red-600">{aiError}</span>}
-    </label>}
-    {!widget.slot && ["heading", "text", "button"].includes(widget.type) && <label className="mb-4 block text-xs font-medium">Contenido<textarea className="v2-field mt-1" value={stringValue} onChange={(event) => updateWidget({ data: { ...widget.data, text: event.target.value } })} /></label>}
-    {(widget.type === "image" || widget.type === "video") && !widget.slot && <EditorMediaField siteId={siteId} kind={widget.type} value={String(widget.data?.src || "")} onChange={(src) => updateWidget({ data: { ...widget.data, src } })} onUsageChange={() => undefined} />}
-    <h3 className="v2-label mt-5">Estilo</h3>
-    <label className="mb-3 block text-xs font-medium">Alineación
-      <select className="v2-field mt-1" value={widget.style?.desktop?.align || "left"} onChange={(event) => updateWidget({ style: { ...widget.style, desktop: { ...widget.style?.desktop, align: event.target.value as "left" | "center" | "right" } } })}>
-        <option value="left">Izquierda</option><option value="center">Centrada</option><option value="right">Derecha</option>
-      </select>
-    </label>
-    <label className="mb-3 block text-xs font-medium">Espaciado
-      <select className="v2-field mt-1" value={widget.style?.desktop?.padding || "none"} onChange={(event) => updateWidget({ style: { ...widget.style, desktop: { ...widget.style?.desktop, padding: event.target.value as "none" | "sm" | "md" | "lg" | "xl" } } })}>
-        <option value="none">Sin espacio</option><option value="sm">Pequeño</option><option value="md">Medio</option><option value="lg">Grande</option><option value="xl">Extra grande</option>
-      </select>
-    </label>
-    <details className="mt-4">
-      <summary className="cursor-pointer text-xs font-medium text-zinc-500">Avanzado</summary>
-      <label className="mt-3 block text-xs font-medium">Variante<input className="v2-field mt-1" value={widget.variant || ""} onChange={(event) => updateWidget({ variant: event.target.value.slice(0, 40) })} /></label>
-    </details>
-  </>;
+  return <V2WidgetSettings siteId={siteId} widget={widget} content={content} setContent={setContent} updateWidget={updateWidget} />;
 }
 
 function SectionTree({ section, selection, setSelection, mutate }: {
@@ -551,7 +515,17 @@ function cloneSection(seed: Omit<CanvasSectionV2, "id">): CanvasSectionV2 {
   section.rows = section.rows.map((row) => ({ ...row, id: crypto.randomUUID(), columns: row.columns.map((column) => ({ ...column, id: crypto.randomUUID(), widgets: column.widgets.map((widget) => ({ ...widget, id: crypto.randomUUID() })) })) }));
   return section;
 }
-function defaultWidgetData(type: V2WidgetType): Record<string, unknown> { return type === "image" || type === "video" ? { src: "", alt: "" } : type === "nav" ? { items: [] } : { text: WIDGET_LABELS[type] }; }
+function defaultWidgetData(type: V2WidgetType): Record<string, unknown> {
+  if (type === "image" || type === "video") return { src: "", alt: "" };
+  if (type === "nav") return { items: [] };
+  if (type === "embed") return { html: "", height: 300 };
+  if (type === "spacer") return { size: "md" };
+  if (type === "list") return { value: [{ title: "Nuevo elemento", description: "Describe este elemento.", meta: "", image: "" }] };
+  if (type === "gallery") return { value: [] };
+  if (type === "testimonials") return { value: [{ name: "Nombre del cliente", role: "", quote: "Escribe aquí la reseña.", rating: 5, source: "" }] };
+  if (type === "accordion") return { value: [{ question: "¿Nueva pregunta?", answer: "Escribe la respuesta." }] };
+  return { text: WIDGET_LABELS[type] };
+}
 function firstColumn(sections: CanvasSectionV2[], region: CanvasSectionV2["region"]) { const section = sections.find((item) => item.region === region); const column = section?.rows[0]?.columns[0]; return section && column ? { section, row: section.rows[0], column } : null; }
 function findWidget(sections: CanvasSectionV2[], id: string) { for (const section of sections) for (const row of section.rows) for (const column of row.columns) { const widget = column.widgets.find((item) => item.id === id); if (widget) return { section, row, column, widget }; } return null; }
 function findColumn(sections: CanvasSectionV2[], id: string) { for (const section of sections) for (const row of section.rows) { const column = row.columns.find((item) => item.id === id); if (column) return { section, row, column }; } return null; }

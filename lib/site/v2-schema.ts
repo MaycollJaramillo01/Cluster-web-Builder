@@ -10,7 +10,7 @@ export type V2TemplateId = (typeof V2_TEMPLATE_IDS)[number];
 export const V2_WIDGET_TYPES = [
   "brand", "nav", "heading", "text", "image", "video", "button",
   "business_info", "list", "gallery", "testimonials", "accordion",
-  "form", "social", "map", "divider", "spacer",
+  "form", "social", "map", "divider", "spacer", "embed",
 ] as const;
 export type V2WidgetType = (typeof V2_WIDGET_TYPES)[number];
 
