@@ -10,11 +10,11 @@ import {
 import { SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import {
-  ArrowLeft, BadgeCheck, Briefcase, Building2, ChevronDown, ChevronLeft, ChevronUp, Code2, ExternalLink,
-  Globe, GripVertical, Heading1, HelpCircle, Image as ImageIcon, Layers, LayoutGrid, LayoutTemplate, List as ListIcon,
-  Mail, MapPin, Megaphone, Menu as MenuIcon, Minus, Monitor, MousePointerClick, MoveVertical, Palette,
-  PanelsTopLeft, Plus, Presentation, Redo2, Save, Search, Share2, Smartphone, Star, Text as TextIcon,
-  Trash2, Undo2, Users, Video as VideoIcon,
+  ArrowDown, ArrowLeft, ArrowUp, BadgeCheck, Briefcase, Building2, ChevronDown, ChevronLeft, ChevronUp,
+  Code2, Copy, ExternalLink, Globe, GripVertical, Heading1, HelpCircle, Image as ImageIcon, Layers,
+  LayoutGrid, LayoutTemplate, List as ListIcon, Mail, MapPin, Megaphone, Menu as MenuIcon, Minus, Monitor,
+  MousePointerClick, MoveVertical, Palette, PanelsTopLeft, Pencil, Plus, Presentation, Redo2, Save, Search,
+  Share2, Smartphone, Star, Text as TextIcon, Trash2, Undo2, Users, Video as VideoIcon,
 } from "lucide-react";
 
 import { V2WidgetSettings } from "@/components/builder/V2WidgetSettings";
@@ -39,6 +39,7 @@ type EditorSiteV2 = {
 
 type Selection = { kind: "section" | "row" | "column" | "widget"; id: string } | null;
 type HistorySnapshot = { content: SiteContentV2; design: ThemeTokensV2; sections: CanvasSectionV2[]; templateId: V2TemplateId };
+type ContextMenuState = { x: number; y: number; target: { kind: "widget" | "column" | "section"; id: string } } | null;
 type DragData = { kind: "section" | "row" | "widget"; sectionId: string; rowId?: string; columnId?: string; id: string };
 type DropData = Omit<DragData, "kind"> & { kind: DragData["kind"] | "column" };
 type PanelTab = "add" | "structure" | "design";
@@ -145,6 +146,7 @@ export function SiteEditorV2({ initialSite }: { initialSite: EditorSiteV2 }) {
   const [status, setStatus] = useState(initialSite.status);
   const [publicUrl, setPublicUrl] = useState(initialSite.publicUrl);
   const [message, setMessage] = useState("");
+  const [menu, setMenu] = useState<ContextMenuState>(null);
   const [undoRevision, setUndoRevision] = useState<string | null>(null);
   const [, setHistoryVersion] = useState(0);
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
@@ -386,6 +388,7 @@ export function SiteEditorV2({ initialSite }: { initialSite: EditorSiteV2 }) {
         source?: string; kind?: string; id?: string;
         widgetType?: string; columnId?: string; index?: number;
         sectionKey?: string; targetSectionId?: string; position?: string;
+        targetKind?: string; x?: number; y?: number;
       } | null;
       if (!data || data.source !== "cluster-canvas") return;
       if (data.kind === "ready") {
@@ -395,6 +398,15 @@ export function SiteEditorV2({ initialSite }: { initialSite: EditorSiteV2 }) {
       }
       if (data.kind === "undo") { undo(); return; }
       if (data.kind === "redo") { redo(); return; }
+      if (data.kind === "context" && typeof data.id === "string" && (data.targetKind === "widget" || data.targetKind === "column" || data.targetKind === "section")) {
+        const rect = iframeRef.current?.getBoundingClientRect();
+        setMenu({
+          x: Math.max(8, Math.min((rect?.left ?? 0) + (Number(data.x) || 0), window.innerWidth - 250)),
+          y: Math.max(8, Math.min((rect?.top ?? 0) + (Number(data.y) || 0), window.innerHeight - 380)),
+          target: { kind: data.targetKind, id: data.id },
+        });
+        return;
+      }
       if (data.kind === "drop-widget" && typeof data.widgetType === "string" && typeof data.columnId === "string") {
         const type = V2_WIDGET_TYPES.find((item) => item === data.widgetType);
         if (!type) return;
@@ -417,6 +429,7 @@ export function SiteEditorV2({ initialSite }: { initialSite: EditorSiteV2 }) {
         return;
       }
       if (!data.id || (data.kind !== "widget" && data.kind !== "column" && data.kind !== "section")) return;
+      setMenu(null);
       selectionFromCanvasRef.current = true;
       setSelection({ kind: data.kind, id: data.id });
       setPane("edit");
@@ -425,6 +438,84 @@ export function SiteEditorV2({ initialSite }: { initialSite: EditorSiteV2 }) {
     return () => window.removeEventListener("message", onCanvasMessage);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- mutateSections y addLibrarySection solo usan setters estables de React.
   }, []);
+
+  /* --------- acciones del menu contextual (operan por id, no por seleccion) --------- */
+
+  const duplicateWidget = (id: string) => {
+    const found = findWidget(sections, id);
+    if (!found) return;
+    const copy = structuredClone(found.widget);
+    copy.id = crypto.randomUUID();
+    mutateSections((draft) => updateColumn(draft, found.column.id, (column) => {
+      const index = column.widgets.findIndex((item) => item.id === id);
+      const widgets = [...column.widgets];
+      widgets.splice(index < 0 ? widgets.length : index + 1, 0, copy);
+      return { ...column, widgets };
+    }));
+    setSelection({ kind: "widget", id: copy.id });
+    setMessage("Widget duplicado.");
+  };
+
+  const duplicateSection = (id: string) => {
+    const source = sections.find((item) => item.id === id);
+    if (!source || source.region !== "main") return;
+    const copy = cloneSection(source);
+    mutateSections((draft) => {
+      const index = draft.findIndex((item) => item.id === id);
+      draft.splice(index < 0 ? draft.length : index + 1, 0, copy);
+      return draft;
+    });
+    setSelection({ kind: "section", id: copy.id });
+    setMessage(`Sección "${source.name}" duplicada.`);
+  };
+
+  const moveWidgetById = (id: string, direction: -1 | 1) => {
+    const found = findWidget(sections, id);
+    if (!found) return;
+    const index = found.column.widgets.findIndex((item) => item.id === id);
+    mutateSections((draft) => updateColumn(draft, found.column.id, (column) => ({ ...column, widgets: moveAt(column.widgets, index, index + direction) })));
+  };
+
+  const moveSectionById = (id: string, direction: -1 | 1) => {
+    mutateSections((draft) => {
+      const index = draft.findIndex((item) => item.id === id);
+      if (index < 0) return draft;
+      const sameRegion = draft[index].region;
+      let target = index + direction;
+      while (target >= 0 && target < draft.length && draft[target].region !== sameRegion) target += direction;
+      if (target < 0 || target >= draft.length) return draft;
+      return moveAt(draft, index, target);
+    });
+  };
+
+  const deleteWidgetById = (id: string) => {
+    mutateSections((draft) => draft.map((section) => ({ ...section, rows: section.rows.map((row) => ({ ...row, columns: row.columns.map((column) => ({ ...column, widgets: column.widgets.filter((item) => item.id !== id) })) })) })));
+    setSelection(null);
+  };
+
+  const deleteRowById = (id: string) => {
+    mutateSections((draft) => draft.map((section) => ({ ...section, rows: section.rows.filter((row) => row.id !== id) })));
+    setSelection(null);
+  };
+
+  const deleteColumnById = (id: string) => {
+    // Si es la ultima columna de la fila, se elimina la fila completa para no dejar filas vacias.
+    mutateSections((draft) => draft.map((section) => ({
+      ...section,
+      rows: section.rows
+        .map((row) => ({ ...row, columns: row.columns.filter((column) => column.id !== id) }))
+        .filter((row) => row.columns.length > 0),
+    })));
+    setSelection(null);
+  };
+
+  const deleteSectionById = (id: string) => {
+    const source = sections.find((item) => item.id === id);
+    if (!source || source.region !== "main") return;
+    mutateSections((draft) => draft.filter((item) => item.id !== id));
+    setSelection(null);
+    setMessage(`Sección "${source.name}" eliminada. Puedes deshacer con Ctrl+Z.`);
+  };
 
   const deleteSelection = () => {
     if (!selection) return;
@@ -645,6 +736,20 @@ export function SiteEditorV2({ initialSite }: { initialSite: EditorSiteV2 }) {
       </div>
     </DndContext>
 
+    {menu && (
+      <>
+        <div className="fixed inset-0 z-40" onClick={() => setMenu(null)} onContextMenu={(event) => { event.preventDefault(); setMenu(null); }} />
+        <CanvasContextMenu
+          menu={menu} sections={sections} close={() => setMenu(null)}
+          select={(kind, id) => { setSelection({ kind, id }); setPane("edit"); }}
+          duplicateWidget={duplicateWidget} duplicateSection={duplicateSection}
+          moveWidgetById={moveWidgetById} moveSectionById={moveSectionById}
+          deleteWidgetById={deleteWidgetById} deleteColumnById={deleteColumnById}
+          deleteRowById={deleteRowById} deleteSectionById={deleteSectionById}
+        />
+      </>
+    )}
+
     {message && (
       <p role="status" className="pointer-events-none fixed bottom-4 left-1/2 z-50 -translate-x-1/2 rounded-full bg-zinc-900 px-4 py-2 text-xs font-medium text-white shadow-lg">
         {message}
@@ -666,6 +771,83 @@ export function SiteEditorV2({ initialSite }: { initialSite: EditorSiteV2 }) {
       .v2-field:focus{outline:2px solid #7c3aed;outline-offset:1px}
     `}</style>
   </main>;
+}
+
+type MenuEntry = { label: string; icon: IconComponent; onClick: () => void; danger?: boolean } | "sep";
+
+function CanvasContextMenu({ menu, sections, close, select, duplicateWidget, duplicateSection, moveWidgetById, moveSectionById, deleteWidgetById, deleteColumnById, deleteRowById, deleteSectionById }: {
+  menu: NonNullable<ContextMenuState>;
+  sections: CanvasSectionV2[];
+  close: () => void;
+  select: (kind: NonNullable<Selection>["kind"], id: string) => void;
+  duplicateWidget: (id: string) => void;
+  duplicateSection: (id: string) => void;
+  moveWidgetById: (id: string, direction: -1 | 1) => void;
+  moveSectionById: (id: string, direction: -1 | 1) => void;
+  deleteWidgetById: (id: string) => void;
+  deleteColumnById: (id: string) => void;
+  deleteRowById: (id: string) => void;
+  deleteSectionById: (id: string) => void;
+}) {
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => { if (event.key === "Escape") close(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [close]);
+
+  const { kind, id } = menu.target;
+  const foundWidget = kind === "widget" ? findWidget(sections, id) : null;
+  const foundColumn = kind === "column" ? findColumn(sections, id) : foundWidget ? { section: foundWidget.section, row: foundWidget.row, column: foundWidget.column } : null;
+  const section = kind === "section" ? sections.find((item) => item.id === id) ?? null : foundColumn?.section ?? null;
+  const isMain = section?.region === "main";
+
+  const entries: MenuEntry[] = [];
+  if (kind === "widget" && foundWidget) {
+    const title = WIDGET_LABELS[foundWidget.widget.type];
+    entries.push(
+      { label: `Editar ${title.toLowerCase()}`, icon: Pencil, onClick: () => select("widget", id) },
+      { label: "Duplicar widget", icon: Copy, onClick: () => duplicateWidget(id) },
+      { label: "Mover arriba", icon: ArrowUp, onClick: () => moveWidgetById(id, -1) },
+      { label: "Mover abajo", icon: ArrowDown, onClick: () => moveWidgetById(id, 1) },
+      "sep",
+      { label: "Seleccionar columna", icon: Layers, onClick: () => select("column", foundWidget.column.id) },
+      { label: `Seleccionar sección (${foundWidget.section.name})`, icon: Layers, onClick: () => select("section", foundWidget.section.id) },
+      "sep",
+      { label: `Eliminar ${title.toLowerCase()}`, icon: Trash2, onClick: () => deleteWidgetById(id), danger: true },
+    );
+    if (isMain) entries.push({ label: `Eliminar sección (${foundWidget.section.name})`, icon: Trash2, onClick: () => deleteSectionById(foundWidget.section.id), danger: true });
+  } else if (kind === "column" && foundColumn) {
+    const lastColumn = foundColumn.row.columns.length === 1;
+    entries.push(
+      { label: "Editar columna", icon: Pencil, onClick: () => select("column", id) },
+      "sep",
+      { label: `Seleccionar sección (${foundColumn.section.name})`, icon: Layers, onClick: () => select("section", foundColumn.section.id) },
+      "sep",
+      lastColumn
+        ? { label: "Eliminar fila", icon: Trash2, onClick: () => deleteRowById(foundColumn.row.id), danger: true }
+        : { label: "Eliminar columna", icon: Trash2, onClick: () => deleteColumnById(id), danger: true },
+    );
+    if (isMain && section) entries.push({ label: `Eliminar sección (${section.name})`, icon: Trash2, onClick: () => deleteSectionById(section.id), danger: true });
+  } else if (kind === "section" && section) {
+    entries.push({ label: `Editar sección (${section.name})`, icon: Pencil, onClick: () => select("section", id) });
+    if (isMain) entries.push({ label: "Duplicar sección", icon: Copy, onClick: () => duplicateSection(id) });
+    entries.push(
+      { label: "Mover arriba", icon: ArrowUp, onClick: () => moveSectionById(id, -1) },
+      { label: "Mover abajo", icon: ArrowDown, onClick: () => moveSectionById(id, 1) },
+    );
+    if (isMain) entries.push("sep", { label: `Eliminar sección (${section.name})`, icon: Trash2, onClick: () => deleteSectionById(id), danger: true });
+  }
+  if (!entries.length) return null;
+
+  return <div role="menu" className="fixed z-50 min-w-[230px] rounded-lg border border-zinc-200 bg-white py-1 shadow-xl" style={{ left: menu.x, top: menu.y }}>
+    {entries.map((entry, index) => entry === "sep"
+      ? <div key={index} className="my-1 border-t border-zinc-100" aria-hidden />
+      : <button key={index} role="menuitem" onClick={() => { close(); entry.onClick(); }}
+          className={`flex w-full items-center gap-2.5 px-3 py-2 text-left text-xs font-medium ${entry.danger ? "text-red-600 hover:bg-red-50" : "text-zinc-700 hover:bg-zinc-50"}`}>
+          <entry.icon className="h-3.5 w-3.5 shrink-0" />
+          <span className="min-w-0 truncate">{entry.label}</span>
+        </button>)}
+  </div>;
 }
 
 function AddSearchResults({ query, addLibrarySection, addWidget, clearCanvasDrop }: {
