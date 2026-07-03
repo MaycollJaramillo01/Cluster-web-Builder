@@ -10,6 +10,8 @@ export type RenderSiteV2Input = {
   sections: unknown;
   leadEndpoint: string;
   showBranding?: boolean;
+  /** Modo editor: resalta elementos al pasar el cursor y reporta clics al padre via postMessage. */
+  editable?: boolean;
 };
 
 export type RenderedSiteV2 = { html: string; body: string; css: string; script: string };
@@ -145,6 +147,29 @@ function baseCss(theme: ThemeTokensV2) {
 
 const mobileSafetyCss = `@media(max-width:640px){.v2-section{padding-left:1.1rem!important;padding-right:1.1rem!important}.v2-column,.v2-form-wrap,.v2-form-wrap label{min-width:0}h1,h2,h3,p,a,span{overflow-wrap:anywhere}.v2-button{max-width:100%;white-space:normal}}`;
 
+// Recursos que solo se inyectan cuando el sitio se renderiza dentro del editor (iframe del builder).
+const editorCss = `[data-widget-id],[data-column-id],[data-section-id]{cursor:pointer}
+.v2-ed-hover{outline:1px dashed #8b5cf6;outline-offset:2px}
+.v2-ed-selected{outline:2px solid #7c3aed!important;outline-offset:2px;position:relative}
+.v2-ed-selected[data-v2-label]::before{content:attr(data-v2-label);position:absolute;top:-1.45rem;left:-2px;z-index:999;background:#7c3aed;color:#fff;font:600 .65rem/1 system-ui,sans-serif;padding:.28rem .5rem;border-radius:.25rem .25rem 0 0;white-space:nowrap;pointer-events:none}`;
+
+function editorScript() {
+  const labels = `{brand:'Marca',nav:'Navegaci\\u00f3n',heading:'T\\u00edtulo',text:'Texto',image:'Imagen',video:'Video',button:'Bot\\u00f3n',business_info:'Datos del negocio',list:'Lista',gallery:'Galer\\u00eda',testimonials:'Rese\\u00f1as',accordion:'Acorde\\u00f3n',form:'Formulario',social:'Redes',map:'Mapa',divider:'Divisor',spacer:'Espacio'}`;
+  return `(function(){
+var LABELS=${labels};
+document.querySelectorAll('[data-widget-type]').forEach(function(node){node.setAttribute('data-v2-label',LABELS[node.getAttribute('data-widget-type')]||'Elemento');});
+function pick(target){if(!(target instanceof Element))return null;return target.closest('[data-widget-id]')||target.closest('[data-column-id]')||target.closest('[data-section-id]');}
+function kindOf(node){return node.hasAttribute('data-widget-id')?'widget':node.hasAttribute('data-column-id')?'column':'section';}
+function idOf(node){return node.getAttribute('data-widget-id')||node.getAttribute('data-column-id')||node.getAttribute('data-section-id');}
+function select(node){document.querySelectorAll('.v2-ed-selected').forEach(function(item){item.classList.remove('v2-ed-selected');});if(node)node.classList.add('v2-ed-selected');}
+document.addEventListener('mouseover',function(event){var target=pick(event.target);document.querySelectorAll('.v2-ed-hover').forEach(function(item){item.classList.remove('v2-ed-hover');});if(target&&!target.classList.contains('v2-ed-selected'))target.classList.add('v2-ed-hover');});
+document.addEventListener('click',function(event){event.preventDefault();event.stopPropagation();var target=pick(event.target);if(!target)return;select(target);parent.postMessage({source:'cluster-canvas',kind:kindOf(target),id:idOf(target)},'*');},true);
+document.addEventListener('submit',function(event){event.preventDefault();event.stopPropagation();},true);
+window.addEventListener('message',function(event){var data=event.data||{};if(data.source!=='cluster-editor'||data.type!=='select')return;if(!data.id)return select(null);var node=document.querySelector('[data-widget-id="'+data.id+'"],[data-column-id="'+data.id+'"],[data-section-id="'+data.id+'"],[data-row-id="'+data.id+'"]');select(node);if(node&&data.scroll)node.scrollIntoView({block:'center',behavior:'smooth'});});
+parent.postMessage({source:'cluster-canvas',kind:'ready'},'*');
+})();`;
+}
+
 function formScript() {
   return `document.querySelectorAll('[data-cluster-form]').forEach(form=>form.addEventListener('submit',async event=>{event.preventDefault();const output=form.querySelector('output');const button=form.querySelector('button');button.disabled=true;output.textContent='Enviando…';try{const response=await fetch(form.dataset.endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.fromEntries(new FormData(form)))});const data=await response.json().catch(()=>({}));if(!response.ok)throw new Error(data.error||'No se pudo enviar.');form.reset();output.textContent='Mensaje enviado correctamente.'}catch(error){output.textContent=error.message||'No se pudo enviar.'}finally{button.disabled=false}}));`;
 }
@@ -157,8 +182,8 @@ export function renderSiteV2(input: RenderSiteV2Input): RenderedSiteV2 {
     return rank[left.region] - rank[right.region];
   });
   const body = `<div id="top" class="v2-site v2-motion-${theme.motion}">${sections.map((section) => sectionHtml(section, content, theme, input.leadEndpoint)).join("")}${input.showBranding ? `<div style="padding:14px;text-align:center;font-size:12px;color:var(--muted)">Creado con Cluster</div>` : ""}</div>`;
-  const css = `${baseCss(theme)}${dynamicCss(sections)}${mobileSafetyCss}`;
-  const script = formScript();
+  const css = `${baseCss(theme)}${dynamicCss(sections)}${mobileSafetyCss}${input.editable ? editorCss : ""}`;
+  const script = `${formScript()}${input.editable ? editorScript() : ""}`;
   const title = content.seo.title || content.business.name;
   const description = content.seo.description || `${content.business.name} — ${content.business.type}`;
   const html = `<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(title)}</title><meta name="description" content="${escapeHtml(description)}"><style>${css}</style></head><body>${body}<script>${script}</script></body></html>`;

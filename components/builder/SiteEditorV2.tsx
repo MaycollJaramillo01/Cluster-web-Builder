@@ -1,7 +1,7 @@
 "use client";
 /* eslint-disable react-hooks/refs -- dnd-kit exposes callback refs and reactive transforms as hook results. */
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
   DndContext, KeyboardSensor, PointerSensor, closestCenter, useDroppable, useSensor, useSensors,
@@ -10,7 +10,7 @@ import {
 import { SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import {
-  ArrowLeft, ChevronDown, ChevronUp, ExternalLink, GripVertical, Layers, LayoutTemplate,
+  ArrowLeft, ChevronDown, ChevronLeft, ChevronUp, ExternalLink, GripVertical, Layers, LayoutTemplate,
   Monitor, Palette, Plus, Redo2, Save, Smartphone, Trash2,
 } from "lucide-react";
 
@@ -69,12 +69,15 @@ export function SiteEditorV2({ initialSite }: { initialSite: EditorSiteV2 }) {
   const [region, setRegion] = useState<CanvasSectionV2["region"]>("main");
   const [selection, setSelection] = useState<Selection>(null);
   const [tab, setTab] = useState<PanelTab>("add");
-  const [pane, setPane] = useState<"edit" | "preview">("edit");
+  const [pane, setPane] = useState<"edit" | "preview">("preview");
   const [device, setDevice] = useState<"desktop" | "mobile">("desktop");
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [undoRevision, setUndoRevision] = useState<string | null>(null);
+  const iframeRef = useRef<HTMLIFrameElement | null>(null);
+  const selectionFromCanvasRef = useRef(false);
+  const selectionRef = useRef<Selection>(null);
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
@@ -105,12 +108,41 @@ export function SiteEditorV2({ initialSite }: { initialSite: EditorSiteV2 }) {
     return () => clearTimeout(timer);
   }, [message]);
 
+  // Clics dentro del lienzo (iframe): seleccionan el elemento y abren sus ajustes en el panel.
+  useEffect(() => {
+    const onCanvasMessage = (event: MessageEvent) => {
+      const data = event.data as { source?: string; kind?: string; id?: string } | null;
+      if (!data || data.source !== "cluster-canvas") return;
+      if (data.kind === "ready") {
+        const active = selectionRef.current;
+        iframeRef.current?.contentWindow?.postMessage({ source: "cluster-editor", type: "select", id: active?.id || null, scroll: false }, "*");
+        return;
+      }
+      if (!data.id || (data.kind !== "widget" && data.kind !== "column" && data.kind !== "section")) return;
+      selectionFromCanvasRef.current = true;
+      setSelection({ kind: data.kind, id: data.id });
+      setPane("edit");
+    };
+    window.addEventListener("message", onCanvasMessage);
+    return () => window.removeEventListener("message", onCanvasMessage);
+  }, []);
+
+  // Selección hecha desde el panel: se refleja en el lienzo (contorno + scroll hasta el elemento).
+  useEffect(() => {
+    selectionRef.current = selection;
+    const fromCanvas = selectionFromCanvasRef.current;
+    selectionFromCanvasRef.current = false;
+    iframeRef.current?.contentWindow?.postMessage({ source: "cluster-editor", type: "select", id: selection?.id || null, scroll: !fromCanvas }, "*");
+  }, [selection]);
+
   const rendered = useMemo(() => renderSiteV2({
-    content, design, sections, leadEndpoint: `/api/public/sites/${initialSite.publicSlug}/leads`,
+    content, design, sections, leadEndpoint: `/api/public/sites/${initialSite.publicSlug}/leads`, editable: true,
   }), [content, design, sections, initialSite.publicSlug]);
   const regionSections = sections.filter((item) => item.region === region);
   const selectedWidget = findWidget(sections, selection?.kind === "widget" ? selection.id : "");
   const selectedColumn = findColumn(sections, selection?.kind === "column" ? selection.id : selectedWidget?.column.id || "");
+  const selectedSection = selection?.kind === "section" ? sections.find((item) => item.id === selection.id) || null : null;
+  const selectedRow = selection?.kind === "row" ? findRow(sections, selection.id) : null;
 
   const mutateSections = (mutator: (draft: CanvasSectionV2[]) => CanvasSectionV2[]) => {
     setSections((current) => mutator(structuredClone(current)));
@@ -161,7 +193,6 @@ export function SiteEditorV2({ initialSite }: { initialSite: EditorSiteV2 }) {
     });
     setRegion("main");
     setSelection({ kind: "section", id: copy.id });
-    setTab("structure");
     setMessage(`Sección "${seed.name}" agregada.`);
   };
 
@@ -171,10 +202,19 @@ export function SiteEditorV2({ initialSite }: { initialSite: EditorSiteV2 }) {
 
   const addWidget = (type: V2WidgetType) => {
     const target = selectedColumn || firstColumn(sections, region);
-    if (!target) return setMessage("Selecciona una columna en Estructura antes de agregar un widget.");
+    if (!target) return setMessage("Haz clic en una columna del sitio antes de agregar un widget.");
     const widget: WidgetV2 = { id: crypto.randomUUID(), type, data: defaultWidgetData(type) };
     mutateSections((draft) => updateColumn(draft, target.column.id, (column) => ({ ...column, widgets: [...column.widgets, widget] })));
     setSelection({ kind: "widget", id: widget.id });
+  };
+
+  const deleteSelection = () => {
+    if (!selection) return;
+    const { kind, id } = selection;
+    if (kind === "section") mutateSections((draft) => draft.filter((item) => item.id !== id));
+    if (kind === "row") mutateSections((draft) => draft.map((section) => ({ ...section, rows: section.rows.filter((row) => row.id !== id) })));
+    if (kind === "widget") mutateSections((draft) => draft.map((section) => ({ ...section, rows: section.rows.map((row) => ({ ...row, columns: row.columns.map((column) => ({ ...column, widgets: column.widgets.filter((widget) => widget.id !== id) })) })) })));
+    setSelection(null);
   };
 
   const onDragEnd = ({ active, over }: DragEndEvent) => {
@@ -191,6 +231,12 @@ export function SiteEditorV2({ initialSite }: { initialSite: EditorSiteV2 }) {
     { id: "design", label: "Diseño", icon: Palette },
   ];
 
+  const selectionTitle = selection?.kind === "widget" && selectedWidget ? WIDGET_LABELS[selectedWidget.widget.type]
+    : selection?.kind === "column" ? "Columna"
+    : selection?.kind === "row" ? "Fila"
+    : selectedSection ? selectedSection.name
+    : "";
+
   return <main className="flex h-dvh flex-col bg-zinc-100 text-zinc-900">
     <header className="flex h-14 shrink-0 items-center justify-between gap-3 border-b border-zinc-200 bg-white px-3 sm:px-4">
       <div className="flex min-w-0 items-center gap-3">
@@ -202,8 +248,8 @@ export function SiteEditorV2({ initialSite }: { initialSite: EditorSiteV2 }) {
           <p className="text-xs leading-tight text-zinc-500">{dirty ? "Cambios sin guardar" : "Todo guardado"}</p>
         </div>
       </div>
-      <div className="flex xl:hidden items-center rounded-lg bg-zinc-100 p-1" role="tablist" aria-label="Vista del editor">
-        {([["edit", "Editar"], ["preview", "Vista previa"]] as const).map(([id, label]) => (
+      <div className="flex lg:hidden items-center rounded-lg bg-zinc-100 p-1" role="tablist" aria-label="Vista del editor">
+        {([["edit", "Panel"], ["preview", "Sitio"]] as const).map(([id, label]) => (
           <button key={id} role="tab" aria-selected={pane === id} onClick={() => setPane(id)}
             className={`rounded-md px-3 py-1.5 text-xs font-medium ${pane === id ? "bg-white text-zinc-900 shadow-sm" : "text-zinc-500"}`}>
             {label}
@@ -222,90 +268,117 @@ export function SiteEditorV2({ initialSite }: { initialSite: EditorSiteV2 }) {
     </header>
 
     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
-      <div className="grid min-h-0 flex-1 grid-cols-1 xl:grid-cols-[320px_minmax(0,1fr)_300px]">
+      <div className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[340px_minmax(0,1fr)]">
 
-        <aside className={`${pane === "edit" ? "flex" : "hidden"} min-h-0 flex-col border-r border-zinc-200 bg-white xl:flex`}>
-          <div className="grid shrink-0 grid-cols-3 border-b border-zinc-200" role="tablist" aria-label="Herramientas">
-            {panelTabs.map(({ id, label, icon: Icon }) => (
-              <button key={id} role="tab" aria-selected={tab === id} onClick={() => setTab(id)}
-                className={`flex min-h-12 flex-col items-center justify-center gap-0.5 text-xs font-medium ${tab === id ? "border-b-2 border-violet-600 text-violet-700" : "text-zinc-500 hover:text-zinc-800"}`}>
-                <Icon className="h-4 w-4" />{label}
-              </button>
-            ))}
-          </div>
-
-          <div className="min-h-0 flex-1 overflow-y-auto p-4">
-            {tab === "add" && <>
-              <h2 className="v2-label">Secciones listas para usar</h2>
-              <p className="mb-3 text-xs text-zinc-500">Haz clic para agregarlas a tu página.</p>
-              <div className="mb-6 grid gap-2">
-                {SECTION_LIBRARY_V2.map((section) => (
-                  <button key={section.key} className="v2-add" onClick={() => addLibrarySection(section)}>
-                    <Plus className="h-4 w-4 shrink-0 text-violet-600" />{section.name}
+        <aside className={`${pane === "edit" ? "flex" : "hidden"} min-h-0 flex-col border-r border-zinc-200 bg-white lg:flex`}>
+          {selection ? (
+            <>
+              <div className="flex shrink-0 items-center gap-1 border-b border-zinc-200 px-2 py-2">
+                <button className="flex h-9 w-9 items-center justify-center rounded-md text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900" aria-label="Volver" onClick={() => setSelection(null)}>
+                  <ChevronLeft className="h-4 w-4" />
+                </button>
+                <p className="min-w-0 flex-1 truncate text-sm font-semibold">{selectionTitle}</p>
+                {(selection.kind === "widget" || selection.kind === "row" || (selectedSection && selectedSection.region === "main")) && (
+                  <button className="flex h-9 w-9 items-center justify-center rounded-md text-zinc-400 hover:bg-red-50 hover:text-red-600" aria-label="Eliminar" title="Eliminar" onClick={deleteSelection}>
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+              <div className="min-h-0 flex-1 overflow-y-auto p-4">
+                <SelectionPanel
+                  siteId={initialSite.id} content={content} setContent={(next) => { setContent(next); setDirty(true); }}
+                  selection={selection} selectedWidget={selectedWidget} selectedColumn={selectedColumn}
+                  selectedSection={selectedSection} selectedRow={selectedRow}
+                  addRow={addRow} mutate={mutateSections}
+                />
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="grid shrink-0 grid-cols-3 border-b border-zinc-200" role="tablist" aria-label="Herramientas">
+                {panelTabs.map(({ id, label, icon: Icon }) => (
+                  <button key={id} role="tab" aria-selected={tab === id} onClick={() => setTab(id)}
+                    className={`flex min-h-12 flex-col items-center justify-center gap-0.5 text-xs font-medium ${tab === id ? "border-b-2 border-violet-600 text-violet-700" : "text-zinc-500 hover:text-zinc-800"}`}>
+                    <Icon className="h-4 w-4" />{label}
                   </button>
                 ))}
               </div>
-              <h2 className="v2-label">Widgets</h2>
-              <p className="mb-3 text-xs text-zinc-500">Elementos sueltos. Se agregan a la columna seleccionada en Estructura.</p>
-              <div className="grid grid-cols-2 gap-2">
-                {V2_WIDGET_TYPES.map((type) => (
-                  <button key={type} className="v2-add" onClick={() => addWidget(type)}>
-                    <Plus className="h-3.5 w-3.5 shrink-0 text-violet-600" />{WIDGET_LABELS[type]}
-                  </button>
-                ))}
-              </div>
-            </>}
 
-            {tab === "structure" && <>
-              <h2 className="v2-label">Parte de la página</h2>
-              <div className="mb-4 grid grid-cols-3 gap-1 rounded-lg bg-zinc-100 p-1">
-                {(["header", "main", "footer"] as const).map((item) => (
-                  <button key={item} onClick={() => setRegion(item)}
-                    className={`min-h-9 rounded-md px-1 text-xs font-medium ${region === item ? "bg-white text-zinc-900 shadow-sm" : "text-zinc-500"}`}>
-                    {REGION_LABELS[item]}
-                  </button>
-                ))}
-              </div>
-              {regionSections.length === 0 && (
-                <p className="rounded-lg border border-dashed border-zinc-300 p-4 text-center text-xs text-zinc-500">
-                  Aún no hay secciones aquí. Ve a la pestaña Agregar para sumar una.
-                </p>
-              )}
-              <SortableContext items={regionSections.map((section) => `section:${section.id}`)} strategy={verticalListSortingStrategy}>
-                <div className="space-y-2">{regionSections.map((section) => <SectionTree key={section.id} section={section} selection={selection} setSelection={setSelection} addRow={addRow} mutate={mutateSections} />)}</div>
-              </SortableContext>
-            </>}
+              <div className="min-h-0 flex-1 overflow-y-auto p-4">
+                {tab === "add" && <>
+                  <p className="mb-4 rounded-lg bg-violet-50 p-3 text-xs leading-relaxed text-violet-900">Haz clic en cualquier parte del sitio a la derecha para editarla. Desde aquí puedes agregar secciones nuevas.</p>
+                  <h2 className="v2-label">Secciones listas para usar</h2>
+                  <div className="mb-6 mt-2 grid gap-2">
+                    {SECTION_LIBRARY_V2.map((section) => (
+                      <button key={section.key} className="v2-add" onClick={() => addLibrarySection(section)}>
+                        <Plus className="h-4 w-4 shrink-0 text-violet-600" />{section.name}
+                      </button>
+                    ))}
+                  </div>
+                  <h2 className="v2-label">Widgets</h2>
+                  <p className="mb-3 text-xs text-zinc-500">Elementos sueltos. Haz clic primero en una columna del sitio y luego en el widget.</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {V2_WIDGET_TYPES.map((type) => (
+                      <button key={type} className="v2-add" onClick={() => addWidget(type)}>
+                        <Plus className="h-3.5 w-3.5 shrink-0 text-violet-600" />{WIDGET_LABELS[type]}
+                      </button>
+                    ))}
+                  </div>
+                </>}
 
-            {tab === "design" && <>
-              <h2 className="v2-label">Plantilla</h2>
-              <p className="mb-3 text-xs text-zinc-500">Cambia la composición completa. Tu contenido se conserva.</p>
-              <div className="mb-6 grid gap-2">
-                {getAllTemplatesV2().map((template) => (
-                  <button key={template.id} onClick={() => applyTemplate(template.id)}
-                    className={`rounded-lg border p-3 text-left text-xs leading-relaxed ${templateId === template.id ? "border-violet-600 bg-violet-50 text-zinc-900" : "border-zinc-200 text-zinc-600 hover:border-zinc-300"}`}>
-                    <span className="mb-0.5 flex items-center gap-1.5 text-sm font-semibold text-zinc-900"><LayoutTemplate className="h-3.5 w-3.5 text-violet-600" />{template.name}</span>
-                    {template.description}
-                  </button>
-                ))}
+                {tab === "structure" && <>
+                  <h2 className="v2-label">Parte de la página</h2>
+                  <div className="mb-4 mt-2 grid grid-cols-3 gap-1 rounded-lg bg-zinc-100 p-1">
+                    {(["header", "main", "footer"] as const).map((item) => (
+                      <button key={item} onClick={() => setRegion(item)}
+                        className={`min-h-9 rounded-md px-1 text-xs font-medium ${region === item ? "bg-white text-zinc-900 shadow-sm" : "text-zinc-500"}`}>
+                        {REGION_LABELS[item]}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="mb-3 text-xs text-zinc-500">Arrastra para reordenar. Haz clic en un elemento para editarlo.</p>
+                  {regionSections.length === 0 && (
+                    <p className="rounded-lg border border-dashed border-zinc-300 p-4 text-center text-xs text-zinc-500">
+                      Aún no hay secciones aquí. Ve a la pestaña Agregar para sumar una.
+                    </p>
+                  )}
+                  <SortableContext items={regionSections.map((section) => `section:${section.id}`)} strategy={verticalListSortingStrategy}>
+                    <div className="space-y-2">{regionSections.map((section) => <SectionTree key={section.id} section={section} selection={selection} setSelection={setSelection} mutate={mutateSections} />)}</div>
+                  </SortableContext>
+                </>}
+
+                {tab === "design" && <>
+                  <h2 className="v2-label">Plantilla</h2>
+                  <p className="mb-3 text-xs text-zinc-500">Cambia la composición completa. Tu contenido se conserva.</p>
+                  <div className="mb-6 grid gap-2">
+                    {getAllTemplatesV2().map((template) => (
+                      <button key={template.id} onClick={() => applyTemplate(template.id)}
+                        className={`rounded-lg border p-3 text-left text-xs leading-relaxed ${templateId === template.id ? "border-violet-600 bg-violet-50 text-zinc-900" : "border-zinc-200 text-zinc-600 hover:border-zinc-300"}`}>
+                        <span className="mb-0.5 flex items-center gap-1.5 text-sm font-semibold text-zinc-900"><LayoutTemplate className="h-3.5 w-3.5 text-violet-600" />{template.name}</span>
+                        {template.description}
+                      </button>
+                    ))}
+                  </div>
+                  <h2 className="v2-label">Colores del sitio</h2>
+                  <p className="mb-3 text-xs text-zinc-500">Se aplican a todo el sitio publicado.</p>
+                  <div className="grid gap-2">
+                    {(Object.keys(COLOR_LABELS) as (keyof typeof COLOR_LABELS)[]).map((key) => (
+                      <label key={key} className="flex min-h-11 cursor-pointer items-center justify-between rounded-lg border border-zinc-200 px-3 text-xs font-medium">
+                        {COLOR_LABELS[key]}
+                        <span className="flex items-center gap-2 text-zinc-500">
+                          {design[key]}
+                          <input type="color" className="h-7 w-9 cursor-pointer rounded border border-zinc-200" value={design[key]} onChange={(event) => { setDesign({ ...design, [key]: event.target.value }); setDirty(true); }} />
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </>}
               </div>
-              <h2 className="v2-label">Colores del sitio</h2>
-              <p className="mb-3 text-xs text-zinc-500">Se aplican a todo el sitio publicado.</p>
-              <div className="grid gap-2">
-                {(Object.keys(COLOR_LABELS) as (keyof typeof COLOR_LABELS)[]).map((key) => (
-                  <label key={key} className="flex min-h-11 cursor-pointer items-center justify-between rounded-lg border border-zinc-200 px-3 text-xs font-medium">
-                    {COLOR_LABELS[key]}
-                    <span className="flex items-center gap-2 text-zinc-500">
-                      {design[key]}
-                      <input type="color" className="h-7 w-9 cursor-pointer rounded border border-zinc-200" value={design[key]} onChange={(event) => { setDesign({ ...design, [key]: event.target.value }); setDirty(true); }} />
-                    </span>
-                  </label>
-                ))}
-              </div>
-            </>}
-          </div>
+            </>
+          )}
         </aside>
 
-        <section className={`${pane === "preview" ? "flex" : "hidden"} min-h-0 min-w-0 flex-col xl:flex`}>
+        <section className={`${pane === "preview" ? "flex" : "hidden"} min-h-0 min-w-0 flex-col lg:flex`}>
           <div className="flex h-11 shrink-0 items-center justify-center gap-1 border-b border-zinc-200 bg-white/60">
             {([["desktop", Monitor, "Escritorio"], ["mobile", Smartphone, "Móvil"]] as const).map(([id, Icon, label]) => (
               <button key={id} onClick={() => setDevice(id)} aria-label={`Vista previa en ${label.toLowerCase()}`} aria-pressed={device === id}
@@ -316,18 +389,10 @@ export function SiteEditorV2({ initialSite }: { initialSite: EditorSiteV2 }) {
           </div>
           <div className="min-h-0 flex-1 overflow-auto p-3 sm:p-6">
             <div className={`mx-auto h-full overflow-hidden rounded-xl border border-zinc-300 bg-white shadow-lg transition-[max-width] ${device === "mobile" ? "max-w-[400px]" : "max-w-[1440px]"}`}>
-              <iframe title="Vista previa real del sitio" className="h-full w-full" srcDoc={rendered.html} />
+              <iframe ref={iframeRef} title="Vista previa del sitio, haz clic para editar" className="h-full w-full" srcDoc={rendered.html} />
             </div>
           </div>
         </section>
-
-        <aside className={`${pane === "edit" ? "block" : "hidden"} min-h-0 overflow-y-auto border-t border-zinc-200 bg-white p-4 xl:block xl:border-l xl:border-t-0`}>
-          <Inspector
-            siteId={initialSite.id} content={content} setContent={(next) => { setContent(next); setDirty(true); }}
-            selected={selectedWidget} column={selectedColumn}
-            mutate={mutateSections}
-          />
-        </aside>
       </div>
     </DndContext>
 
@@ -350,9 +415,87 @@ export function SiteEditorV2({ initialSite }: { initialSite: EditorSiteV2 }) {
   </main>;
 }
 
-function SectionTree({ section, selection, setSelection, addRow, mutate }: {
+function SelectionPanel({ siteId, content, setContent, selection, selectedWidget, selectedColumn, selectedSection, selectedRow, addRow, mutate }: {
+  siteId: string; content: SiteContentV2; setContent: (value: SiteContentV2) => void;
+  selection: NonNullable<Selection>;
+  selectedWidget: ReturnType<typeof findWidget>; selectedColumn: ReturnType<typeof findColumn>;
+  selectedSection: CanvasSectionV2 | null; selectedRow: ReturnType<typeof findRow>;
+  addRow: (id: string, layout: number[]) => void;
+  mutate: (fn: (draft: CanvasSectionV2[]) => CanvasSectionV2[]) => void;
+}) {
+  const [improving, setImproving] = useState(false);
+  const [aiError, setAiError] = useState("");
+
+  if (selection.kind === "section" && selectedSection) return <>
+    <p className="mb-4 text-xs leading-relaxed text-zinc-500">Haz clic en un texto, imagen o botón dentro de la sección para editarlo directamente.</p>
+    <h3 className="v2-label">Agregar fila a esta sección</h3>
+    <div className="mt-2 grid gap-2">
+      {ROW_LAYOUTS.map(({ layout, label }) => (
+        <button key={label} className="v2-add" onClick={() => addRow(selectedSection.id, layout)}><Plus className="h-4 w-4 shrink-0 text-violet-600" />{label}</button>
+      ))}
+    </div>
+    <p className="mt-4 text-xs text-zinc-500">Para mover la sección, usa la pestaña Estructura y arrástrala.</p>
+  </>;
+
+  if (selection.kind === "row" && selectedRow) return <>
+    <p className="mb-4 text-xs leading-relaxed text-zinc-500">Una fila agrupa columnas. Haz clic en una columna del sitio para ajustar su ancho o agregarle widgets.</p>
+    <p className="text-xs text-zinc-500">Esta fila tiene {selectedRow.row.columns.length} {selectedRow.row.columns.length === 1 ? "columna" : "columnas"}.</p>
+  </>;
+
+  if (selection.kind === "column" && selectedColumn) return <>
+    <p className="mb-3 text-xs leading-relaxed text-zinc-500">Define cuánto espacio ocupa la columna (de 12 partes disponibles).</p>
+    {(["desktop", "tablet"] as const).map((breakpoint) => <label key={breakpoint} className="mb-3 block text-xs font-medium">
+      Ancho en {breakpoint === "desktop" ? "escritorio" : "tablet"}
+      <select className="v2-field mt-1" value={selectedColumn.column.span[breakpoint]} onChange={(event) => mutate((draft) => updateColumn(draft, selectedColumn.column.id, (item) => ({ ...item, span: { ...item.span, [breakpoint]: Number(event.target.value) } as CanvasColumnV2["span"] })))}>
+        {[1,2,3,4,5,6,7,8,9,12].map((value) => <option key={value} value={value}>{value} de 12</option>)}
+      </select>
+    </label>)}
+    <p className="mt-2 text-xs text-zinc-500">Para agregarle contenido, ve a la pestaña Agregar y elige un widget.</p>
+  </>;
+
+  if (selection.kind !== "widget" || !selectedWidget) return null;
+  const widget = selectedWidget.widget;
+  const value = widget.slot ? resolveContentSlot(content, widget.slot) : widget.data?.text || widget.data?.src || "";
+  const updateWidget = (patch: Partial<WidgetV2>) => mutate((draft) => updateWidgetById(draft, widget.id, (item) => ({ ...item, ...patch })));
+  const stringValue = typeof value === "string" ? value : "";
+  const improve = async () => {
+    if (!widget.slot || typeof value !== "string") return;
+    setImproving(true); setAiError("");
+    const response = await fetch(`/api/sites/${siteId}/improve-content`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ slot: widget.slot, currentValue: value }) });
+    const data = await response.json().catch(() => ({}));
+    if (response.ok && data.value) setContent(setContentSlot(content, widget.slot, data.value));
+    else setAiError(data.error || "No se pudo mejorar el texto.");
+    setImproving(false);
+  };
+  return <>
+    {widget.slot && typeof value === "string" && <label className="mb-4 block text-xs font-medium">Contenido
+      <textarea className="v2-field mt-1 min-h-28" value={stringValue} onChange={(event) => setContent(setContentSlot(content, widget.slot as V2ContentSlot, event.target.value))} />
+      <button type="button" disabled={improving} onClick={improve} className="mt-2 min-h-10 rounded-md border border-violet-600 px-3 text-xs font-medium text-violet-700 hover:bg-violet-50 disabled:opacity-60">{improving ? "Mejorando…" : "Mejorar con IA"}</button>
+      {aiError && <span className="mt-2 block font-normal text-red-600">{aiError}</span>}
+    </label>}
+    {!widget.slot && ["heading", "text", "button"].includes(widget.type) && <label className="mb-4 block text-xs font-medium">Contenido<textarea className="v2-field mt-1" value={stringValue} onChange={(event) => updateWidget({ data: { ...widget.data, text: event.target.value } })} /></label>}
+    {(widget.type === "image" || widget.type === "video") && !widget.slot && <EditorMediaField siteId={siteId} kind={widget.type} value={String(widget.data?.src || "")} onChange={(src) => updateWidget({ data: { ...widget.data, src } })} onUsageChange={() => undefined} />}
+    <h3 className="v2-label mt-5">Estilo</h3>
+    <label className="mb-3 block text-xs font-medium">Alineación
+      <select className="v2-field mt-1" value={widget.style?.desktop?.align || "left"} onChange={(event) => updateWidget({ style: { ...widget.style, desktop: { ...widget.style?.desktop, align: event.target.value as "left" | "center" | "right" } } })}>
+        <option value="left">Izquierda</option><option value="center">Centrada</option><option value="right">Derecha</option>
+      </select>
+    </label>
+    <label className="mb-3 block text-xs font-medium">Espaciado
+      <select className="v2-field mt-1" value={widget.style?.desktop?.padding || "none"} onChange={(event) => updateWidget({ style: { ...widget.style, desktop: { ...widget.style?.desktop, padding: event.target.value as "none" | "sm" | "md" | "lg" | "xl" } } })}>
+        <option value="none">Sin espacio</option><option value="sm">Pequeño</option><option value="md">Medio</option><option value="lg">Grande</option><option value="xl">Extra grande</option>
+      </select>
+    </label>
+    <details className="mt-4">
+      <summary className="cursor-pointer text-xs font-medium text-zinc-500">Avanzado</summary>
+      <label className="mt-3 block text-xs font-medium">Variante<input className="v2-field mt-1" value={widget.variant || ""} onChange={(event) => updateWidget({ variant: event.target.value.slice(0, 40) })} /></label>
+    </details>
+  </>;
+}
+
+function SectionTree({ section, selection, setSelection, mutate }: {
   section: CanvasSectionV2; selection: Selection; setSelection: (value: Selection) => void;
-  addRow: (id: string, layout: number[]) => void; mutate: (fn: (draft: CanvasSectionV2[]) => CanvasSectionV2[]) => void;
+  mutate: (fn: (draft: CanvasSectionV2[]) => CanvasSectionV2[]) => void;
 }) {
   const sortable = useSortable({ id: `section:${section.id}`, data: { kind: "section", sectionId: section.id, id: section.id } satisfies DragData });
   const selected = selection?.id === section.id;
@@ -366,13 +509,6 @@ function SectionTree({ section, selection, setSelection, addRow, mutate }: {
     <SortableContext items={section.rows.map((row) => `row:${row.id}`)} strategy={verticalListSortingStrategy}>
       <div className="space-y-2 pl-3">{section.rows.map((row) => <RowTree key={row.id} sectionId={section.id} row={row} selection={selection} setSelection={setSelection} mutate={mutate} />)}</div>
     </SortableContext>
-    <div className="mt-2 flex flex-wrap gap-1 pl-3">
-      {ROW_LAYOUTS.map(({ layout, label }) => (
-        <button key={label} className="rounded border border-zinc-200 px-2 py-1 text-[11px] text-zinc-500 hover:border-violet-300 hover:text-violet-700" onClick={() => addRow(section.id, layout)}>
-          + {label}
-        </button>
-      ))}
-    </div>
   </div>;
 }
 
@@ -410,65 +546,6 @@ function WidgetTree({ widget, index, sectionId, rowId, columnId, selection, setS
   </div>;
 }
 
-function Inspector({ siteId, content, setContent, selected, column, mutate }: { siteId: string; content: SiteContentV2; setContent: (value: SiteContentV2) => void; selected: ReturnType<typeof findWidget>; column: ReturnType<typeof findColumn>; mutate: (fn: (draft: CanvasSectionV2[]) => CanvasSectionV2[]) => void }) {
-  const [improving, setImproving] = useState(false);
-  const [aiError, setAiError] = useState("");
-  if (!selected && !column) return <div className="flex h-full flex-col items-center justify-center gap-2 text-center">
-    <Layers className="h-8 w-8 text-zinc-300" />
-    <p className="text-sm font-medium text-zinc-700">Nada seleccionado</p>
-    <p className="max-w-[22ch] text-xs leading-relaxed text-zinc-500">Haz clic en una sección, columna o widget en la pestaña Estructura para editarlo aquí.</p>
-  </div>;
-  if (!selected && column) return <>
-    <h2 className="v2-label">Columna</h2>
-    <p className="mb-3 text-xs text-zinc-500">Define cuánto espacio ocupa (de 12 partes disponibles).</p>
-    {(["desktop", "tablet"] as const).map((breakpoint) => <label key={breakpoint} className="mb-3 block text-xs font-medium">
-      Ancho en {breakpoint === "desktop" ? "escritorio" : "tablet"}
-      <select className="v2-field mt-1" value={column.column.span[breakpoint]} onChange={(event) => mutate((draft) => updateColumn(draft, column.column.id, (item) => ({ ...item, span: { ...item.span, [breakpoint]: Number(event.target.value) } as CanvasColumnV2["span"] })))}>
-        {[1,2,3,4,5,6,7,8,9,12].map((value) => <option key={value} value={value}>{value} de 12</option>)}
-      </select>
-    </label>)}
-  </>;
-  if (!selected) return null;
-  const widget = selected.widget;
-  const value = widget.slot ? resolveContentSlot(content, widget.slot) : widget.data?.text || widget.data?.src || "";
-  const updateWidget = (patch: Partial<WidgetV2>) => mutate((draft) => updateWidgetById(draft, widget.id, (item) => ({ ...item, ...patch })));
-  const stringValue = typeof value === "string" ? value : "";
-  const improve = async () => {
-    if (!widget.slot || typeof value !== "string") return;
-    setImproving(true); setAiError("");
-    const response = await fetch(`/api/sites/${siteId}/improve-content`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ slot: widget.slot, currentValue: value }) });
-    const data = await response.json().catch(() => ({}));
-    if (response.ok && data.value) setContent(setContentSlot(content, widget.slot, data.value));
-    else setAiError(data.error || "No se pudo mejorar el texto.");
-    setImproving(false);
-  };
-  return <>
-    <h2 className="v2-label">{WIDGET_LABELS[widget.type]}</h2>
-    {widget.slot && typeof value === "string" && <label className="mb-4 block text-xs font-medium">Contenido
-      <textarea className="v2-field mt-1 min-h-28" value={stringValue} onChange={(event) => setContent(setContentSlot(content, widget.slot as V2ContentSlot, event.target.value))} />
-      <button type="button" disabled={improving} onClick={improve} className="mt-2 min-h-10 rounded-md border border-violet-600 px-3 text-xs font-medium text-violet-700 hover:bg-violet-50 disabled:opacity-60">{improving ? "Mejorando…" : "Mejorar con IA"}</button>
-      {aiError && <span className="mt-2 block font-normal text-red-600">{aiError}</span>}
-    </label>}
-    {!widget.slot && ["heading", "text", "button"].includes(widget.type) && <label className="mb-4 block text-xs font-medium">Contenido<textarea className="v2-field mt-1" value={stringValue} onChange={(event) => updateWidget({ data: { ...widget.data, text: event.target.value } })} /></label>}
-    {(widget.type === "image" || widget.type === "video") && !widget.slot && <EditorMediaField siteId={siteId} kind={widget.type} value={String(widget.data?.src || "")} onChange={(src) => updateWidget({ data: { ...widget.data, src } })} onUsageChange={() => undefined} />}
-    <h3 className="v2-label mt-5">Estilo</h3>
-    <label className="mb-3 block text-xs font-medium">Alineación
-      <select className="v2-field mt-1" value={widget.style?.desktop?.align || "left"} onChange={(event) => updateWidget({ style: { ...widget.style, desktop: { ...widget.style?.desktop, align: event.target.value as "left" | "center" | "right" } } })}>
-        <option value="left">Izquierda</option><option value="center">Centrada</option><option value="right">Derecha</option>
-      </select>
-    </label>
-    <label className="mb-3 block text-xs font-medium">Espaciado
-      <select className="v2-field mt-1" value={widget.style?.desktop?.padding || "none"} onChange={(event) => updateWidget({ style: { ...widget.style, desktop: { ...widget.style?.desktop, padding: event.target.value as "none" | "sm" | "md" | "lg" | "xl" } } })}>
-        <option value="none">Sin espacio</option><option value="sm">Pequeño</option><option value="md">Medio</option><option value="lg">Grande</option><option value="xl">Extra grande</option>
-      </select>
-    </label>
-    <details className="mt-4">
-      <summary className="cursor-pointer text-xs font-medium text-zinc-500">Avanzado</summary>
-      <label className="mt-3 block text-xs font-medium">Variante<input className="v2-field mt-1" value={widget.variant || ""} onChange={(event) => updateWidget({ variant: event.target.value.slice(0, 40) })} /></label>
-    </details>
-  </>;
-}
-
 function cloneSection(seed: Omit<CanvasSectionV2, "id">): CanvasSectionV2 {
   const section = structuredClone(seed) as CanvasSectionV2; section.id = crypto.randomUUID();
   section.rows = section.rows.map((row) => ({ ...row, id: crypto.randomUUID(), columns: row.columns.map((column) => ({ ...column, id: crypto.randomUUID(), widgets: column.widgets.map((widget) => ({ ...widget, id: crypto.randomUUID() })) })) }));
@@ -478,6 +555,7 @@ function defaultWidgetData(type: V2WidgetType): Record<string, unknown> { return
 function firstColumn(sections: CanvasSectionV2[], region: CanvasSectionV2["region"]) { const section = sections.find((item) => item.region === region); const column = section?.rows[0]?.columns[0]; return section && column ? { section, row: section.rows[0], column } : null; }
 function findWidget(sections: CanvasSectionV2[], id: string) { for (const section of sections) for (const row of section.rows) for (const column of row.columns) { const widget = column.widgets.find((item) => item.id === id); if (widget) return { section, row, column, widget }; } return null; }
 function findColumn(sections: CanvasSectionV2[], id: string) { for (const section of sections) for (const row of section.rows) { const column = row.columns.find((item) => item.id === id); if (column) return { section, row, column }; } return null; }
+function findRow(sections: CanvasSectionV2[], id: string) { for (const section of sections) { const row = section.rows.find((item) => item.id === id); if (row) return { section, row }; } return null; }
 function updateColumn(sections: CanvasSectionV2[], id: string, update: (column: CanvasColumnV2) => CanvasColumnV2) { return sections.map((section) => ({ ...section, rows: section.rows.map((row) => ({ ...row, columns: row.columns.map((column) => column.id === id ? update(column) : column) })) })); }
 function updateWidgetById(sections: CanvasSectionV2[], id: string, update: (widget: WidgetV2) => WidgetV2) { return sections.map((section) => ({ ...section, rows: section.rows.map((row) => ({ ...row, columns: row.columns.map((column) => ({ ...column, widgets: column.widgets.map((widget) => widget.id === id ? update(widget) : widget) })) })) })); }
 function moveAt<T>(items: T[], from: number, to: number) { if (to < 0 || to >= items.length) return items; const next = [...items]; const [item] = next.splice(from, 1); next.splice(to, 0, item); return next; }
