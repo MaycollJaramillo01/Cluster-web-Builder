@@ -22,8 +22,9 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
   const endpoint = `${request.nextUrl.origin}/api/public/sites/${site.publicSlug}/leads`;
   const showBranding = user.planStatus !== "ACTIVE";
+  const publicUrl = site.status === "PUBLISHED" ? (site.domainVerifiedAt && site.customDomain ? `https://${site.customDomain}` : `${request.nextUrl.origin}/s/${site.publicSlug}`) : undefined;
   const html = site.builderVersion === 2
-    ? renderSiteV2({ content: site.contentJson, design: site.designJson, sections: site.sections.map((section) => section.content), leadEndpoint: endpoint, showBranding }).html
+    ? renderSiteV2({ content: site.contentJson, design: site.designJson, sections: site.sections.map((section) => section.content), leadEndpoint: endpoint, showBranding, publicUrl, indexable: Boolean(publicUrl) }).html
     : exportSiteHtml({ ...site, showBranding, theme: themeFromSite(site), sections: site.sections.map(toRenderSection) }, endpoint);
   const readme = showBranding
     ? "Abre index.html o súbelo a cualquier hosting estático. El formulario envía los contactos a Cluster mientras el proyecto permanezca publicado."

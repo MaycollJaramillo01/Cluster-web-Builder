@@ -45,6 +45,7 @@ export async function generateMetadata({
   return {
     title: v2Seo?.title || seo?.title || site.businessName,
     description: v2Seo?.description || seo?.metaDescription || undefined,
+    robots: { index: false, follow: false },
   };
 }
 
@@ -82,6 +83,7 @@ export default async function PreviewPage({
       design={site.designJson}
       sections={site.sections.map((section) => section.content)}
       leadEndpoint={`/api/public/sites/${site.publicSlug}/leads`}
+      indexable={false}
     /></main>;
   }
 

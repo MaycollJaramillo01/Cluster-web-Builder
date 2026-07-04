@@ -814,6 +814,44 @@ export function SiteEditorV2({ initialSite }: { initialSite: EditorSiteV2 }) {
                   <select className="v2-field" value={design.motion} onChange={(event) => applyDesign({ ...design, motion: event.target.value as ThemeTokensV2["motion"] })}>
                     {MOTION_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
                   </select>
+
+                  <div className="my-7 border-t border-zinc-200" />
+                  <h2 className="v2-label">SEO y vista al compartir</h2>
+                  <p className="mb-4 text-xs leading-relaxed text-zinc-500">Controla cómo aparece el sitio en Google, WhatsApp y redes sociales.</p>
+                  <label className="mb-4 block text-xs font-medium">
+                    Título de la página
+                    <input className="v2-field mt-1" maxLength={200} value={content.seo.title} placeholder={content.business.name || "Nombre del negocio"}
+                      onChange={(event) => applyContent({ ...content, seo: { ...content.seo, title: event.target.value } })} />
+                    <span className={`mt-1 block text-right ${content.seo.title.length > 60 ? "text-amber-700" : "text-zinc-400"}`}>{content.seo.title.length}/60 recomendado</span>
+                  </label>
+                  <label className="mb-4 block text-xs font-medium">
+                    Descripción
+                    <textarea className="v2-field mt-1 min-h-24 resize-y" maxLength={400} value={content.seo.description}
+                      placeholder={`${content.business.name || "Tu negocio"} - ${content.business.type || "servicios profesionales"}`}
+                      onChange={(event) => applyContent({ ...content, seo: { ...content.seo, description: event.target.value } })} />
+                    <span className={`mt-1 block text-right ${content.seo.description.length > 160 ? "text-amber-700" : "text-zinc-400"}`}>{content.seo.description.length}/160 recomendado</span>
+                  </label>
+                  <label className="mb-5 block text-xs font-medium">
+                    Palabra clave principal
+                    <input className="v2-field mt-1" maxLength={160} value={content.seo.keyword} placeholder={content.business.type || "servicio local"}
+                      onChange={(event) => applyContent({ ...content, seo: { ...content.seo, keyword: event.target.value } })} />
+                  </label>
+
+                  <p className="v2-label">Vista previa en Google</p>
+                  <div className="mb-4 rounded-lg border border-zinc-200 bg-white p-3">
+                    <p className="truncate text-[11px] text-zinc-600">{publicUrl || `https://cluster.app/s/${initialSite.publicSlug}`}</p>
+                    <p className="mt-1 line-clamp-2 text-base font-medium leading-snug text-[#1a0dab]">{content.seo.title || content.business.name || "Título del sitio"}</p>
+                    <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-zinc-600">{content.seo.description || `${content.business.name || "Tu negocio"} - ${content.business.type || "servicios profesionales"}`}</p>
+                  </div>
+
+                  <p className="v2-label">Tarjeta social</p>
+                  <div className="overflow-hidden rounded-lg border border-zinc-200 bg-zinc-50">
+                    {(content.hero.media || content.business.logo) && <div className="h-28 bg-zinc-200 bg-cover bg-center" style={{ backgroundImage: `url("${content.hero.media || content.business.logo}")` }} />}
+                    <div className="p-3">
+                      <p className="line-clamp-2 text-sm font-semibold text-zinc-900">{content.seo.title || content.business.name || "Título del sitio"}</p>
+                      <p className="mt-1 line-clamp-2 text-xs text-zinc-600">{content.seo.description || `${content.business.name || "Tu negocio"} - ${content.business.type || "servicios profesionales"}`}</p>
+                    </div>
+                  </div>
                 </>}
               </div>
             </>

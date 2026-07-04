@@ -18,7 +18,7 @@ const button = (label: V2ContentSlot = "hero.ctaText", link: V2ContentSlot = "he
 const image = (slot: V2ContentSlot, variant = "cover") => widget("image", slot, variant);
 const nav = () => widget("nav", undefined, "horizontal", { items: [{ label: "Servicios", href: "#services" }, { label: "Nosotros", href: "#about" }, { label: "Contacto", href: "#contact" }] });
 const header = (variant = "bar") => section("global-header", "Header global", "header", [row(column(3, [widget("brand", "business.name", variant)]), column(9, [nav()]))], { desktop: { padding: "sm", width: "full" } });
-const footer = (variant = "columns") => section("global-footer", "Footer global", "footer", [row(column(5, [widget("brand", "business.name", variant), text("business.type")]), column(4, [widget("business_info", undefined, "compact")]), column(3, [widget("social", "social", "icons")]))], { desktop: { background: "#111827", color: "#ffffff", padding: "lg", width: "full" } });
+const footer = (variant = "columns") => section("global-footer", "Footer global", "footer", [row(column(5, [widget("brand", "business.name", variant), text("business.type")]), column(4, [widget("business_info", undefined, "compact")]), column(3, [widget("social", "social", "icons")]))], { desktop: { padding: "lg", width: "full" } });
 
 const THEMES: Record<V2TemplateId, ThemeTokensV2> = {
   conversion: { primary: "#5b21b6", secondary: "#17111f", accent: "#f59e0b", background: "#ffffff", text: "#17111f", muted: "#6b6472", headingFont: "Inter, system-ui, sans-serif", bodyFont: "Inter, system-ui, sans-serif", radius: "md", motion: "stagger" },

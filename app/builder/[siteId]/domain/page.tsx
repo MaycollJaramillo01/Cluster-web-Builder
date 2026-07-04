@@ -14,11 +14,13 @@ export default async function DomainPage({ params }: { params: Promise<{ siteId:
   if (!user) redirect(`/login?from=/builder/${siteId}/domain`);
   const site = await prisma.site.findFirst({ where: { id: siteId, ...(user.role === "ADMIN" ? {} : { userId: user.id }) }, select: { businessName: true, customDomain: true, domainVerifiedAt: true } });
   if (!site) notFound();
-  if (!hasProAccess(user)) redirect(`/billing?from=${encodeURIComponent(`/builder/${siteId}/domain`)}`);
-  return <main className="min-h-dvh bg-background px-5 py-12 text-foreground"><div className="mx-auto max-w-2xl">
-    <Link href={`/builder/${siteId}`} className="text-sm text-muted-foreground">← Volver al editor</Link>
-    <h1 className="mt-8 text-3xl font-semibold">Dominio personalizado</h1>
-    <p className="mt-2 text-muted-foreground">{site.businessName} seguirá alojado en Cluster; Vercel gestionará DNS y SSL.</p>
-    <DomainForm siteId={siteId} initialDomain={site.customDomain || ""} verified={Boolean(site.domainVerifiedAt)} />
+  return <main className="min-h-dvh bg-zinc-50 px-5 py-10 text-zinc-950"><div className="mx-auto max-w-3xl">
+    <Link href={`/builder/${siteId}`} className="text-sm font-medium text-zinc-600 hover:text-zinc-950">← Volver al editor</Link>
+    <div className="mt-8 max-w-2xl">
+      <p className="text-xs font-semibold uppercase tracking-[.16em] text-violet-700">Dirección del sitio</p>
+      <h1 className="mt-3 text-4xl font-semibold tracking-tight">Usa tu propio dominio</h1>
+      <p className="mt-3 leading-relaxed text-zinc-600">Conecta la dirección que tus clientes ya conocen. {site.businessName} seguirá alojado en Cluster y el certificado de seguridad se activará automáticamente.</p>
+    </div>
+    <DomainForm siteId={siteId} initialDomain={site.customDomain || ""} verified={Boolean(site.domainVerifiedAt)} proAccess={hasProAccess(user)} />
   </div></main>;
 }

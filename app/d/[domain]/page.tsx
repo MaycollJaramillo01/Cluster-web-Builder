@@ -8,6 +8,7 @@ import { toRenderSection } from "@/lib/site/section";
 import { themeFromSite } from "@/lib/site/theme";
 import { socialLinksFromBlueprint } from "@/lib/site/social-links";
 import { trackSiteView } from "@/lib/site/track-view";
+import { publishedSiteMetadata, publishedSiteStructuredData } from "@/lib/site/metadata";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -19,25 +20,20 @@ async function find(domain: string) {
 export async function generateMetadata({ params }: { params: Promise<{ domain: string }> }): Promise<Metadata> {
   const site = await find(decodeURIComponent((await params).domain));
   if (!site) return { title: "Sitio no encontrado", robots: { index: false, follow: false } };
-  const seo = (site.blueprintJson as { site?: { seo?: { title?: string; metaDescription?: string } } } | null)?.site?.seo;
-  const v2Seo = (site.contentJson as { seo?: { title?: string; description?: string } } | null)?.seo;
-  const title = v2Seo?.title || seo?.title || site.businessName;
-  const description = seo?.metaDescription || `${site.businessName} — ${site.businessType}`;
   const url = `https://${site.customDomain}`;
-  return { title, description: v2Seo?.description || description, alternates: { canonical: url }, openGraph: { title, description: v2Seo?.description || description, url, type: "website" }, robots: { index: true, follow: true } };
+  return publishedSiteMetadata(site, url);
 }
 
 export default async function CustomDomainPage({ params }: { params: Promise<{ domain: string }> }) {
   const site = await find(decodeURIComponent((await params).domain));
   if (!site) notFound();
   void trackSiteView(site.id);
-  const structuredData = { "@context": "https://schema.org", "@type": "LocalBusiness", name: site.businessName, url: `https://${site.customDomain}`, telephone: site.phone || undefined, email: site.email || undefined, address: site.location || undefined };
+  const publicUrl = `https://${site.customDomain}`;
   if (site.builderVersion === 2) return <main>
-    <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData).replace(/</g, "\\u003c") }} />
-    <SitePreviewV2 content={site.contentJson} design={site.designJson} sections={site.sections.map((section) => section.content)} leadEndpoint={`/api/public/sites/${site.publicSlug}/leads`} showBranding={false} />
+    <SitePreviewV2 content={site.contentJson} design={site.designJson} sections={site.sections.map((section) => section.content)} leadEndpoint={`/api/public/sites/${site.publicSlug}/leads`} showBranding={false} publicUrl={publicUrl} indexable />
   </main>;
   return <main>
-    <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData).replace(/</g, "\\u003c") }} />
+    <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(publishedSiteStructuredData(site, publicUrl)).replace(/</g, "\\u003c") }} />
     <SitePreview businessName={site.businessName} businessType={site.businessType} phone={site.phone} email={site.email} location={site.location} publicSlug={site.publicSlug} showBranding={false} logoUrl={site.logoUrl} coverUrl={site.coverUrl} socialLinks={socialLinksFromBlueprint(site.blueprintJson)} theme={themeFromSite(site)} visualStyle={site.visualStyle} sections={site.sections.map(toRenderSection)} />
   </main>;
 }

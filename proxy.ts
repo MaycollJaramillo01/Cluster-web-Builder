@@ -12,19 +12,21 @@ function isDevHost(host: string) {
 
 export function proxy(request: NextRequest) {
   const root = process.env.PUBLIC_ROOT_DOMAIN?.replace(/^https?:\/\//, "").replace(/\/$/, "");
-  if (request.nextUrl.pathname !== "/") return NextResponse.next();
   const host = request.headers.get("host")?.split(":")[0] || "";
+  const pathname = request.nextUrl.pathname;
   if (root && host.endsWith(`.${root}`)) {
     const slug = host.slice(0, -(root.length + 1));
-    if (slug && !slug.includes(".")) return NextResponse.rewrite(new URL(`/s/${slug}`, request.url));
+    if (pathname === "/" && slug && !slug.includes(".")) return NextResponse.rewrite(new URL(`/s/${slug}`, request.url));
   }
   let appHost = "localhost";
   try { if (process.env.NEXT_PUBLIC_APP_URL) appHost = new URL(process.env.NEXT_PUBLIC_APP_URL).hostname; } catch { /* Keep localhost for placeholder values. */ }
   const vercelHost = process.env.VERCEL_URL;
   if (host && host !== appHost && host !== vercelHost && !host.endsWith(".vercel.app") && !isDevHost(host)) {
-    return NextResponse.rewrite(new URL(`/d/${encodeURIComponent(host)}`, request.url));
+    if (pathname === "/") return NextResponse.rewrite(new URL(`/d/${encodeURIComponent(host)}`, request.url));
+    if (pathname === "/sitemap.xml") return NextResponse.rewrite(new URL(`/d/${encodeURIComponent(host)}/sitemap.xml`, request.url));
+    if (pathname === "/robots.txt") return NextResponse.rewrite(new URL(`/d/${encodeURIComponent(host)}/robots.txt`, request.url));
   }
   return NextResponse.next();
 }
 
-export const config = { matcher: ["/((?!api|_next|favicon.ico|robots.txt|sitemap.xml).*)"] };
+export const config = { matcher: ["/((?!api|_next|favicon.ico).*)"] };

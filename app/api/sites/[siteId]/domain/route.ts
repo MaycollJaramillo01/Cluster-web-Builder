@@ -5,7 +5,8 @@ import { getUserBySessionToken, SESSION_COOKIE } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { hasProAccess } from "@/lib/entitlements";
 import { trackProductEvent } from "@/lib/product-events";
-import { addProjectDomain, removeProjectDomain, verifyProjectDomain } from "@/lib/vercel-domains";
+import { dnsRecordsForDomain } from "@/lib/site/domain-dns";
+import { addProjectDomain, getDomainConfiguration, removeProjectDomain, verifyProjectDomain } from "@/lib/vercel-domains";
 
 const schema = z.object({ domain: z.string().trim().toLowerCase().max(253).regex(/^(?=.{4,253}$)(?!-)(?:[a-z0-9-]+\.)+[a-z]{2,63}$/) });
 
@@ -26,9 +27,15 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
   try {
     const result = await addProjectDomain(parsed.data.domain);
-    await prisma.site.update({ where: { id: siteId }, data: { customDomain: parsed.data.domain, domainVerifiedAt: result?.verified ? new Date() : null } });
-    await trackProductEvent("domain_connected", { userId: access.user.id, siteId, metadata: { verified: Boolean(result?.verified) } });
-    return NextResponse.json({ domain: parsed.data.domain, verified: Boolean(result?.verified), verification: result?.verification || [], providerConfigured: Boolean(result) });
+    const configuration = result ? await getDomainConfiguration(parsed.data.domain) : null;
+    const verified = Boolean(result?.verified && configuration?.misconfigured === false);
+    await prisma.site.update({ where: { id: siteId }, data: { customDomain: parsed.data.domain, domainVerifiedAt: verified ? new Date() : null } });
+    if (access.site.customDomain && access.site.customDomain !== parsed.data.domain) {
+      const removal = removeProjectDomain(access.site.customDomain);
+      if (removal) await removal.catch(() => null);
+    }
+    await trackProductEvent("domain_connected", { userId: access.user.id, siteId, metadata: { verified } });
+    return NextResponse.json({ domain: parsed.data.domain, verified, ownershipVerified: Boolean(result?.verified), records: dnsRecordsForDomain(parsed.data.domain, result?.verification), providerConfigured: Boolean(result), propagationHours: 48 });
   } catch (reason) {
     return NextResponse.json({ error: reason instanceof Error ? reason.message : "No se pudo agregar el dominio." }, { status: 502 });
   }
@@ -41,9 +48,10 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   if (!hasProAccess(access.user)) return NextResponse.json({ error: "El dominio personalizado requiere Cluster Pro.", upgradeRequired: true }, { status: 402 });
   try {
     const result = await verifyProjectDomain(access.site.customDomain);
-    const verified = Boolean(result?.verified);
+    const configuration = result ? await getDomainConfiguration(access.site.customDomain) : null;
+    const verified = Boolean(result?.verified && configuration?.misconfigured === false);
     await prisma.site.update({ where: { id: siteId }, data: { domainVerifiedAt: verified ? new Date() : null } });
-    return NextResponse.json({ domain: access.site.customDomain, verified, verification: result?.verification || [], providerConfigured: Boolean(result) });
+    return NextResponse.json({ domain: access.site.customDomain, verified, ownershipVerified: Boolean(result?.verified), records: dnsRecordsForDomain(access.site.customDomain, result?.verification), providerConfigured: Boolean(result), propagationHours: 48 });
   } catch (reason) {
     return NextResponse.json({ error: reason instanceof Error ? reason.message : "No se pudo verificar el dominio." }, { status: 502 });
   }
@@ -58,5 +66,6 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     if (removal) await removal.catch(() => null);
   }
   await prisma.site.update({ where: { id: siteId }, data: { customDomain: null, domainVerifiedAt: null } });
+  await trackProductEvent("domain_removed", { userId: access.user.id, siteId });
   return NextResponse.json({ ok: true });
 }

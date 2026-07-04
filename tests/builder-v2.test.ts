@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { renderSiteV2 } from "../lib/site/v2-render";
+import { dnsRecordsForDomain } from "../lib/site/domain-dns";
+import { publishedSiteMetadata, publishedSiteStructuredData } from "../lib/site/metadata";
 import { parseV2Clipboard } from "../lib/site/v2-clipboard";
 import { getAllTemplatesV2, instantiateTemplateV2, LEGACY_TEMPLATE_MIGRATION, SECTION_LIBRARY_V2 } from "../lib/site/v2-templates";
 import { normalizeCanvasSectionsV2, normalizeSiteContentV2, normalizeWidgetV2, V2_TEMPLATE_IDS, V2_WIDGET_TYPES } from "../lib/site/v2-schema";
@@ -86,4 +88,55 @@ test("el fondo de imagen se valida y genera CSS seguro", () => {
   const unsafe = normalizeCanvasSectionsV2(document.sections);
   assert.equal(unsafe[1].style?.desktop?.backgroundImage, "");
   assert.doesNotMatch(renderSiteV2({ content: document.content, design: document.template.theme, sections: unsafe, leadEndpoint: "/api/leads" }).css, /javascript:/);
+});
+
+test("el sitio publicado emite SEO social, canonical, favicon y JSON-LD", () => {
+  const document = instantiateTemplateV2("local", {
+    ...content,
+    business: { ...content.business, logo: "https://cdn.example.com/logo.webp" },
+    hero: { ...content.hero, media: "https://cdn.example.com/cover.webp" },
+  });
+  const rendered = renderSiteV2({ content: document.content, design: document.template.theme, sections: document.sections, leadEndpoint: "/api/leads", publicUrl: "https://tallernorte.com", indexable: true });
+  assert.match(rendered.head, /name="robots" content="index,follow"/);
+  assert.match(rendered.head, /rel="canonical" href="https:\/\/tallernorte\.com\/"/);
+  assert.match(rendered.head, /property="og:image" content="https:\/\/cdn\.example\.com\/cover\.webp"/);
+  assert.match(rendered.head, /name="twitter:card" content="summary_large_image"/);
+  assert.match(rendered.head, /rel="icon" href="https:\/\/cdn\.example\.com\/logo\.webp"/);
+  assert.match(rendered.body, /"@type":"LocalBusiness"/);
+  assert.match(rendered.body, /"streetAddress":"Managua"/);
+});
+
+test("el preview no se indexa y las secciones vacías colapsan fuera del editor", () => {
+  const empty = normalizeSiteContentV2({ ...content, services: [], benefits: [], reviews: [], faqs: [], media: [] });
+  const document = instantiateTemplateV2("catalog", empty);
+  const published = renderSiteV2({ content: document.content, design: document.template.theme, sections: document.sections, leadEndpoint: "/api/leads" });
+  const editor = renderSiteV2({ content: document.content, design: document.template.theme, sections: document.sections, leadEndpoint: "/api/leads", editable: true });
+  assert.match(published.head, /noindex,nofollow/);
+  assert.doesNotMatch(published.body, /id="catalog"/);
+  assert.match(editor.body, /id="catalog"/);
+  assert.match(editor.body, /Agrega elementos a esta lista/);
+});
+
+test("el renderer elige texto oscuro para CTA con acento claro", () => {
+  const document = instantiateTemplateV2("local", content);
+  const rendered = renderSiteV2({ content: document.content, design: document.template.theme, sections: document.sections, leadEndpoint: "/api/leads" });
+  assert.match(rendered.css, /--button-text:#111827/);
+  assert.match(rendered.css, /min-height:100dvh/);
+  assert.match(rendered.css, /margin-top:auto/);
+});
+
+test("la metadata publicada usa la misma fuente SEO y estructura LocalBusiness", () => {
+  const source = { builderVersion: 2, businessName: "Taller Norte", businessType: "Arquitectura", location: "Managua", phone: "+505 8000 0000", contentJson: content };
+  const metadata = publishedSiteMetadata(source, "https://tallernorte.com");
+  assert.equal(metadata.alternates?.canonical, "https://tallernorte.com");
+  assert.equal(metadata.robots && typeof metadata.robots === "object" && "index" in metadata.robots ? metadata.robots.index : false, true);
+  assert.equal(publishedSiteStructuredData(source, "https://tallernorte.com")["@type"], "LocalBusiness");
+});
+
+test("las instrucciones DNS conservan retos de Vercel y agregan el registro de enrutamiento", () => {
+  const apex = dnsRecordsForDomain("negocio.com", [{ type: "TXT", domain: "_vercel", value: "vc-domain-verify=abc" }]);
+  assert.deepEqual(apex.map((record) => record.type), ["TXT", "A"]);
+  assert.equal(apex[1].value, "76.76.21.21");
+  const www = dnsRecordsForDomain("www.negocio.com", []);
+  assert.deepEqual(www, [{ type: "CNAME", name: "www", value: "cname.vercel-dns-0.com" }]);
 });

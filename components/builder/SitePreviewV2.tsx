@@ -6,6 +6,9 @@ type SitePreviewV2Props = {
   sections: unknown;
   leadEndpoint: string;
   showBranding?: boolean;
+  publicUrl?: string;
+  indexable?: boolean;
+  socialImage?: string;
 };
 
 /** The public page, editor preview and ZIP all consume renderSiteV2. */

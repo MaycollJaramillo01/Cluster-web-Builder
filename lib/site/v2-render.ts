@@ -10,11 +10,17 @@ export type RenderSiteV2Input = {
   sections: unknown;
   leadEndpoint: string;
   showBranding?: boolean;
+  /** URL canónica del sitio publicado. En preview se omite. */
+  publicUrl?: string;
+  /** Solo los sitios publicados deben ser indexables. */
+  indexable?: boolean;
+  /** Imagen explícita para tarjetas sociales. */
+  socialImage?: string;
   /** Modo editor: resalta elementos al pasar el cursor y reporta clics al padre via postMessage. */
   editable?: boolean;
 };
 
-export type RenderedSiteV2 = { html: string; body: string; css: string; script: string };
+export type RenderedSiteV2 = { html: string; head: string; body: string; css: string; script: string };
 
 const escapeHtml = (value: unknown) => String(value ?? "").replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]!);
 const safeUrl = (value: unknown) => {
@@ -22,7 +28,21 @@ const safeUrl = (value: unknown) => {
   return clean.startsWith("http://") ? "" : clean;
 };
 
-const FONT_SIZE: Record<NonNullable<StyleTokensV2["fontSize"]>, string> = { xs: ".75rem", sm: ".875rem", md: "1rem", lg: "1.25rem", xl: "1.75rem", "2xl": "2.5rem", display: "clamp(3rem,8vw,7.5rem)" };
+function readableText(background: string) {
+  const hex = background.replace("#", "");
+  if (!/^[0-9a-f]{6}$/i.test(hex)) return "#ffffff";
+  const channels = [0, 2, 4].map((offset) => Number.parseInt(hex.slice(offset, offset + 2), 16) / 255)
+    .map((value) => value <= .03928 ? value / 12.92 : ((value + .055) / 1.055) ** 2.4);
+  const luminance = .2126 * channels[0] + .7152 * channels[1] + .0722 * channels[2];
+  return luminance > .42 ? "#111827" : "#ffffff";
+}
+
+function socialImageFor(content: SiteContentV2, explicit?: string) {
+  const candidates = [explicit, content.hero.media, content.business.logo];
+  return candidates.map(safeUrl).find((url) => url && !/(?:youtu\.be|youtube\.com|\.mp4(?:$|[?#])|\.webm(?:$|[?#]))/i.test(url)) || "";
+}
+
+const FONT_SIZE: Record<NonNullable<StyleTokensV2["fontSize"]>, string> = { xs: ".75rem", sm: ".875rem", md: "1rem", lg: "1.25rem", xl: "1.75rem", "2xl": "2.5rem", display: "clamp(2.8rem,7vw,6rem)" };
 const FONT_WEIGHT = { normal: 400, medium: 500, semibold: 600, bold: 700, black: 900 } as const;
 const SPACE = { none: "0", sm: ".75rem", md: "1.5rem", lg: "3rem", xl: "5rem" } as const;
 const RADIUS = { none: "0", sm: ".25rem", md: ".75rem", lg: "1.5rem", pill: "999px" } as const;
@@ -35,7 +55,8 @@ function tokensCss(style?: StyleTokensV2) {
   const cssBackgroundImage = backgroundImage.replace(/["'()\\\s]/g, (character) => encodeURIComponent(character));
   return [
     style.color && `color:${style.color}`, style.background && `background:${style.background}`,
-    backgroundImage && `background-image:url("${cssBackgroundImage}")`, backgroundImage && "background-size:cover", backgroundImage && "background-position:center",
+    backgroundImage && !style.background && "background-color:#111827", backgroundImage && !style.color && "color:#ffffff",
+    backgroundImage && `background-image:url("${cssBackgroundImage}")`, backgroundImage && "background-size:cover", backgroundImage && "background-position:center", backgroundImage && "background-blend-mode:multiply",
     style.align && `text-align:${style.align}`, style.fontSize && `font-size:${FONT_SIZE[style.fontSize]}`,
     style.fontWeight && `font-weight:${FONT_WEIGHT[style.fontWeight]}`, style.padding && `padding:${SPACE[style.padding]}`,
     style.gap && `gap:${SPACE[style.gap]}`, style.radius && `border-radius:${RADIUS[style.radius]}`,
@@ -71,17 +92,18 @@ function widgetHtml(widget: WidgetV2, content: SiteContentV2, theme: ThemeTokens
     }
     case "heading": {
       const level = widget.variant === "h1" ? "h1" : widget.variant === "h3" ? "h3" : "h2";
+      if (!String(value || "").trim()) return editable ? `<${level} ${attr} class="v2-empty-placeholder">Escribe un título</${level}>` : "";
       return `<${level} ${attr}>${escapeHtml(value)}</${level}>`;
     }
-    case "text": return `<p ${attr}>${escapeHtml(value)}</p>`;
+    case "text": return String(value || "").trim() ? `<p ${attr}>${escapeHtml(value)}</p>` : editable ? `<p ${attr} class="v2-empty-placeholder">Escribe un texto</p>` : "";
     case "image": {
       const source = safeUrl(value);
-      if (!source) return `<div ${attr} class="v2-media-placeholder">Agrega una imagen</div>`;
+      if (!source) return editable ? `<div ${attr} class="v2-media-placeholder">Agrega una imagen</div>` : "";
       return `<img ${attr} class="v2-image v2-image-${escapeHtml(widget.variant || "cover")}" src="${escapeHtml(source)}" alt="${escapeHtml(widget.data?.alt || content.business.name)}" loading="lazy">`;
     }
     case "video": {
       const source = safeUrl(value);
-      if (!source) return `<div ${attr} class="v2-media-placeholder">Agrega un video</div>`;
+      if (!source) return editable ? `<div ${attr} class="v2-media-placeholder">Agrega un video</div>` : "";
       const youtube = source.match(/(?:youtu\.be\/|youtube\.com\/watch\?v=)([\w-]{6,20})/i)?.[1];
       if (youtube) return `<iframe ${attr} class="v2-video" src="https://www.youtube-nocookie.com/embed/${escapeHtml(youtube)}" title="Video" loading="lazy" allowfullscreen></iframe>`;
       if (!/\.(?:mp4|webm)(?:$|[?#])/i.test(source)) return `<img ${attr} class="v2-image v2-image-cover" src="${escapeHtml(source)}" alt="${escapeHtml(content.business.name)}" loading="lazy">`;
@@ -95,18 +117,22 @@ function widgetHtml(widget: WidgetV2, content: SiteContentV2, theme: ThemeTokens
     case "business_info": return `<address ${attr} class="v2-business-info"><strong>${escapeHtml(content.business.name)}</strong>${content.business.phone ? `<a href="tel:${escapeHtml(content.business.phone)}">${escapeHtml(content.business.phone)}</a>` : ""}${content.business.email ? `<a href="mailto:${escapeHtml(content.business.email)}">${escapeHtml(content.business.email)}</a>` : ""}${content.business.location ? `<span>${escapeHtml(content.business.location)}</span>` : ""}</address>`;
     case "list": {
       const items = Array.isArray(value) ? value : [];
+      if (!items.length) return editable ? `<div ${attr} class="v2-empty-placeholder">Agrega elementos a esta lista</div>` : "";
       return `<div ${attr} class="v2-list v2-list-${escapeHtml(widget.variant || "cards")}">${items.map((item, index) => { const record = item as Record<string, unknown>; return `<article><span class="v2-index">${String(index + 1).padStart(2, "0")}</span>${record.image ? `<img src="${escapeHtml(safeUrl(record.image))}" alt="" loading="lazy">` : ""}<h3>${escapeHtml(record.title)}</h3><p>${escapeHtml(record.description)}</p>${record.meta ? `<small>${escapeHtml(record.meta)}</small>` : ""}</article>`; }).join("")}</div>`;
     }
     case "gallery": {
       const items = Array.isArray(value) ? value : [];
+      if (!items.some((item) => safeUrl((item as Record<string, unknown>)?.url))) return editable ? `<div ${attr} class="v2-media-placeholder">Agrega imágenes a la galería</div>` : "";
       return `<div ${attr} class="v2-gallery v2-gallery-${escapeHtml(widget.variant || "grid")}">${items.map((item) => { const record = item as Record<string, unknown>; const source = safeUrl(record.url); return source ? `<figure><img src="${escapeHtml(source)}" alt="${escapeHtml(record.alt)}" loading="lazy"></figure>` : ""; }).join("")}</div>`;
     }
     case "testimonials": {
       const reviews = Array.isArray(value) ? value : [];
+      if (!reviews.length) return editable ? `<div ${attr} class="v2-empty-placeholder">Agrega reseñas</div>` : "";
       return `<div ${attr} class="v2-testimonials v2-testimonials-${escapeHtml(widget.variant || "cards")}">${reviews.map((item) => { const review = item as Record<string, unknown>; return `<figure><div class="v2-stars" aria-label="${escapeHtml(review.rating || 5)} de 5 estrellas">★★★★★</div><blockquote>“${escapeHtml(review.quote)}”</blockquote><figcaption><strong>${escapeHtml(review.name)}</strong>${review.role ? `<span>${escapeHtml(review.role)}</span>` : ""}</figcaption></figure>`; }).join("")}</div>`;
     }
     case "accordion": {
       const faqs = Array.isArray(value) ? value : [];
+      if (!faqs.length) return editable ? `<div ${attr} class="v2-empty-placeholder">Agrega preguntas frecuentes</div>` : "";
       return `<div ${attr} class="v2-accordion">${faqs.map((item) => { const faq = item as Record<string, unknown>; return `<details><summary>${escapeHtml(faq.question)}</summary><p>${escapeHtml(faq.answer)}</p></details>`; }).join("")}</div>`;
     }
     case "form": {
@@ -120,17 +146,19 @@ function widgetHtml(widget: WidgetV2, content: SiteContentV2, theme: ThemeTokens
     }
     case "social": {
       const links = value && typeof value === "object" ? Object.entries(value as Record<string, unknown>) : [];
+      if (!links.some(([, href]) => safeUrl(href))) return editable ? `<nav ${attr} class="v2-empty-placeholder">Agrega tus redes sociales</nav>` : "";
       return `<nav ${attr} class="v2-social" aria-label="Redes sociales">${links.map(([label, href]) => { const safe = safeUrl(href); return safe ? `<a href="${escapeHtml(safe)}" target="_blank" rel="noreferrer">${escapeHtml(label)}</a>` : ""; }).join("")}</nav>`;
     }
     case "map": {
       const location = String(value || content.business.location);
+      if (!location.trim()) return editable ? `<div ${attr} class="v2-empty-placeholder">Agrega la ubicación</div>` : "";
       return `<a ${attr} class="v2-map" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(location)}" target="_blank" rel="noreferrer"><span>Ubicación</span><strong>${escapeHtml(location)}</strong><small>Abrir en Google Maps ↗</small></a>`;
     }
     case "divider": return `<hr ${attr}>`;
     case "spacer": return `<div ${attr} aria-hidden class="v2-spacer v2-spacer-${escapeHtml(String(widget.data?.size || "md"))}"></div>`;
     case "embed": {
       const code = typeof widget.data?.html === "string" ? widget.data.html.slice(0, 8000) : "";
-      if (!code.trim()) return `<div ${attr} class="v2-media-placeholder">Agrega tu código insertado</div>`;
+      if (!code.trim()) return editable ? `<div ${attr} class="v2-media-placeholder">Agrega tu código insertado</div>` : "";
       const height = Math.max(60, Math.min(1200, Number(widget.data?.height) || 300));
       // Sandbox sin allow-same-origin: el código pegado no puede leer cookies ni tocar el resto del sitio.
       return `<iframe ${attr} class="v2-embed" style="height:${height}px" sandbox="allow-scripts allow-popups" loading="lazy" title="Contenido insertado" srcdoc="${escapeHtml(code)}"></iframe>`;
@@ -139,8 +167,16 @@ function widgetHtml(widget: WidgetV2, content: SiteContentV2, theme: ThemeTokens
 }
 
 function sectionHtml(section: CanvasSectionV2, content: SiteContentV2, theme: ThemeTokensV2, leadEndpoint: string, editable = false) {
-  const rows = section.rows.map((row) => `<div class="v2-row" data-row-id="${escapeHtml(row.id)}">${row.columns.map((column) => `<div class="v2-column" data-column-id="${escapeHtml(column.id)}" style="--span-d:${column.span.desktop};--span-t:${column.span.tablet};--span-m:${column.span.mobile}">${column.widgets.map((widget) => widgetHtml(widget, content, theme, leadEndpoint, editable)).join("")}</div>`).join("")}</div>`).join("");
-  return `<section id="${escapeHtml(section.key)}" class="v2-section v2-region-${section.region}" data-section-id="${escapeHtml(section.id)}"><div class="v2-section-inner">${rows}</div></section>`;
+  const rows = section.rows.map((row) => {
+    const columns = row.columns.map((column) => {
+      const widgets = column.widgets.map((widget) => widgetHtml(widget, content, theme, leadEndpoint, editable)).join("");
+      return widgets || editable ? `<div class="v2-column" data-column-id="${escapeHtml(column.id)}" style="--span-d:${column.span.desktop};--span-t:${column.span.tablet};--span-m:${column.span.mobile}">${widgets}</div>` : "";
+    }).join("");
+    return columns || editable ? `<div class="v2-row" data-row-id="${escapeHtml(row.id)}">${columns}</div>` : "";
+  }).join("");
+  if (!rows && !editable) return "";
+  const key = section.key.replace(/[^a-zA-Z0-9_-]/g, "");
+  return `<section id="${escapeHtml(section.key)}" class="v2-section v2-region-${section.region} v2-key-${key}" data-section-id="${escapeHtml(section.id)}"><div class="v2-section-inner">${rows}</div></section>`;
 }
 
 function dynamicCss(sections: CanvasSectionV2[]) {
@@ -153,7 +189,25 @@ function dynamicCss(sections: CanvasSectionV2[]) {
 
 function baseCss(theme: ThemeTokensV2) {
   const radius = RADIUS[theme.radius];
-  return `:root{--primary:${theme.primary};--secondary:${theme.secondary};--accent:${theme.accent};--bg:${theme.background};--text:${theme.text};--muted:${theme.muted};--radius:${radius};--heading:${theme.headingFont};--body:${theme.bodyFont}}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--text);font:16px/1.65 var(--body);overflow-x:hidden}img,video,iframe{max-width:100%}a{color:inherit}.v2-site{min-height:100vh}.v2-section{padding:4rem max(5vw,1.25rem)}.v2-section-inner{width:min(1200px,100%);margin:auto}.v2-row{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:1.5rem;align-items:center}.v2-row+.v2-row{margin-top:2rem}.v2-column{grid-column:span var(--span-d);display:flex;flex-direction:column;gap:1.25rem;min-width:0}h1,h2,h3,p{margin:0}h1,h2,h3{font-family:var(--heading);line-height:1.04}h1{font-size:clamp(2.8rem,7vw,6.5rem)}h2{font-size:clamp(2rem,4vw,4rem)}h3{font-size:1.25rem}.v2-region-header{position:relative;z-index:20;padding-block:1rem;border-bottom:1px solid color-mix(in srgb,var(--text) 12%,transparent)}.v2-region-footer{background:var(--secondary);color:white}.v2-brand{display:flex;align-items:center;gap:.75rem;text-decoration:none;font-family:var(--heading)}.v2-brand img{width:42px;height:42px;object-fit:contain}.v2-region-header nav{display:flex;justify-content:flex-end;gap:1.25rem}.v2-region-header nav a{text-decoration:none;font-size:.9rem}.v2-button{display:inline-flex;width:max-content;min-height:44px;align-items:center;justify-content:center;border:0;border-radius:var(--radius);background:var(--accent);color:#fff;padding:.75rem 1.25rem;font-weight:700;text-decoration:none;cursor:pointer}.v2-button-outline{background:transparent;color:currentColor;border:1px solid currentColor}.v2-image{width:100%;height:100%;min-height:280px;object-fit:cover;border-radius:var(--radius)}.v2-image-portrait{aspect-ratio:4/5}.v2-image-monochrome{filter:grayscale(1)}.v2-video{width:100%;aspect-ratio:16/9;border:0;background:#000;border-radius:var(--radius)}.v2-media-placeholder{display:grid;min-height:260px;place-items:center;border:1px dashed currentColor;border-radius:var(--radius);opacity:.55}.v2-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:1rem}.v2-list article,.v2-testimonials figure{margin:0;padding:1.5rem;border:1px solid color-mix(in srgb,currentColor 15%,transparent);border-radius:var(--radius);background:color-mix(in srgb,var(--bg) 94%,var(--primary))}.v2-list article h3{margin:.5rem 0}.v2-list article p,.v2-list article small{color:var(--muted)}.v2-list-minimal{display:block}.v2-list-minimal article{border:0;border-bottom:1px solid color-mix(in srgb,currentColor 18%,transparent);border-radius:0;background:none}.v2-list-editorial article:nth-child(even){transform:translateY(2rem)}.v2-list-metrics article{text-align:center}.v2-list-metrics h3{font-size:2rem}.v2-index{font:700 .75rem monospace;color:var(--primary)}.v2-gallery{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem}.v2-gallery figure{margin:0;overflow:hidden;border-radius:var(--radius)}.v2-gallery img{width:100%;height:280px;object-fit:cover}.v2-gallery-mosaic figure:first-child{grid-column:span 2;grid-row:span 2}.v2-gallery-mosaic figure:first-child img{height:576px}.v2-gallery-filmstrip{display:flex;overflow:auto}.v2-gallery-filmstrip figure{min-width:70%}.v2-testimonials{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:1rem}.v2-testimonials blockquote{margin:1rem 0;font-size:1.05rem}.v2-testimonials figcaption{display:flex;flex-direction:column}.v2-testimonials-quotes figure{border:0;background:none}.v2-stars{color:var(--accent);letter-spacing:.1em}.v2-accordion details{border-bottom:1px solid color-mix(in srgb,currentColor 18%,transparent);padding:1rem 0}.v2-accordion summary{cursor:pointer;font-weight:700}.v2-accordion details p{margin-top:.75rem;color:var(--muted)}.v2-business-info{display:flex;flex-direction:column;gap:.5rem;font-style:normal}.v2-form-wrap form{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1.5rem;padding:1.5rem;border:1px solid color-mix(in srgb,currentColor 15%,transparent);border-radius:var(--radius);background:color-mix(in srgb,var(--bg) 96%,var(--primary))}.v2-form-wrap label{display:grid;gap:.35rem;font-size:.85rem}.v2-form-wrap input,.v2-form-wrap textarea{width:100%;min-height:44px;padding:.75rem;border:1px solid #8885;border-radius:calc(var(--radius)/2);background:transparent;color:inherit;font:inherit}.v2-form-wrap textarea{min-height:130px}.v2-wide,.v2-form-wrap output,.v2-form-wrap button{grid-column:1/-1}.v2-trap{display:none}.v2-social{display:flex;flex-wrap:wrap;gap:.75rem}.v2-map{display:flex;min-height:260px;flex-direction:column;justify-content:flex-end;padding:1.5rem;border-radius:var(--radius);background:color-mix(in srgb,var(--primary) 15%,var(--bg));text-decoration:none}.v2-map strong{font-size:1.35rem}.v2-spacer-sm{height:1rem}.v2-spacer-md{height:2.5rem}.v2-spacer-lg{height:5rem}.v2-embed{width:100%;border:0;border-radius:var(--radius);background:#fff}@media(max-width:1024px){.v2-column{grid-column:span var(--span-t)}.v2-section{padding-block:3rem}.v2-region-header nav{flex-wrap:wrap}}@media(max-width:640px){.v2-row{gap:1rem}.v2-column{grid-column:span var(--span-m)}.v2-section{padding:2.5rem 1.1rem}.v2-region-header .v2-row{display:flex;justify-content:space-between}.v2-region-header nav{display:none}.v2-gallery{grid-template-columns:1fr 1fr}.v2-gallery img{height:210px}.v2-gallery-mosaic figure:first-child{grid-column:span 2}.v2-form-wrap form{grid-template-columns:1fr}.v2-form-wrap label,.v2-form-wrap button,.v2-form-wrap output{grid-column:1}}@media(prefers-reduced-motion:no-preference){.v2-motion-subtle .v2-region-main{animation:v2-reveal .5s ease both}.v2-motion-stagger .v2-region-main{animation:v2-reveal .6s ease both}.v2-motion-cinematic .v2-region-main{animation:v2-cinema .8s cubic-bezier(.2,.8,.2,1) both}@keyframes v2-reveal{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}@keyframes v2-cinema{from{opacity:0;transform:scale(.985)}to{opacity:1;transform:none}}}`;
+  const buttonText = readableText(theme.accent);
+  const footerText = readableText(theme.secondary);
+  return `:root{--primary:${theme.primary};--secondary:${theme.secondary};--accent:${theme.accent};--button-text:${buttonText};--footer-text:${footerText};--bg:${theme.background};--text:${theme.text};--muted:${theme.muted};--radius:${radius};--heading:${theme.headingFont};--body:${theme.bodyFont}}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--text);font:16px/1.65 var(--body);overflow-x:hidden}img,video,iframe{display:block;max-width:100%}a{color:inherit}.v2-site{display:flex;min-height:100dvh;flex-direction:column;background:var(--bg)}
+.v2-section{padding:clamp(3rem,6vw,6rem) max(5vw,1.25rem)}.v2-section-inner{width:min(1200px,100%);margin:auto}.v2-row{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:clamp(1.25rem,3vw,2.5rem);align-items:center}.v2-row+.v2-row{margin-top:clamp(2rem,4vw,4rem)}.v2-column{grid-column:span var(--span-d);display:flex;min-width:0;flex-direction:column;gap:1.25rem}.v2-column>p{max-width:68ch}
+h1,h2,h3,p{margin:0}h1,h2,h3{font-family:var(--heading);line-height:1.06;text-wrap:balance}h1{max-width:18ch;font-size:clamp(2.6rem,6vw,5.5rem);letter-spacing:-.045em}h2{max-width:24ch;font-size:clamp(2rem,4vw,3.75rem);letter-spacing:-.03em}h3{font-size:clamp(1.1rem,2vw,1.35rem)}
+.v2-region-header{position:relative;z-index:20;padding-block:1rem;border-bottom:1px solid color-mix(in srgb,var(--text) 12%,transparent)}.v2-region-header .v2-section-inner{width:min(1320px,100%)}.v2-region-footer{margin-top:auto;background:var(--secondary)!important;color:var(--footer-text)!important}.v2-region-footer .v2-row{align-items:start}.v2-region-footer a{color:inherit}
+.v2-brand{display:flex;align-items:center;gap:.75rem;text-decoration:none;font-family:var(--heading)}.v2-brand img{width:42px;height:42px;object-fit:contain}.v2-region-header nav{display:flex;justify-content:flex-end;gap:1.25rem;white-space:nowrap}.v2-region-header nav a{text-decoration:none;font-size:.9rem}
+.v2-button{display:inline-flex;width:max-content;min-height:46px;align-items:center;justify-content:center;border:0;border-radius:var(--radius);background:var(--accent);color:var(--button-text);padding:.8rem 1.35rem;font-weight:750;line-height:1.1;text-decoration:none;white-space:nowrap;cursor:pointer;transition:transform .2s ease,filter .2s ease}.v2-button:hover{filter:brightness(.94)}.v2-button:active{transform:translateY(1px)}.v2-button:focus-visible{outline:3px solid color-mix(in srgb,var(--accent) 55%,white);outline-offset:3px}.v2-button-outline{background:transparent;color:currentColor;border:1px solid currentColor}
+.v2-image{width:100%;min-height:280px;aspect-ratio:4/3;object-fit:cover;border-radius:var(--radius)}.v2-image-portrait{aspect-ratio:4/5}.v2-image-wide{aspect-ratio:16/8}.v2-image-monochrome{filter:grayscale(1)}.v2-video{width:100%;aspect-ratio:16/9;border:0;background:#09090b;border-radius:var(--radius)}.v2-media-placeholder,.v2-empty-placeholder{display:grid;min-height:120px;place-items:center;border:1px dashed currentColor;border-radius:var(--radius);padding:1rem;opacity:.58}
+.v2-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem}.v2-list article,.v2-testimonials figure{margin:0;padding:clamp(1.25rem,2.5vw,2rem);border:1px solid color-mix(in srgb,currentColor 14%,transparent);border-radius:var(--radius);background:color-mix(in srgb,currentColor 6%,transparent)}.v2-list article h3{margin:.55rem 0}.v2-list article p,.v2-list article small{color:color-mix(in srgb,currentColor 72%,transparent)}.v2-list article img{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:calc(var(--radius)/2);margin-bottom:1rem}.v2-list-minimal{display:block}.v2-list-minimal article{border:0;border-bottom:1px solid color-mix(in srgb,currentColor 18%,transparent);border-radius:0;background:none}.v2-list-minimal article:last-child{border-bottom:0}.v2-list-editorial article:nth-child(even){transform:translateY(1.5rem)}.v2-list-bento{grid-template-columns:repeat(12,minmax(0,1fr))}.v2-list-bento article{grid-column:span 5}.v2-list-bento article:nth-child(3n+1){grid-column:span 7}.v2-list-metrics article{text-align:center}.v2-list-metrics h3{font-size:clamp(1.75rem,4vw,3rem)}.v2-index{font:700 .75rem monospace;color:var(--primary)}
+.v2-gallery{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:1rem}.v2-gallery figure{grid-column:span 4;margin:0;overflow:hidden;border-radius:var(--radius)}.v2-gallery img{width:100%;height:clamp(220px,24vw,340px);object-fit:cover}.v2-gallery-mosaic figure:first-child{grid-column:span 8;grid-row:span 2}.v2-gallery-mosaic figure:first-child img{height:100%;min-height:576px}.v2-gallery-filmstrip{display:flex;overflow:auto;scroll-snap-type:x mandatory}.v2-gallery-filmstrip figure{min-width:min(70%,780px);scroll-snap-align:start}
+.v2-testimonials{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:1rem}.v2-testimonials blockquote{display:-webkit-box;overflow:hidden;margin:1rem 0;font-size:1.05rem;-webkit-box-orient:vertical;-webkit-line-clamp:3}.v2-testimonials figcaption{display:flex;flex-direction:column}.v2-testimonials-quotes figure{border:0;background:none}.v2-stars{color:var(--accent);letter-spacing:.08em}
+.v2-accordion{max-width:900px}.v2-accordion details{border-bottom:1px solid color-mix(in srgb,currentColor 18%,transparent);padding:1rem 0}.v2-accordion summary{cursor:pointer;font-weight:700}.v2-accordion details p{margin-top:.75rem;color:var(--muted)}.v2-business-info{display:flex;flex-direction:column;gap:.5rem;font-style:normal}
+.v2-form-wrap form{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1.5rem;padding:clamp(1.25rem,3vw,2rem);border:1px solid color-mix(in srgb,currentColor 22%,transparent);border-radius:var(--radius);background:color-mix(in srgb,var(--bg) 94%,var(--primary))}.v2-form-wrap label{display:grid;gap:.4rem;font-size:.875rem;font-weight:650}.v2-form-wrap input,.v2-form-wrap textarea{width:100%;min-height:46px;padding:.75rem;border:1px solid color-mix(in srgb,currentColor 40%,transparent);border-radius:calc(var(--radius)/2);background:color-mix(in srgb,var(--bg) 97%,var(--text));color:var(--text);font:inherit}.v2-form-wrap input:focus,.v2-form-wrap textarea:focus{outline:3px solid color-mix(in srgb,var(--accent) 45%,transparent);border-color:var(--accent)}.v2-form-wrap textarea{min-height:130px}.v2-wide,.v2-form-wrap output,.v2-form-wrap button{grid-column:1/-1}.v2-trap{display:none}
+.v2-social{display:flex;flex-wrap:wrap;gap:.75rem}.v2-social a{text-underline-offset:.25em}.v2-map{display:flex;min-height:280px;flex-direction:column;justify-content:flex-end;padding:1.5rem;border-radius:var(--radius);background:color-mix(in srgb,var(--primary) 15%,var(--bg));text-decoration:none}.v2-map strong{font-size:1.35rem}.v2-spacer-sm{height:1rem}.v2-spacer-md{height:2.5rem}.v2-spacer-lg{height:5rem}.v2-embed{width:100%;border:0;border-radius:var(--radius);background:#fff}
+@media(max-width:1024px){.v2-column{grid-column:span var(--span-t)}.v2-section{padding-block:clamp(3rem,7vw,5rem)}.v2-region-header nav{gap:.8rem}.v2-list-bento article,.v2-list-bento article:nth-child(3n+1){grid-column:span 6}}
+@media(max-width:640px){.v2-row{gap:1.25rem}.v2-column{grid-column:span var(--span-m)}.v2-section{padding:3rem 1.1rem}.v2-region-header{padding-block:.75rem}.v2-region-header .v2-row{display:flex;justify-content:space-between}.v2-region-header nav{display:none}h1{font-size:clamp(2.35rem,13vw,4rem)}h2{font-size:clamp(1.9rem,10vw,3rem)}.v2-list-bento article,.v2-list-bento article:nth-child(3n+1){grid-column:1/-1}.v2-gallery figure{grid-column:span 6}.v2-gallery-mosaic figure:first-child{grid-column:1/-1}.v2-gallery-mosaic figure:first-child img{min-height:360px}.v2-gallery-filmstrip figure{min-width:88%}.v2-form-wrap form{grid-template-columns:1fr}.v2-form-wrap label,.v2-form-wrap button,.v2-form-wrap output{grid-column:1}.v2-button{max-width:100%;white-space:normal}}
+@media(prefers-reduced-motion:no-preference){.v2-motion-subtle .v2-region-main{animation:v2-reveal .5s ease both}.v2-motion-stagger .v2-region-main{animation:v2-reveal .6s cubic-bezier(.16,1,.3,1) both}.v2-motion-stagger .v2-region-main:nth-of-type(2){animation-delay:.06s}.v2-motion-stagger .v2-region-main:nth-of-type(3){animation-delay:.12s}.v2-motion-stagger .v2-region-main:nth-of-type(4){animation-delay:.18s}.v2-motion-cinematic .v2-region-main{animation:v2-cinema .8s cubic-bezier(.2,.8,.2,1) both}@keyframes v2-reveal{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}@keyframes v2-cinema{from{opacity:0;transform:scale(.985)}to{opacity:1;transform:none}}}`;
 }
 
 const mobileSafetyCss = `@media(max-width:640px){.v2-section{padding-left:1.1rem!important;padding-right:1.1rem!important}.v2-column,.v2-form-wrap,.v2-form-wrap label{min-width:0}h1,h2,h3,p,a,span{overflow-wrap:anywhere}.v2-button{max-width:100%;white-space:normal}}`;
@@ -218,11 +272,42 @@ export function renderSiteV2(input: RenderSiteV2Input): RenderedSiteV2 {
     const rank = { header: 0, main: 1, footer: 2 } as const;
     return rank[left.region] - rank[right.region];
   });
-  const body = `<div id="top" class="v2-site v2-motion-${theme.motion}">${sections.map((section) => sectionHtml(section, content, theme, input.leadEndpoint, input.editable)).join("")}${input.showBranding ? `<div style="padding:14px;text-align:center;font-size:12px;color:var(--muted)">Creado con Cluster</div>` : ""}</div>`;
+  const title = content.seo.title || content.business.name || "Sitio web";
+  const description = content.seo.description || [content.business.name, content.business.type].filter(Boolean).join(" - ");
+  const canonical = safeUrl(input.publicUrl);
+  const socialImage = socialImageFor(content, input.socialImage);
+  const indexable = Boolean(input.indexable && canonical);
+  const logo = safeUrl(content.business.logo);
+  const structuredData = indexable ? {
+    "@context": "https://schema.org",
+    "@type": content.business.location || content.business.phone ? "LocalBusiness" : "Organization",
+    name: content.business.name,
+    description,
+    url: canonical,
+    ...(content.business.phone ? { telephone: content.business.phone } : {}),
+    ...(content.business.email ? { email: content.business.email } : {}),
+    ...(content.business.location ? { address: { "@type": "PostalAddress", streetAddress: content.business.location } } : {}),
+    ...(logo ? { logo } : {}),
+    ...(socialImage ? { image: socialImage } : {}),
+    ...(Object.values(content.social).filter((url) => safeUrl(url)).length ? { sameAs: Object.values(content.social).map(safeUrl).filter(Boolean) } : {}),
+  } : null;
+  const structuredDataHtml = structuredData ? `<script type="application/ld+json">${JSON.stringify(structuredData).replace(/</g, "\\u003c")}</script>` : "";
+  const body = `<div id="top" class="v2-site v2-motion-${theme.motion}">${sections.map((section) => sectionHtml(section, content, theme, input.leadEndpoint, input.editable)).join("")}${input.showBranding ? `<div style="padding:14px;text-align:center;font-size:12px;color:var(--muted)">Creado con Cluster</div>` : ""}</div>${structuredDataHtml}`;
   const css = `${baseCss(theme)}${dynamicCss(sections)}${mobileSafetyCss}${input.editable ? editorCss : ""}`;
   const script = `${formScript()}${input.editable ? editorScript() : ""}`;
-  const title = content.seo.title || content.business.name;
-  const description = content.seo.description || `${content.business.name} — ${content.business.type}`;
-  const html = `<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(title)}</title><meta name="description" content="${escapeHtml(description)}"><style>${css}</style></head><body>${body}<script>${script}</script></body></html>`;
-  return { html, body, css, script };
+  const head = [
+    `<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">`,
+    `<title>${escapeHtml(title)}</title><meta name="description" content="${escapeHtml(description)}">`,
+    `<meta name="robots" content="${indexable ? "index,follow" : "noindex,nofollow"}">`,
+    canonical && `<link rel="canonical" href="${escapeHtml(canonical)}">`,
+    logo && `<link rel="icon" href="${escapeHtml(logo)}">`,
+    `<meta property="og:title" content="${escapeHtml(title)}"><meta property="og:description" content="${escapeHtml(description)}"><meta property="og:type" content="website"><meta property="og:site_name" content="${escapeHtml(content.business.name)}"><meta property="og:locale" content="es_ES">`,
+    canonical && `<meta property="og:url" content="${escapeHtml(canonical)}">`,
+    socialImage && `<meta property="og:image" content="${escapeHtml(socialImage)}">`,
+    `<meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="${escapeHtml(title)}"><meta name="twitter:description" content="${escapeHtml(description)}">`,
+    socialImage && `<meta name="twitter:image" content="${escapeHtml(socialImage)}">`,
+    `<style>${css}</style>`,
+  ].filter(Boolean).join("");
+  const html = `<!doctype html><html lang="es"><head>${head}</head><body>${body}<script>${script}</script></body></html>`;
+  return { html, head, body, css, script };
 }

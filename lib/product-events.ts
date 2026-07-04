@@ -11,6 +11,7 @@ export type ProductEventName =
   | "site_published"
   | "site_downloaded"
   | "domain_connected"
+  | "domain_removed"
   | "lead_received";
 
 export async function trackProductEvent(name: ProductEventName, data: {
