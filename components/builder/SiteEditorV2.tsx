@@ -152,7 +152,7 @@ const MOTION_OPTIONS: { value: ThemeTokensV2["motion"]; label: string }[] = [
 
 function sanitizeInlineText(value: unknown, type: V2WidgetType) {
   const max = type === "text" ? 4000 : 240;
-  return String(value ?? "").replace(/<[^>]*>/g, "").replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, "").trim().slice(0, max);
+  return String(value ?? "").replace(/<[^>]*>/g, "").replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, "").replace(type === "text" ? /$^/ : /[\r\n]+/g, " ").trim().slice(0, max);
 }
 
 export function SiteEditorV2({ initialSite }: { initialSite: EditorSiteV2 }) {
