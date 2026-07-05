@@ -17,11 +17,11 @@ const content = normalizeSiteContentV2({
   seo: { title: "Taller Norte Arquitectura en Managua", description: "Diseño arquitectónico residencial y comercial en Managua.", keyword: "arquitectura" },
 });
 
-test("las seis plantillas V2 tienen fingerprints estructurales distintos", () => {
+test("las plantillas V2 tienen fingerprints estructurales distintos", () => {
   const templates = getAllTemplatesV2();
   assert.deepEqual(templates.map((template) => template.id), [...V2_TEMPLATE_IDS]);
   const fingerprints = templates.map((template) => template.sections.map((section) => section.rows.map((row) => row.columns.map((column) => `${column.span.desktop}:${column.widgets.map((widget) => widget.type).join(",")}`).join("|"))).join("/"));
-  assert.equal(new Set(fingerprints).size, 6);
+  assert.equal(new Set(fingerprints).size, V2_TEMPLATE_IDS.length);
 });
 
 test("cambiar plantilla conserva contenido y secciones personalizadas", () => {
