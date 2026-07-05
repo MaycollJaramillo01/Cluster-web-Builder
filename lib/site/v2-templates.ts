@@ -95,7 +95,7 @@ const TEMPLATES: Record<V2TemplateId, TemplateDefinitionV2> = {
   studio: {
     version: 2, id: "studio", name: "Estudio creativo", description: "Portafolio con el trabajo al centro: galería protagonista y proyectos en retícula.", thumbnail: "/templates/v2/studio.svg", theme: THEMES.studio,
     sections: [header("minimal"),
-      section("hero", "Portada", "main", [row(column(6, [heading("hero.title", "h1", { desktop: { fontSize: "display", fontWeight: "black" } }), text("hero.body", { desktop: { fontSize: "lg" } }), button()]), column(6, [image("hero.media", "wide")]))], { desktop: { padding: "xl", width: "wide" } }),
+      section("hero", "Portada", "main", [row(column(6, [heading("hero.title", "h1", { desktop: { fontWeight: "black" } }), text("hero.subtitle", { desktop: { fontSize: "lg" } }), button()]), column(6, [image("hero.media", "wide")]))], { desktop: { padding: "xl", width: "wide" } }),
       section("work", "Trabajo", "main", [row(column(12, [widget("gallery", "media", "mosaic")]))], { desktop: { background: "#fafaf9", padding: "lg" } }),
       section("projects", "Proyectos", "main", [row(column(12, [heading("about.title"), widget("list", "services", "bento")]))]),
       section("studio", "El estudio", "main", [row(column(5, [heading("about.subtitle"), text("about.body", { desktop: { fontSize: "lg" } })]), column(7, [widget("list", "about.highlights", "metrics")]))], { desktop: { padding: "lg" } }),
@@ -105,7 +105,7 @@ const TEMPLATES: Record<V2TemplateId, TemplateDefinitionV2> = {
   saas: {
     version: 2, id: "saas", name: "Producto digital", description: "Landing de app o software: funciones en bento, resultados y preguntas frecuentes.", thumbnail: "/templates/v2/saas.svg", theme: THEMES.saas,
     sections: [header("floating"),
-      section("hero", "Lanzamiento", "main", [row(column(12, [heading("hero.title", "h1", { desktop: { fontSize: "display", fontWeight: "black", align: "center" } }), text("hero.body", { desktop: { fontSize: "lg", align: "center", width: "content" } }), button()])), row(column(12, [image("hero.media", "wide")]))], { desktop: { padding: "xl", width: "wide" } }),
+      section("hero", "Lanzamiento", "main", [row(column(6, [heading("hero.title", "h1", { desktop: { fontWeight: "black" } }), text("hero.body", { desktop: { fontSize: "lg" } }), button()]), column(6, [image("hero.media", "framed")]))], { desktop: { padding: "xl", width: "wide" } }),
       section("features", "Funciones", "main", [row(column(12, [heading("about.title"), widget("list", "services", "bento")]))], { desktop: { background: "#ecfdf5", padding: "lg" } }),
       section("benefits", "Resultados", "main", [row(column(5, [heading("about.subtitle"), text("about.body")]), column(7, [widget("list", "benefits", "metrics")]))]),
       section("how", "Cómo funciona", "main", [row(column(12, [widget("list", "about.highlights", "numbered")]))]),
@@ -116,7 +116,7 @@ const TEMPLATES: Record<V2TemplateId, TemplateDefinitionV2> = {
   gastro: {
     version: 2, id: "gastro", name: "Restaurante", description: "Carta como eje, galería de platos y reserva. Atmósfera cálida y apetecible.", thumbnail: "/templates/v2/gastro.svg", theme: THEMES.gastro,
     sections: [header("overlay"),
-      section("hero", "Bienvenida", "main", [row(column(6, [heading("hero.title", "h1", { desktop: { fontSize: "display", fontWeight: "bold" } }), text("hero.subtitle", { desktop: { fontSize: "lg" } }), button()]), column(6, [image("hero.media", "wide")]))], { desktop: { background: "#1c1917", color: "#f5f5f4", padding: "xl", width: "wide" } }),
+      section("hero", "Bienvenida", "main", [row(column(6, [heading("hero.title", "h1", { desktop: { fontWeight: "bold" } }), text("hero.subtitle", { desktop: { fontSize: "lg" } }), button()]), column(6, [image("hero.media", "wide")]))], { desktop: { background: "#1c1917", color: "#f5f5f4", padding: "xl", width: "wide" } }),
       section("menu", "Carta", "main", [row(column(12, [heading("business.type"), widget("list", "services", "catalog")]))], { desktop: { background: "#292524", color: "#f5f5f4", padding: "lg" } }),
       section("gallery", "Platos", "main", [row(column(12, [widget("gallery", "media", "filmstrip")]))]),
       section("about", "Nuestra cocina", "main", [row(column(6, [image("about.media", "portrait")]), column(6, [heading("about.title"), text("about.body", { desktop: { fontSize: "lg" } })]))], { desktop: { padding: "lg" } }),
@@ -127,7 +127,7 @@ const TEMPLATES: Record<V2TemplateId, TemplateDefinitionV2> = {
   wellness: {
     version: 2, id: "wellness", name: "Bienestar", description: "Estética serena y aireada para salud, spa o coaching. Cuidados y agenda de cita.", thumbnail: "/templates/v2/wellness.svg", theme: THEMES.wellness,
     sections: [header("bar"),
-      section("hero", "Portada", "main", [row(column(6, [heading("hero.title", "h1", { desktop: { fontSize: "2xl", fontWeight: "semibold" } }), text("hero.subtitle", { desktop: { fontSize: "lg" } }), button()]), column(6, [image("hero.media", "rounded")]))], { desktop: { padding: "xl" } }),
+      section("hero", "Portada", "main", [row(column(6, [heading("hero.title", "h1", { desktop: { fontWeight: "semibold" } }), text("hero.subtitle", { desktop: { fontSize: "lg" } }), button()]), column(6, [image("hero.media", "rounded")]))], { desktop: { padding: "xl" } }),
       section("services", "Cuidados", "main", [row(column(12, [widget("list", "services", "cards")]))]),
       section("benefits", "Beneficios", "main", [row(column(5, [heading("about.subtitle"), text("about.body")]), column(7, [widget("list", "benefits", "badges")]))], { desktop: { background: "#eef2ea", padding: "lg" } }),
       section("about", "Filosofía", "main", [row(column(7, [heading("about.title"), text("about.body", { desktop: { fontSize: "lg" } })]), column(5, [image("about.media", "portrait")]))]),
