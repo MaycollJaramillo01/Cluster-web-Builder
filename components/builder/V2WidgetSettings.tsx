@@ -83,7 +83,7 @@ export function V2WidgetSettings({ siteId, widget, content, setContent, updateWi
       <TextControl label="Descripción de la imagen" value={String(widget.data?.alt ?? "")} onChange={(value) => writeData({ alt: value })}
         placeholder="Qué se ve en la imagen" hint="Ayuda a la accesibilidad y al SEO" />
       <SelectControl label="Estilo" value={widget.variant || "cover"} onChange={(value) => updateWidget({ variant: value })}
-        options={[["cover", "Normal"], ["portrait", "Vertical (retrato)"], ["monochrome", "Blanco y negro"]]} />
+        options={[["cover", "Normal"], ["portrait", "Vertical (retrato)"], ["monochrome", "Blanco y negro"], ["tilt", "Inclinada (collage)"]]} />
       <StyleControls widget={widget} updateWidget={updateWidget} />
     </>;
 

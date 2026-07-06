@@ -97,6 +97,8 @@ test("renderer único incluye responsive, formulario y sanitiza javascript", () 
   assert.match(rendered.html, /data-cluster-form/);
   assert.match(rendered.html, /\/api\/leads/);
   assert.doesNotMatch(rendered.html, /javascript:alert/);
+  assert.match(rendered.body, /v2-nav-toggle/);
+  assert.match(rendered.script, /v2-nav-open/);
 });
 
 test("los 46 presets V1 tienen destino y la biblioteca no repite keys", () => {

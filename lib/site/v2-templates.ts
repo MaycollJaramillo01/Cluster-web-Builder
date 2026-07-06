@@ -36,6 +36,7 @@ const THEMES: Record<V2TemplateId, ThemeTokensV2> = {
   nordic: { primary: "#1f5d46", secondary: "#17372d", accent: "#dd5f3f", background: "#f2f6f3", text: "#17372d", muted: "#627068", headingFont: "Avenir Next, Arial, sans-serif", bodyFont: "Avenir Next, Arial, sans-serif", radius: "lg", motion: "subtle" },
   metro: { primary: "#191919", secondary: "#101010", accent: "#e63946", background: "#f3f3f1", text: "#191919", muted: "#666662", headingFont: "Arial Black, Arial, sans-serif", bodyFont: "Arial, Helvetica, sans-serif", radius: "none", motion: "stagger" },
   deco: { primary: "#0d3152", secondary: "#071421", accent: "#d3a33f", background: "#f5f0e6", text: "#10263a", muted: "#6c655a", headingFont: "Copperplate, Georgia, serif", bodyFont: "Arial, Helvetica, sans-serif", radius: "none", motion: "subtle" },
+  impact: { primary: "#14432e", secondary: "#123829", accent: "#f2ca3b", background: "#f0efe8", text: "#173a2a", muted: "#5f6d61", headingFont: "Impact, 'Arial Narrow', 'Franklin Gothic Medium', sans-serif", bodyFont: "'Trebuchet MS', 'Segoe UI', sans-serif", headingCase: "uppercase", radius: "lg", motion: "stagger" },
 };
 
 const TEMPLATES: Record<V2TemplateId, TemplateDefinitionV2> = {
@@ -157,10 +158,10 @@ const TEMPLATES: Record<V2TemplateId, TemplateDefinitionV2> = {
     sections: [header("bordered"),
       section("hero", "Propuesta ejecutiva", "main", [row(column(12, [image("hero.media", "background"), text("hero.subtitle", { desktop: { fontSize: "sm" } }), heading("hero.title", "h1", { desktop: { fontSize: "2xl", fontWeight: "bold" } }), text("hero.body", { desktop: { fontSize: "lg" } }), button()]))], { desktop: { padding: "none", width: "full" } }),
       section("proof", "Resultados verificables", "main", [row(column(8, [widget("list", "benefits", "metrics")]), column(4, [widget("business_info", undefined, "stacked")]))], { desktop: { background: "#e8eef6", padding: "lg" } }),
-      section("services", "Capacidades", "main", [row(column(5, [heading("business.type"), text("about.subtitle")]), column(7, [widget("list", "services", "minimal")]))], { desktop: { padding: "xl" } }),
+      section("services", "Capacidades", "main", [row(column(5, [heading("business.type")]), column(7, [widget("list", "services", "minimal")]))], { desktop: { padding: "xl" } }),
       section("about", "Cómo trabajamos", "main", [row(column(4, [image("about.media", "portrait")]), column(8, [heading("about.title"), text("about.body", { desktop: { fontSize: "lg" } }), widget("list", "about.highlights", "numbered")]))]),
       section("reviews", "Referencias", "main", [row(column(12, [widget("testimonials", "reviews", "list")]))], { desktop: { background: "#0b1f3a", color: "#ffffff", padding: "lg" } }),
-      section("faq", "Información clave", "main", [row(column(5, [heading("contact.title"), text("contact.body")]), column(7, [widget("accordion", "faqs", "cards")]))]),
+      section("faq", "Información clave", "main", [row(column(12, [widget("accordion", "faqs", "cards")]))]),
       section("contact", "Contacto directo", "main", [row(column(4, [widget("business_info", undefined, "stacked")]), column(8, [widget("form", undefined, "card", { titleSlot: "contact.title", buttonSlot: "contact.ctaText" })]))], { desktop: { background: "#e8eef6", padding: "xl" } }), footer("columns")],
   },
   nordic: {
@@ -170,8 +171,8 @@ const TEMPLATES: Record<V2TemplateId, TemplateDefinitionV2> = {
       section("services", "Servicios", "main", [row(column(12, [widget("list", "services", "cards")]))], { desktop: { background: "#e5eee8", padding: "lg" } }),
       section("about", "Nuestra filosofía", "main", [row(column(7, [heading("about.title"), text("about.body", { desktop: { fontSize: "lg" } }), widget("list", "about.highlights", "badges")]), column(5, [image("about.media", "portrait")]))], { desktop: { padding: "xl" } }),
       section("gallery", "Vida cotidiana", "main", [row(column(12, [widget("gallery", "media", "filmstrip")]))]),
-      section("benefits", "Lo que permanece", "main", [row(column(4, [heading("about.subtitle")]), column(8, [widget("list", "benefits", "minimal")]))], { desktop: { background: "#e5eee8", padding: "lg" } }),
-      section("reviews", "Historias cercanas", "main", [row(column(5, [image("hero.media", "monochrome")]), column(7, [widget("testimonials", "reviews", "quotes")]))]),
+      section("benefits", "Lo que permanece", "main", [row(column(4, [heading("business.type")]), column(8, [widget("list", "benefits", "minimal")]))], { desktop: { background: "#e5eee8", padding: "lg" } }),
+      section("reviews", "Historias cercanas", "main", [row(column(12, [widget("testimonials", "reviews", "quotes")]))]),
       section("contact", "Empecemos con calma", "main", [row(column(6, [heading("contact.title"), text("contact.body"), widget("business_info", undefined, "stacked")]), column(6, [widget("form", undefined, "minimal", { buttonSlot: "contact.ctaText" })]))], { desktop: { padding: "xl" } }), footer("minimal")],
   },
   metro: {
@@ -188,14 +189,27 @@ const TEMPLATES: Record<V2TemplateId, TemplateDefinitionV2> = {
   deco: {
     version: 2, id: "deco", name: "Art déco", description: "Simetría ceremonial, lujo gráfico y una narrativa de servicio con carácter atemporal.", thumbnail: "/templates/v2/deco.svg", theme: THEMES.deco,
     sections: [header("overlay"),
-      section("hero", "Gran salón", "main", [row(column(12, [widget("video", "hero.media", "background"), text("hero.subtitle", { desktop: { fontSize: "sm" } }), heading("hero.title", "h1", { desktop: { fontSize: "display", fontWeight: "bold" } }), text("hero.body", { desktop: { fontSize: "lg", width: "content" } }), button()]))], { desktop: { padding: "none", width: "full" } }),
+      section("hero", "Gran salón", "main", [row(column(12, [widget("video", "hero.media", "background"), text("hero.subtitle", { desktop: { fontSize: "sm" } }), heading("hero.title", "h1", { desktop: { fontSize: "display", fontWeight: "bold" } }), text("hero.body", { desktop: { fontSize: "lg" } }), button()]))], { desktop: { padding: "none", width: "full" } }),
       section("services", "Colección de servicios", "main", [row(column(12, [heading("business.type", "h2", { desktop: { align: "center" } }), widget("list", "services", "catalog")]))], { desktop: { padding: "xl" } }),
       section("about", "Historia y oficio", "main", [row(column(6, [image("about.media", "portrait")]), column(6, [text("about.subtitle", { desktop: { fontSize: "sm" } }), heading("about.title"), text("about.body", { desktop: { fontSize: "lg" } })]))], { desktop: { background: "#e9dfcb", padding: "lg" } }),
       section("benefits", "Distinciones", "main", [row(column(12, [widget("list", "benefits", "metrics")]))], { desktop: { background: "#0d3152", color: "#ffffff", padding: "lg" } }),
       section("gallery", "Galería", "main", [row(column(12, [widget("gallery", "media", "editorial")]))]),
-      section("reviews", "Testimonios", "main", [row(column(4, [heading("contact.title")]), column(8, [widget("testimonials", "reviews", "featured")]))]),
+      section("reviews", "Testimonios", "main", [row(column(12, [widget("testimonials", "reviews", "featured")]))]),
       section("faq", "Detalles", "main", [row(column(12, [widget("accordion", "faqs", "cards")]))], { desktop: { background: "#e9dfcb", padding: "lg" } }),
       section("contact", "Solicitud privada", "main", [row(column(5, [heading("contact.title"), text("contact.body"), widget("business_info", undefined, "stacked")]), column(7, [widget("form", undefined, "dark", { buttonSlot: "contact.ctaText" })]))], { desktop: { background: "#071421", color: "#ffffff", padding: "xl" } }), footer("dark")],
+  },
+  impact: {
+    version: 2, id: "impact", name: "Impacto", description: "Agencia creativa audaz: bandas de color a lo ancho, titulares condensados en mayúsculas y un amarillo que dirige la acción.", thumbnail: "/templates/v2/impact.svg", theme: THEMES.impact,
+    sections: [
+      section("global-header", "Header global", "header", [row(column(12, [widget("brand", "business.name", "pill"), widget("nav", undefined, "pill", { items: [{ label: "Nosotros", href: "#about" }, { label: "Obras", href: "#gallery" }, { label: "Contacto", href: "#contact" }] })]))], { desktop: { padding: "sm", width: "full" } }),
+      section("hero", "Portada", "main", [row(column(6, [text("hero.subtitle", { desktop: { fontSize: "sm" } }), heading("hero.title", "h1", { desktop: { fontSize: "display", fontWeight: "black" } }), text("hero.body", { desktop: { fontSize: "lg" } }), button()]), column(6, [image("hero.media", "tilt")]))], { desktop: { padding: "xl" } }),
+      section("about", "Sobre nosotros", "main", [row(column(5, [text("about.subtitle", { desktop: { fontSize: "sm" } }), heading("about.title")]), column(7, [text("about.body", { desktop: { fontSize: "lg" } }), image("about.media", "wide")]))], { desktop: { background: "#123829", color: "#ffffff", padding: "xl" } }),
+      section("services", "Servicios", "main", [row(column(12, [heading("business.type", "h2"), widget("list", "services", "cards")]))], { desktop: { background: "#ffffff", padding: "xl" } }),
+      section("gallery", "Obras", "main", [row(column(12, [widget("gallery", "media", "mosaic")]))], { desktop: { background: "#123829", color: "#ffffff", padding: "lg" } }),
+      section("proof", "Resultados", "main", [row(column(12, [widget("list", "benefits", "metrics")]))], { desktop: { padding: "lg" } }),
+      section("reviews", "Testimonios", "main", [row(column(12, [widget("testimonials", "reviews", "featured")]))], { desktop: { background: "#ffffff", padding: "xl" } }),
+      section("faq", "Preguntas", "main", [row(column(12, [widget("accordion", "faqs", "cards")]))], { desktop: { background: "#123829", color: "#ffffff", padding: "lg" } }),
+      section("contact", "Contacto", "main", [row(column(5, [heading("contact.title"), text("contact.body"), widget("business_info", undefined, "stacked")]), column(7, [widget("form", undefined, "card", { buttonSlot: "contact.ctaText" })]))], { desktop: { padding: "xl" } }), footer("columns")],
   },
 };
 

@@ -4,7 +4,7 @@ import { sanitizeLink } from "@/lib/site/links";
 
 export const BUILDER_V2 = 2;
 
-export const V2_TEMPLATE_IDS = ["conversion", "editorial", "catalog", "local", "immersive", "minimal", "studio", "saas", "gastro", "wellness", "essential", "assurance", "nordic", "metro", "deco"] as const;
+export const V2_TEMPLATE_IDS = ["conversion", "editorial", "catalog", "local", "immersive", "minimal", "studio", "saas", "gastro", "wellness", "essential", "assurance", "nordic", "metro", "deco", "impact"] as const;
 export type V2TemplateId = (typeof V2_TEMPLATE_IDS)[number];
 
 export const V2_WIDGET_TYPES = [
@@ -51,6 +51,8 @@ export type ThemeTokensV2 = {
   muted: string;
   headingFont: string;
   bodyFont: string;
+  /** Transformación de los titulares; "uppercase" da identidad de display condensado. */
+  headingCase?: "none" | "uppercase";
   radius: "none" | "sm" | "md" | "lg" | "pill";
   motion: "none" | "subtle" | "stagger" | "cinematic";
 };
@@ -182,6 +184,7 @@ export function normalizeThemeV2(value: unknown): ThemeTokensV2 {
     primary: color("primary", "#6d28d9"), secondary: color("secondary", "#111827"), accent: color("accent", "#f59e0b"),
     background: color("background", "#ffffff"), text: color("text", "#111827"), muted: color("muted", "#64748b"),
     headingFont: text(raw.headingFont, 160) || "Inter, system-ui, sans-serif", bodyFont: text(raw.bodyFont, 160) || "Inter, system-ui, sans-serif",
+    headingCase: raw.headingCase === "uppercase" ? "uppercase" : "none",
     radius: ["none", "sm", "md", "lg", "pill"].includes(String(raw.radius)) ? raw.radius as ThemeTokensV2["radius"] : "md",
     motion: ["none", "subtle", "stagger", "cinematic"].includes(String(raw.motion)) ? raw.motion as ThemeTokensV2["motion"] : "subtle",
   };
