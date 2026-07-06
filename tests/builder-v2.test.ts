@@ -24,6 +24,53 @@ test("las plantillas V2 tienen fingerprints estructurales distintos", () => {
   assert.equal(new Set(fingerprints).size, V2_TEMPLATE_IDS.length);
 });
 
+test("la plantilla Esencial conserva el lenguaje minimal y un recorrido comercial completo", () => {
+  const template = getAllTemplatesV2().find((item) => item.id === "essential");
+  assert.ok(template);
+  assert.equal(template.theme.radius, "none");
+  assert.equal(template.theme.accent, "#2457ff");
+  assert.deepEqual(template.sections.map((section) => section.key), ["global-header", "hero", "principles", "services", "about", "reviews", "faq", "contact", "global-footer"]);
+  const reviewWidget = template.sections.find((section) => section.key === "reviews")?.rows[0]?.columns[1]?.widgets[0];
+  assert.equal(reviewWidget?.type, "testimonials");
+  assert.equal(reviewWidget?.variant, "quotes");
+  const document = instantiateTemplateV2("essential", content);
+  const rendered = renderSiteV2({ content: document.content, design: document.template.theme, sections: document.sections, leadEndpoint: "/api/leads" });
+  assert.match(rendered.body, /data-cluster-form/);
+  assert.doesNotMatch(rendered.body, /linear-gradient/);
+});
+
+test("las cuatro plantillas aleatorias tienen recorridos, paletas y formas independientes", () => {
+  const ids = ["assurance", "nordic", "metro", "deco"] as const;
+  const templates = ids.map((id) => getAllTemplatesV2().find((template) => template.id === id));
+  assert.ok(templates.every(Boolean));
+  assert.equal(new Set(templates.map((template) => template?.theme.accent)).size, ids.length);
+  assert.equal(new Set(templates.map((template) => template?.theme.radius)).size, 3);
+  assert.equal(new Set(templates.map((template) => template?.sections.map((section) => section.key).join(">"))).size, ids.length);
+  const heroMediaTypes = templates.map((template) => {
+    const widgets = template?.sections.find((section) => section.key === "hero")?.rows[0]?.columns[0]?.widgets || [];
+    assert.equal(widgets[0]?.variant, "background", `${template?.id} no usa medio de fondo`);
+    assert.ok(widgets.some((widget) => widget.type === "heading" && widget.variant === "h1"), `${template?.id} no tiene título principal`);
+    assert.ok(widgets.some((widget) => widget.type === "text"), `${template?.id} no tiene texto de apoyo`);
+    assert.ok(widgets.some((widget) => widget.type === "button"), `${template?.id} no tiene CTA`);
+    return widgets[0]?.type;
+  });
+  assert.deepEqual(heroMediaTypes, ["image", "image", "video", "video"]);
+  for (const id of ids) {
+    const document = instantiateTemplateV2(id, content);
+    const rendered = renderSiteV2({ content: document.content, design: document.template.theme, sections: document.sections, leadEndpoint: "/api/leads" });
+    assert.match(rendered.body, /data-cluster-form/, `${id} no incluye un formulario funcional`);
+    assert.ok(document.sections[0].region === "header" && document.sections.at(-1)?.region === "footer", `${id} no forma una página completa`);
+  }
+  const imageFallback = instantiateTemplateV2("metro", content);
+  const fallbackRender = renderSiteV2({ content: imageFallback.content, design: imageFallback.template.theme, sections: imageFallback.sections, leadEndpoint: "/api/leads" });
+  assert.match(fallbackRender.body, /v2-media-background/);
+  const videoContent = { ...content, hero: { ...content.hero, media: "https://cdn.example.com/hero.mp4" } };
+  const videoDocument = instantiateTemplateV2("metro", videoContent);
+  const videoRender = renderSiteV2({ content: videoDocument.content, design: videoDocument.template.theme, sections: videoDocument.sections, leadEndpoint: "/api/leads" });
+  assert.match(videoRender.body, /<video[^>]+autoplay muted loop playsinline/);
+  assert.doesNotMatch(videoRender.body, /<video[^>]+controls/);
+});
+
 test("cambiar plantilla conserva contenido y secciones personalizadas", () => {
   const custom = instantiateTemplateV2("minimal", content).sections[1];
   custom.id = "custom-section";
@@ -88,6 +135,28 @@ test("el fondo de imagen se valida y genera CSS seguro", () => {
   const unsafe = normalizeCanvasSectionsV2(document.sections);
   assert.equal(unsafe[1].style?.desktop?.backgroundImage, "");
   assert.doesNotMatch(renderSiteV2({ content: document.content, design: document.template.theme, sections: unsafe, leadEndpoint: "/api/leads" }).css, /javascript:/);
+});
+
+test("la portada animada renderiza canvas, sanitiza enlaces y solo inyecta su script cuando existe", () => {
+  const document = instantiateTemplateV2("conversion", content);
+  const plain = renderSiteV2({ content: document.content, design: document.template.theme, sections: document.sections, leadEndpoint: "/api/leads" });
+  assert.doesNotMatch(plain.script, /data-pixel-hero/);
+  document.sections.push({
+    schemaVersion: 2, id: "pxh-section", key: "hero-animado", name: "Portada animada", region: "main", order: document.sections.length,
+    rows: [{ id: "pxh-row", columns: [{ id: "pxh-col", span: { desktop: 12, tablet: 12, mobile: 12 }, widgets: [{
+      id: "pxh-widget", type: "hero_pixel",
+      data: { secondaryText: "Ver más", secondaryLink: "javascript:alert(1)", marqueeItems: ["Acme", "Norte & Co", "  ", ""] },
+    }] }] }],
+  });
+  const sections = normalizeCanvasSectionsV2(document.sections);
+  assert.equal(sections.length, document.sections.length);
+  const rendered = renderSiteV2({ content: document.content, design: document.template.theme, sections, leadEndpoint: "/api/leads" });
+  assert.match(rendered.body, /data-pixel-hero/);
+  assert.match(rendered.body, /<em>Espacios<\/em>/);
+  assert.match(rendered.body, /Norte &amp; Co/);
+  assert.doesNotMatch(rendered.body, /javascript:alert/);
+  assert.match(rendered.script, /requestAnimationFrame/);
+  assert.match(rendered.css, /v2-pxh-marquee/);
 });
 
 test("el sitio publicado emite SEO social, canonical, favicon y JSON-LD", () => {

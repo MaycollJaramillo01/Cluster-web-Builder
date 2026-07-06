@@ -4,13 +4,13 @@ import { sanitizeLink } from "@/lib/site/links";
 
 export const BUILDER_V2 = 2;
 
-export const V2_TEMPLATE_IDS = ["conversion", "editorial", "catalog", "local", "immersive", "minimal", "studio", "saas", "gastro", "wellness"] as const;
+export const V2_TEMPLATE_IDS = ["conversion", "editorial", "catalog", "local", "immersive", "minimal", "studio", "saas", "gastro", "wellness", "essential", "assurance", "nordic", "metro", "deco"] as const;
 export type V2TemplateId = (typeof V2_TEMPLATE_IDS)[number];
 
 export const V2_WIDGET_TYPES = [
   "brand", "nav", "heading", "text", "image", "video", "button",
   "business_info", "list", "gallery", "testimonials", "accordion",
-  "form", "social", "map", "divider", "spacer", "embed",
+  "form", "social", "map", "divider", "spacer", "embed", "hero_pixel",
 ] as const;
 export type V2WidgetType = (typeof V2_WIDGET_TYPES)[number];
 

@@ -222,6 +222,33 @@ export function V2WidgetSettings({ siteId, widget, content, setContent, updateWi
         options={[["sm", "Pequeño"], ["md", "Medio"], ["lg", "Grande"]]} />
     </>;
 
+    case "hero_pixel": {
+      const heroWords = (content.hero.title || content.business.name || "").split(/\s+/);
+      const marqueeItems = (Array.isArray(widget.data?.marqueeItems) ? widget.data.marqueeItems : []).map((item) => String(item ?? ""));
+      return <>
+        <p className="mb-3 text-xs leading-relaxed text-zinc-500">Portada a pantalla completa con fondo animado de puntos. Los campos vacíos usan el contenido principal del sitio (título, descripción y botón del hero).</p>
+        <TextControl label="Primera parte del título" value={String(widget.data?.word1 ?? "")} onChange={(value) => writeData({ word1: value })}
+          placeholder={heroWords[0] || "Ej: Precisión"} hint="Se muestra en cursiva elegante" />
+        <TextControl label="Resto del título" value={String(widget.data?.word2 ?? "")} onChange={(value) => writeData({ word2: value })}
+          placeholder={heroWords.slice(1).join(" ") || "Ej: silenciosa"} hint="Se muestra en negrita" />
+        <TextControl label="Descripción" value={String(widget.data?.description ?? "")} onChange={(value) => writeData({ description: value })} textarea rows={3}
+          placeholder={content.hero.subtitle || content.hero.body || "Una frase corta sobre tu negocio"} />
+        <TextControl label="Texto del botón principal" value={String(widget.data?.ctaText ?? "")} onChange={(value) => writeData({ ctaText: value })}
+          placeholder={content.hero.ctaText || "Ej: Contáctanos"} />
+        <TextControl label="Enlace del botón principal" value={String(widget.data?.ctaLink ?? "")} onChange={(value) => writeData({ ctaLink: value })}
+          placeholder="#contact o https://..." hint="Vacío lleva al formulario de contacto" />
+        <TextControl label="Texto del botón secundario" value={String(widget.data?.secondaryText ?? "")} onChange={(value) => writeData({ secondaryText: value })}
+          placeholder="Ej: Conócenos" hint="Déjalo vacío para mostrar solo un botón" />
+        <TextControl label="Enlace del botón secundario" value={String(widget.data?.secondaryLink ?? "")} onChange={(value) => writeData({ secondaryLink: value })}
+          placeholder="#about o https://..." />
+        <TextControl label="Título de la cinta" value={String(widget.data?.marqueeLabel ?? "")} onChange={(value) => writeData({ marqueeLabel: value })}
+          placeholder="Con la confianza de" />
+        <TextControl label="Nombres de la cinta" value={marqueeItems.join("\n")} textarea rows={4}
+          onChange={(value) => writeData({ marqueeItems: value.split("\n").slice(0, 20) })}
+          placeholder={"Cliente uno\nCliente dos\nCliente tres"} hint="Uno por línea. Se desplazan al pie de la portada; vacío oculta la cinta." />
+      </>;
+    }
+
     case "divider": return <p className="text-xs text-zinc-500">Una línea separadora. No tiene opciones adicionales.</p>;
 
     case "embed": return <>

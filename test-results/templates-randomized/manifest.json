@@ -1,0 +1,36 @@
+{
+  "selectionMethod": "cryptographic shuffle without replacement",
+  "candidateCount": 25,
+  "templates": [
+    {
+      "template": "essential",
+      "style": "Minimal",
+      "draw": 0,
+      "sections": 9
+    },
+    {
+      "template": "assurance",
+      "style": "Corporate Professional",
+      "draw": 1,
+      "sections": 9
+    },
+    {
+      "template": "nordic",
+      "style": "Scandinavian",
+      "draw": 2,
+      "sections": 9
+    },
+    {
+      "template": "metro",
+      "style": "Metropolitan",
+      "draw": 3,
+      "sections": 9
+    },
+    {
+      "template": "deco",
+      "style": "Art Deco",
+      "draw": 4,
+      "sections": 10
+    }
+  ]
+}

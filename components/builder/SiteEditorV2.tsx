@@ -14,7 +14,7 @@ import {
   ClipboardPaste, Code2, Copy, ExternalLink, Globe, GripVertical, Heading1, HelpCircle, Image as ImageIcon, Layers,
   LayoutGrid, LayoutTemplate, List as ListIcon, Mail, MapPin, Megaphone, Menu as MenuIcon, Minus, Monitor,
   MousePointerClick, MoveVertical, Paintbrush, Palette, PanelsTopLeft, Pencil, Plus, Presentation, Redo2, Save, Search,
-  Share2, Smartphone, Star, Text as TextIcon, Trash2, Undo2, Users, Video as VideoIcon,
+  Share2, Smartphone, Sparkles, Star, Text as TextIcon, Trash2, Undo2, Users, Video as VideoIcon,
 } from "lucide-react";
 
 import { V2WidgetSettings } from "@/components/builder/V2WidgetSettings";
@@ -50,7 +50,7 @@ const WIDGET_LABELS: Record<V2WidgetType, string> = {
   brand: "Marca", nav: "Navegación", heading: "Título", text: "Texto", image: "Imagen", video: "Video",
   button: "Botón", business_info: "Datos del negocio", list: "Lista", gallery: "Galería", testimonials: "Reseñas",
   accordion: "Acordeón", form: "Formulario", social: "Redes", map: "Mapa", divider: "Divisor", spacer: "Espacio",
-  embed: "Código insertado",
+  embed: "Código insertado", hero_pixel: "Portada animada",
 };
 
 type IconComponent = typeof Plus;
@@ -59,12 +59,13 @@ const WIDGET_ICONS: Record<V2WidgetType, IconComponent> = {
   brand: BadgeCheck, nav: MenuIcon, heading: Heading1, text: TextIcon, image: ImageIcon, video: VideoIcon,
   button: MousePointerClick, business_info: Building2, list: ListIcon, gallery: LayoutGrid, testimonials: Star,
   accordion: HelpCircle, form: Mail, social: Share2, map: MapPin, divider: Minus, spacer: MoveVertical, embed: Code2,
+  hero_pixel: Sparkles,
 };
 
 const WIDGET_GROUPS: { name: string; types: V2WidgetType[]; open?: boolean }[] = [
   { name: "Básico", types: ["heading", "text", "image", "video", "button", "list", "gallery"], open: true },
   { name: "Negocio", types: ["brand", "nav", "business_info", "form", "social", "map"] },
-  { name: "Avanzado", types: ["testimonials", "accordion", "embed", "divider", "spacer"] },
+  { name: "Avanzado", types: ["hero_pixel", "testimonials", "accordion", "embed", "divider", "spacer"] },
 ];
 
 // Chip visible que acompaña al cursor durante el arrastre; sin esto el navegador
@@ -1174,6 +1175,7 @@ function defaultWidgetData(type: V2WidgetType): Record<string, unknown> {
   if (type === "gallery") return { value: [] };
   if (type === "testimonials") return { value: [{ name: "Nombre del cliente", role: "", quote: "Escribe aquí la reseña.", rating: 5, source: "" }] };
   if (type === "accordion") return { value: [{ question: "¿Nueva pregunta?", answer: "Escribe la respuesta." }] };
+  if (type === "hero_pixel") return { word1: "", word2: "", description: "", ctaText: "", ctaLink: "", secondaryText: "", secondaryLink: "", marqueeLabel: "", marqueeItems: [] };
   return { text: WIDGET_LABELS[type] };
 }
 function firstColumn(sections: CanvasSectionV2[], region: CanvasSectionV2["region"]) { const section = sections.find((item) => item.region === region); const column = section?.rows[0]?.columns[0]; return section && column ? { section, row: section.rows[0], column } : null; }
