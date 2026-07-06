@@ -71,6 +71,42 @@ test("las cuatro plantillas aleatorias tienen recorridos, paletas y formas indep
   assert.doesNotMatch(videoRender.body, /<video[^>]+controls/);
 });
 
+test("Servicio premium replica el recorrido completo de un negocio local", () => {
+  const template = getAllTemplatesV2().find((item) => item.id === "hvac-premium");
+  assert.ok(template);
+  assert.equal(template.theme.accent, "#3b82f6");
+  assert.deepEqual(template.sections.map((section) => section.key), [
+    "global-header", "hero", "hvac-stats", "services", "about", "reviews",
+    "hvac-financing", "hvac-service-areas", "gallery", "hvac-process", "faq", "contact", "global-footer",
+  ]);
+  const document = instantiateTemplateV2("hvac-premium", {
+    ...content,
+    benefits: [
+      { title: "Atención el mismo día", description: "Respuesta rápida." },
+      { title: "Licencia y seguro", description: "Trabajo responsable." },
+      { title: "Financiamiento", description: "Opciones flexibles." },
+    ],
+    about: { ...content.about, highlights: [
+      { title: "5000+", description: "Proyectos completados" },
+      { title: "15+", description: "Años de experiencia" },
+      { title: "4.9", description: "Calificación" },
+      { title: "24/7", description: "Disponibilidad" },
+    ] },
+    reviews: [
+      { name: "Michael R", role: "Homeowner", quote: "Fast response, fair pricing, and excellent workmanship.", rating: 5, source: "Google" },
+      { name: "David M", role: "Homeowner", quote: "The whole service process was smooth and professional.", rating: 5, source: "Google" },
+      { name: "Jason T", role: "Homeowner", quote: "They explained every step and completed the work on time.", rating: 5, source: "Google" },
+    ],
+  });
+  const rendered = renderSiteV2({ content: document.content, design: document.template.theme, sections: document.sections, leadEndpoint: "/api/leads" });
+  assert.match(rendered.body, /v2-brand-hvac/);
+  assert.match(rendered.body, /v2-list-hvac-services/);
+  assert.match(rendered.body, /v2-testimonials-hvac-wall/);
+  assert.match(rendered.css, /HVAC Premium: faithful service-business composition/);
+  assert.match(rendered.css, /\.v2-key-hvac-service-areas/);
+  assert.doesNotMatch(rendered.body, /Made in Framer/);
+});
+
 test("cambiar plantilla conserva contenido y secciones personalizadas", () => {
   const custom = instantiateTemplateV2("minimal", content).sections[1];
   custom.id = "custom-section";

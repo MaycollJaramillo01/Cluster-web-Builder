@@ -37,6 +37,7 @@ const THEMES: Record<V2TemplateId, ThemeTokensV2> = {
   metro: { primary: "#191919", secondary: "#101010", accent: "#e63946", background: "#f3f3f1", text: "#191919", muted: "#666662", headingFont: "Arial Black, Arial, sans-serif", bodyFont: "Arial, Helvetica, sans-serif", radius: "none", motion: "stagger" },
   deco: { primary: "#0d3152", secondary: "#071421", accent: "#d3a33f", background: "#f5f0e6", text: "#10263a", muted: "#6c655a", headingFont: "Copperplate, Georgia, serif", bodyFont: "Arial, Helvetica, sans-serif", radius: "none", motion: "subtle" },
   impact: { primary: "#14432e", secondary: "#123829", accent: "#f2ca3b", background: "#f0efe8", text: "#173a2a", muted: "#5f6d61", headingFont: "Anton, 'Arial Narrow', sans-serif", bodyFont: "Poppins, 'Segoe UI', sans-serif", headingCase: "uppercase", radius: "lg", motion: "stagger" },
+  "hvac-premium": { primary: "#3b82f6", secondary: "#111827", accent: "#3b82f6", background: "#ffffff", text: "#111111", muted: "#666666", headingFont: "Arial, Helvetica, sans-serif", bodyFont: "Arial, Helvetica, sans-serif", radius: "sm", motion: "subtle" },
 };
 
 const TEMPLATES: Record<V2TemplateId, TemplateDefinitionV2> = {
@@ -210,6 +211,72 @@ const TEMPLATES: Record<V2TemplateId, TemplateDefinitionV2> = {
       section("reviews", "Testimonios", "main", [row(column(12, [widget("testimonials", "reviews", "featured")]))], { desktop: { background: "#ffffff", padding: "xl" } }),
       section("faq", "Preguntas", "main", [row(column(12, [widget("accordion", "faqs", "cards")]))], { desktop: { background: "#123829", color: "#ffffff", padding: "lg" } }),
       section("contact", "Contacto", "main", [row(column(5, [heading("contact.title"), text("contact.body"), widget("business_info", undefined, "stacked")]), column(7, [widget("form", undefined, "card", { buttonSlot: "contact.ctaText" })]))], { desktop: { padding: "xl" } }), footer("columns")],
+  },
+  "hvac-premium": {
+    version: 2, id: "hvac-premium", name: "Servicio premium", description: "Landing de servicios locales con hero fotográfico, métricas, áreas de cobertura, proyectos y conversión directa.", thumbnail: "/templates/v2/hvac-premium.svg", theme: THEMES["hvac-premium"],
+    sections: [
+      section("global-header", "Header global", "header", [row(
+        column(3, [widget("brand", "business.name", "hvac")]),
+        column(6, [widget("nav", undefined, "hvac", { items: [{ label: "About us", href: "#about" }, { label: "Services", href: "#services" }, { label: "Contact", href: "#contact" }, { label: "Blog", href: "#faq" }] })]),
+        column(3, [widget("button", undefined, "solid", { value: "Schedule Service", link: "#contact" })]),
+      )], { desktop: { padding: "sm", width: "full" } }),
+      section("hero", "Portada de servicio", "main", [row(column(12, [
+        image("hero.media", "background"),
+        text("hero.subtitle", { desktop: { fontSize: "sm" } }),
+        heading("hero.title", "h1", { desktop: { fontSize: "2xl", fontWeight: "normal" } }),
+        text("hero.body", { desktop: { fontSize: "lg" } }),
+        widget("list", "benefits", "hvac-hero-trust"),
+        button(),
+        widget("business_info", undefined, "hvac-phone"),
+        widget("testimonials", "reviews", "hvac-rating"),
+      ]))], { desktop: { padding: "none", width: "full" } }),
+      section("hvac-stats", "Confianza y métricas", "main", [
+        row(column(7, [widget("text", undefined, undefined, { value: "WHY HOMEOWNERS CHOOSE US" }), heading("about.title", "h2", { desktop: { fontWeight: "normal" } })]), column(5, [text("about.body", { desktop: { fontSize: "lg" } })])),
+        row(column(12, [widget("list", "about.highlights", "hvac-stats")]))
+      ], { desktop: { padding: "xl" } }),
+      section("services", "Servicios residenciales", "main", [row(column(12, [
+        widget("text", undefined, undefined, { value: "OUR SERVICES" }),
+        widget("heading", undefined, "h2", { value: "Complete Residential Heating & Cooling Solutions" }, { desktop: { fontWeight: "normal" } }),
+        text("hero.body", { desktop: { fontSize: "lg" } }),
+        widget("list", "services", "hvac-services"),
+        widget("button", undefined, "solid", { value: "See All Services", link: "#services" }),
+      ]))], { desktop: { background: "#fafafa", padding: "xl" } }),
+      section("about", "Por qué elegirnos", "main", [
+        row(column(4, [widget("text", undefined, undefined, { value: "WHY CHOOSE US" })]), column(8, [widget("heading", undefined, "h2", { value: "Everything You Need for a Comfortable, Worry-Free Service Experience" }, { desktop: { fontWeight: "normal" } })])),
+        row(column(12, [widget("list", "benefits", "hvac-features")]))
+      ], { desktop: { padding: "xl" } }),
+      section("reviews", "Reseñas", "main", [row(column(12, [
+        widget("text", undefined, undefined, { value: "REVIEWS" }),
+        widget("heading", undefined, "h2", { value: "What Our Customers Say" }, { desktop: { align: "center", fontWeight: "normal" } }),
+        widget("testimonials", "reviews", "hvac-wall"),
+        widget("button", undefined, "solid", { value: "See All Google Reviews", link: "#reviews" }),
+      ]))], { desktop: { padding: "xl" } }),
+      section("hvac-financing", "Financiamiento", "main", [row(column(12, [
+        widget("text", undefined, undefined, { value: "FLEXIBLE FINANCING" }),
+        widget("heading", undefined, "h2", { value: "Upgrade Your Comfort Without the Upfront Cost of a New System" }, { desktop: { align: "center", fontWeight: "normal" } }),
+        widget("button", undefined, "solid", { value: "Explore Financing Options", link: "#contact" }),
+      ]))], { desktop: { background: "#fafafa", padding: "xl" } }),
+      section("hvac-service-areas", "Áreas de servicio", "main", [
+        row(column(7, [widget("text", undefined, undefined, { value: "SERVICE AREAS" }), widget("heading", undefined, "h2", { value: "Proudly Serving Your City and Nearby Communities" }, { desktop: { fontWeight: "normal" } })]), column(5, [text("contact.body", { desktop: { fontSize: "lg" } })])),
+        row(column(5, [widget("business_info", undefined, "stacked"), button("contact.ctaText", "hero.ctaLink")]), column(7, [widget("map", "business.location", "hvac")]))
+      ], { desktop: { padding: "xl" } }),
+      section("gallery", "Proyectos recientes", "main", [row(column(7, [widget("text", undefined, undefined, { value: "RECENT WORKS" }), widget("heading", undefined, "h2", { value: "Real Projects. Real Comfort." }, { desktop: { fontWeight: "normal" } })]), column(5, [text("about.subtitle", { desktop: { fontSize: "lg" } })])), row(column(12, [widget("gallery", "media", "hvac-works")]))], { desktop: { background: "#fafafa", padding: "xl" } }),
+      section("hvac-process", "Proceso", "main", [
+        row(column(7, [widget("text", undefined, undefined, { value: "PROCESS" }), widget("heading", undefined, "h2", { value: "Simple Steps to Restore Your Home Comfort" }, { desktop: { fontWeight: "normal" } }), button()]), column(5, [text("about.body", { desktop: { fontSize: "lg" } })])),
+        row(column(12, [widget("list", undefined, "hvac-process", { value: [
+          { title: "Request a Free Estimate", description: "Contact our team and tell us about your service needs." },
+          { title: "System Evaluation", description: "We assess the situation and recommend the best solution." },
+          { title: "Professional Service", description: "We complete the work with attention to quality and safety." },
+          { title: "Enjoy Lasting Comfort", description: "Relax knowing your system is operating efficiently and reliably." },
+        ] })]))
+      ], { desktop: { padding: "xl" } }),
+      section("faq", "Preguntas frecuentes", "main", [row(column(4, [widget("text", undefined, undefined, { value: "FAQ" }), widget("heading", undefined, "h2", { value: "Frequently Asked Customer Questions" }, { desktop: { fontWeight: "normal" } }), text("contact.body")]), column(8, [widget("accordion", "faqs", "hvac")]))], { desktop: { padding: "xl" } }),
+      section("contact", "Llamada final", "main", [row(column(12, [heading("contact.title", "h2", { desktop: { align: "center", fontWeight: "normal" } }), text("contact.body", { desktop: { align: "center" } }), button("contact.ctaText", "hero.ctaLink"), widget("business_info", undefined, "hvac-phone")]))], { desktop: { background: "#30343b", color: "#ffffff", padding: "xl", radius: "sm" } }),
+      section("global-footer", "Footer global", "footer", [
+        row(column(5, [widget("business_info", undefined, "stacked"), widget("social", "social", "icons")]), column(3, [widget("nav", undefined, "footer", { items: [{ label: "Home", href: "#top" }, { label: "About", href: "#about" }, { label: "Services", href: "#services" }, { label: "Contact", href: "#contact" }] })]), column(4, [widget("list", "services", "hvac-footer-services")])),
+        row(column(12, [widget("brand", "business.name", "hvac-footer")]))
+      ], { desktop: { background: "#ffffff", color: "#111111", padding: "xl", width: "full" } }),
+    ],
   },
 };
 

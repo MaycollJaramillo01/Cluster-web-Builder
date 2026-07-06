@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 420" role="img" aria-labelledby="title desc">
+  <title id="title">Plantilla Servicio premium</title>
+  <desc id="desc">Cabecera blanca y portada fotográfica oscura con llamada a la acción azul.</desc>
+  <rect width="640" height="420" fill="#fff"/>
+  <g font-family="Arial,Helvetica,sans-serif">
+    <circle cx="34" cy="30" r="11" fill="#3b82f6"/>
+    <path d="M26 27c4-4 8 4 16 0M26 31c4-4 8 4 16 0M27 35c4-4 8 4 14 0" fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round"/>
+    <text x="52" y="36" font-size="19" font-weight="700" fill="#111">Service Premium</text>
+    <text x="278" y="35" font-size="13" fill="#222">About us</text>
+    <text x="348" y="35" font-size="13" fill="#222">Services</text>
+    <text x="414" y="35" font-size="13" fill="#222">Contact</text>
+    <rect x="520" y="14" width="98" height="34" rx="7" fill="#3b82f6"/>
+    <text x="539" y="36" font-size="12" font-weight="700" fill="#fff">Schedule</text>
+  </g>
+  <defs>
+    <linearGradient id="photo" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#25382d"/>
+      <stop offset=".55" stop-color="#18221d"/>
+      <stop offset="1" stop-color="#050706"/>
+    </linearGradient>
+  </defs>
+  <rect x="18" y="64" width="604" height="338" rx="10" fill="url(#photo)"/>
+  <g opacity=".48" fill="#9aa5a0">
+    <rect x="355" y="218" width="226" height="84" rx="5"/>
+    <rect x="321" y="238" width="88" height="64" rx="4"/>
+    <circle cx="375" cy="307" r="17" fill="#111"/>
+    <circle cx="548" cy="307" r="17" fill="#111"/>
+  </g>
+  <g font-family="Arial,Helvetica,sans-serif" fill="#fff">
+    <text x="112" y="123" font-size="12" font-weight="700">Trusted local service professionals</text>
+    <text x="112" y="171" font-size="37">Fast, Reliable Service</text>
+    <text x="112" y="211" font-size="37">When You Need It</text>
+    <text x="112" y="241" font-size="13" font-weight="600">Expert installation, repair, and maintenance</text>
+    <text x="112" y="259" font-size="13" font-weight="600">for homes and businesses in your area.</text>
+    <text x="112" y="292" font-size="12">✓ Same-Day Service Available</text>
+    <text x="112" y="313" font-size="12">✓ Licensed &amp; Insured</text>
+    <text x="112" y="334" font-size="12">✓ Flexible Financing Options</text>
+    <rect x="112" y="354" width="106" height="33" rx="7" fill="#3b82f6"/>
+    <text x="128" y="375" font-size="12" font-weight="700">Schedule Service</text>
+  </g>
+  <rect x="466" y="337" width="128" height="50" rx="7" fill="#111827" fill-opacity=".9" stroke="#fff" stroke-opacity=".15"/>
+  <circle cx="487" cy="362" r="13" fill="#fff"/>
+  <text x="510" y="359" font-family="Arial,Helvetica,sans-serif" font-size="11" font-weight="700" fill="#fff">★ 4.9 out of 5</text>
+  <text x="510" y="376" font-family="Arial,Helvetica,sans-serif" font-size="9" fill="#fff">From 250+ Reviews</text>
+</svg>

@@ -50,3 +50,36 @@ prisma:error Error in PostgreSQL connection: Error { kind: Closed, cause: None }
  GET /s/nexo-legal-compliance 200 in 322ms (next.js: 28ms, proxy.ts: 8ms, application-code: 286ms)
 prisma:error Error in PostgreSQL connection: Error { kind: Closed, cause: None }
 prisma:error Error in PostgreSQL connection: Error { kind: Closed, cause: None }
+✓ Compiled in 470ms
+✓ Compiled in 328ms
+✓ Compiled in 344ms
+✓ Compiled in 325ms
+✓ Compiled in 327ms
+✓ Compiled in 320ms
+✓ Compiled in 362ms
+✓ Compiled in 293ms
+✓ Compiled in 315ms
+ GET /s/hvac-premium-phoenix 200 in 1852ms (next.js: 357ms, proxy.ts: 212ms, application-code: 1283ms)
+ GET /s/hvac-premium-phoenix 200 in 447ms (next.js: 17ms, proxy.ts: 17ms, application-code: 413ms)
+✓ Compiled in 279ms
+ GET /s/hvac-premium-phoenix 200 in 1143ms (next.js: 402ms, proxy.ts: 77ms, application-code: 665ms)
+ GET /s/hvac-premium-phoenix 200 in 470ms (next.js: 126ms, proxy.ts: 57ms, application-code: 287ms)
+ GET /s/hvac-premium-phoenix 200 in 708ms (next.js: 27ms, proxy.ts: 14ms, application-code: 668ms)
+ GET /s/hvac-premium-phoenix 200 in 1053ms (next.js: 52ms, proxy.ts: 16ms, application-code: 985ms)
+ GET /s/hvac-premium-phoenix 200 in 1118ms (next.js: 86ms, proxy.ts: 19ms, application-code: 1014ms)
+ GET /s/hvac-premium-phoenix 200 in 275ms (next.js: 16ms, proxy.ts: 5ms, application-code: 254ms)
+ GET /s/hvac-premium-phoenix?qa=mobile 200 in 356ms (next.js: 14ms, proxy.ts: 4ms, application-code: 338ms)
+ GET /s/hvac-premium-phoenix?qa=final 200 in 414ms (next.js: 17ms, proxy.ts: 4ms, application-code: 393ms)
+ GET /s/hvac-premium-phoenix?qa=settled 200 in 410ms (next.js: 14ms, proxy.ts: 6ms, application-code: 389ms)
+prisma:error Error in PostgreSQL connection: Error { kind: Closed, cause: None }
+prisma:error Error in PostgreSQL connection: Error { kind: Closed, cause: None }
+prisma:error Error in PostgreSQL connection: Error { kind: Closed, cause: None }
+prisma:error Error in PostgreSQL connection: Error { kind: Closed, cause: None }
+prisma:error Error in PostgreSQL connection: Error { kind: Closed, cause: None }
+prisma:error Error in PostgreSQL connection: Error { kind: Closed, cause: None }
+prisma:error Error in PostgreSQL connection: Error { kind: Closed, cause: None }
+prisma:error Error in PostgreSQL connection: Error { kind: Closed, cause: None }
+ GET /s/hvac-premium-phoenix 200 in 1772ms (next.js: 17ms, proxy.ts: 5ms, application-code: 1750ms)
+ GET /s/hvac-premium-phoenix 200 in 354ms (next.js: 18ms, proxy.ts: 5ms, application-code: 330ms)
+prisma:error Error in PostgreSQL connection: Error { kind: Closed, cause: None }
+prisma:error Error in PostgreSQL connection: Error { kind: Closed, cause: None }
