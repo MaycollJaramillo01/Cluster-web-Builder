@@ -178,6 +178,19 @@ export function SiteEditorV2({ initialSite }: { initialSite: EditorSiteV2 }) {
   const [undoRevision, setUndoRevision] = useState<string | null>(null);
   const [, setHistoryVersion] = useState(0);
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
+  // Medidas del lienzo para escalar el preview al ancho real del dispositivo.
+  const canvasBoxRef = useRef<HTMLDivElement | null>(null);
+  const [canvasBox, setCanvasBox] = useState({ width: 0, height: 0 });
+  useEffect(() => {
+    const node = canvasBoxRef.current;
+    if (!node || !("ResizeObserver" in window)) return;
+    const observer = new ResizeObserver((entries) => {
+      const rect = entries[0]?.contentRect;
+      if (rect) setCanvasBox({ width: rect.width, height: rect.height });
+    });
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
   const selectionFromCanvasRef = useRef(false);
   const selectionRef = useRef<Selection>(null);
   // Historial local para deshacer/rehacer. stateRef siempre refleja el estado actual.
@@ -299,6 +312,10 @@ export function SiteEditorV2({ initialSite }: { initialSite: EditorSiteV2 }) {
     content: previewInputs.content, design: previewInputs.design, sections: previewInputs.sections,
     leadEndpoint: `/api/public/sites/${initialSite.publicSlug}/leads`, editable: true,
   }), [previewInputs, initialSite.publicSlug]);
+  // Ancho real por dispositivo: el preview de escritorio siempre se maqueta a
+  // 1280px (layout de escritorio de verdad) y se escala para caber en el lienzo.
+  const previewWidth = device === "mobile" ? 390 : 1280;
+  const canvasScale = canvasBox.width > 0 ? Math.min(1, canvasBox.width / previewWidth) : 1;
   const regionSections = sections.filter((item) => item.region === region);
   const selectedWidget = findWidget(sections, selection?.kind === "widget" ? selection.id : "");
   const selectedColumn = findColumn(sections, selection?.kind === "column" ? selection.id : selectedWidget?.column.id || "");
@@ -445,9 +462,11 @@ export function SiteEditorV2({ initialSite }: { initialSite: EditorSiteV2 }) {
       }
       if (data.kind === "context" && typeof data.id === "string" && (data.targetKind === "widget" || data.targetKind === "column" || data.targetKind === "section")) {
         const rect = iframeRef.current?.getBoundingClientRect();
+        // El iframe puede estar escalado: convierte coordenadas internas a pantalla.
+        const frameScale = iframeRef.current && iframeRef.current.offsetWidth > 0 ? (rect?.width ?? iframeRef.current.offsetWidth) / iframeRef.current.offsetWidth : 1;
         setMenu({
-          x: Math.max(8, Math.min((rect?.left ?? 0) + (Number(data.x) || 0), window.innerWidth - 250)),
-          y: Math.max(8, Math.min((rect?.top ?? 0) + (Number(data.y) || 0), window.innerHeight - 380)),
+          x: Math.max(8, Math.min((rect?.left ?? 0) + (Number(data.x) || 0) * frameScale, window.innerWidth - 250)),
+          y: Math.max(8, Math.min((rect?.top ?? 0) + (Number(data.y) || 0) * frameScale, window.innerHeight - 380)),
           target: { kind: data.targetKind, id: data.id },
         });
         return;
@@ -869,8 +888,12 @@ export function SiteEditorV2({ initialSite }: { initialSite: EditorSiteV2 }) {
             ))}
           </div>
           <div className="min-h-0 flex-1 overflow-auto p-3 sm:p-6">
-            <div className={`mx-auto h-full overflow-hidden rounded-xl border border-zinc-300 bg-white shadow-lg transition-[max-width] ${device === "mobile" ? "max-w-[400px]" : "max-w-[1440px]"}`}>
-              <iframe ref={iframeRef} title="Vista previa del sitio, haz clic para editar" className="h-full w-full" srcDoc={rendered.html}
+            <div ref={canvasBoxRef} className={`mx-auto h-full overflow-hidden rounded-xl border border-zinc-300 bg-white shadow-lg transition-[max-width] ${device === "mobile" ? "max-w-[400px]" : "max-w-[1440px]"}`}>
+              {/* El iframe se renderiza al ancho real del dispositivo y se escala para caber:
+                  sin esto, un lienzo angosto dispara los media queries de tablet y el
+                  preview de escritorio no coincide con el sitio publicado. */}
+              <iframe ref={iframeRef} title="Vista previa del sitio, haz clic para editar" srcDoc={rendered.html}
+                style={{ width: previewWidth, height: canvasScale > 0 ? canvasBox.height / canvasScale : "100%", transform: `scale(${canvasScale})`, transformOrigin: "top left", border: 0 }}
                 onLoad={(event) => event.currentTarget.contentWindow?.scrollTo(0, previewScrollRef.current)} />
             </div>
           </div>
