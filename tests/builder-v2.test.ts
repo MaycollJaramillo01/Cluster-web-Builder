@@ -159,6 +159,8 @@ test("el modo editable solo se inyecta en el preview del editor", () => {
   assert.match(editorRender.html, /data-editable-text="1"/);
   assert.match(editorRender.script, /kind:'edit-text'/);
   assert.match(editorRender.script, /innerText/);
+  assert.match(editorRender.script, /delete-element/);
+  assert.doesNotMatch(publicRender.script, /delete-element/);
 });
 
 test("los fondos de sección por token siguen la paleta del cliente", () => {

@@ -74,7 +74,7 @@ export function V2WidgetSettings({ siteId, widget, content, setContent, updateWi
         {preset === "custom" && <TextControl label="URL" value={link} onChange={writeLink} placeholder="https://... o tel:+52..." hint="Acepta enlaces web, tel: y mailto:" />}
         <SelectControl label="Estilo del botón" value={widget.variant || "solid"} onChange={(value) => updateWidget({ variant: value })}
           options={[["solid", "Sólido (color de acento)"], ["outline", "Contorno"]]} />
-        <StyleControls widget={widget} updateWidget={updateWidget} />
+        <StyleControls widget={widget} updateWidget={updateWidget} colorControl={false} />
       </>;
     }
 
@@ -84,7 +84,13 @@ export function V2WidgetSettings({ siteId, widget, content, setContent, updateWi
         placeholder="Qué se ve en la imagen" hint="Ayuda a la accesibilidad y al SEO" />
       <SelectControl label="Estilo" value={widget.variant || "cover"} onChange={(value) => updateWidget({ variant: value })}
         options={[["cover", "Normal"], ["portrait", "Vertical (retrato)"], ["monochrome", "Blanco y negro"], ["tilt", "Inclinada (collage)"]]} />
-      <StyleControls widget={widget} updateWidget={updateWidget} />
+      <SelectControl label="Esquinas" value={widget.style?.desktop?.radius || "inherit"}
+        onChange={(value) => updateWidget({ style: { ...widget.style, desktop: { ...widget.style?.desktop, radius: value === "inherit" ? undefined : value as "none" | "sm" | "md" | "lg" | "pill" } } })}
+        options={[["inherit", "Del sitio"], ["none", "Rectas"], ["md", "Suaves"], ["lg", "Muy redondeadas"], ["pill", "Ovaladas"]]} />
+      <SelectControl label="Sombra" value={widget.style?.desktop?.shadow || "none"}
+        onChange={(value) => updateWidget({ style: { ...widget.style, desktop: { ...widget.style?.desktop, shadow: value === "none" ? undefined : value as "sm" | "md" | "lg" } } })}
+        options={[["none", "Sin sombra"], ["sm", "Ligera"], ["md", "Media"], ["lg", "Fuerte"]]} />
+      <StyleControls widget={widget} updateWidget={updateWidget} typography={false} colorControl={false} />
     </>;
 
     case "video": return <>
@@ -289,14 +295,46 @@ function SelectControl({ label, value, onChange, options, compact }: {
   </label>;
 }
 
-function StyleControls({ widget, updateWidget }: { widget: WidgetV2; updateWidget: (patch: Partial<WidgetV2>) => void }) {
+const TEXT_COLOR_TOKENS = ["primary", "secondary", "accent", "muted"] as const;
+
+function StyleControls({ widget, updateWidget, typography = true, colorControl = true }: {
+  widget: WidgetV2; updateWidget: (patch: Partial<WidgetV2>) => void; typography?: boolean; colorControl?: boolean;
+}) {
+  const desktop = widget.style?.desktop || {};
+  const patchStyle = (styles: Partial<typeof desktop>) => updateWidget({ style: { ...widget.style, desktop: { ...desktop, ...styles } } });
+  const color = desktop.color || "";
+  const colorKind = (TEXT_COLOR_TOKENS as readonly string[]).includes(color) ? color : color ? "custom" : "inherit";
   return <>
     <h3 className="v2-label mt-5">Estilo</h3>
-    <SelectControl label="Alineación" value={widget.style?.desktop?.align || "left"}
-      onChange={(value) => updateWidget({ style: { ...widget.style, desktop: { ...widget.style?.desktop, align: value as "left" | "center" | "right" } } })}
+    {typography && <>
+      <SelectControl label="Tamaño del texto" value={desktop.fontSize || "inherit"}
+        onChange={(value) => patchStyle({ fontSize: value === "inherit" ? undefined : value as NonNullable<typeof desktop.fontSize> })}
+        options={[["inherit", "Automático"], ["sm", "Pequeño"], ["md", "Normal"], ["lg", "Grande"], ["xl", "Muy grande"], ["2xl", "Enorme"], ["display", "Gigante"]]} />
+      <SelectControl label="Grosor de la letra" value={desktop.fontWeight || "inherit"}
+        onChange={(value) => patchStyle({ fontWeight: value === "inherit" ? undefined : value as NonNullable<typeof desktop.fontWeight> })}
+        options={[["inherit", "Automático"], ["normal", "Normal"], ["medium", "Medio"], ["semibold", "Seminegrita"], ["bold", "Negrita"], ["black", "Extra negrita"]]} />
+    </>}
+    {colorControl && <>
+      {/* Los colores del sitio siguen la paleta si el cliente la cambia; el personalizado queda fijo. */}
+      <SelectControl label="Color del texto" value={colorKind}
+        onChange={(value) => {
+          if (value === "inherit") patchStyle({ color: undefined });
+          else if (value === "custom") patchStyle({ color: "#111827" });
+          else patchStyle({ color: value });
+        }}
+        options={[["inherit", "Automático"], ["primary", "Primario del sitio"], ["accent", "Acento del sitio"], ["muted", "Atenuado"], ["custom", "Personalizado"]]} />
+      {colorKind === "custom" && (
+        <label className="mb-3 flex min-h-11 items-center justify-between rounded-lg border border-zinc-200 px-3 text-xs font-medium">
+          Color personalizado
+          <input type="color" className="h-7 w-9 cursor-pointer rounded border border-zinc-200" value={color.startsWith("#") ? color : "#111827"} onChange={(event) => patchStyle({ color: event.target.value })} />
+        </label>
+      )}
+    </>}
+    <SelectControl label="Alineación" value={desktop.align || "left"}
+      onChange={(value) => patchStyle({ align: value as "left" | "center" | "right" })}
       options={[["left", "Izquierda"], ["center", "Centrada"], ["right", "Derecha"]]} />
-    <SelectControl label="Espaciado" value={widget.style?.desktop?.padding || "none"}
-      onChange={(value) => updateWidget({ style: { ...widget.style, desktop: { ...widget.style?.desktop, padding: value as "none" | "sm" | "md" | "lg" | "xl" } } })}
+    <SelectControl label="Espaciado" value={desktop.padding || "none"}
+      onChange={(value) => patchStyle({ padding: value as "none" | "sm" | "md" | "lg" | "xl" })}
       options={[["none", "Sin espacio"], ["sm", "Pequeño"], ["md", "Medio"], ["lg", "Grande"], ["xl", "Extra grande"]]} />
   </>;
 }

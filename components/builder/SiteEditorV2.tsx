@@ -193,6 +193,8 @@ export function SiteEditorV2({ initialSite }: { initialSite: EditorSiteV2 }) {
   }, []);
   const selectionFromCanvasRef = useRef(false);
   const selectionRef = useRef<Selection>(null);
+  // Puente para que el mensaje del lienzo borre elementos sin problemas de orden de declaración.
+  const deleteDispatchRef = useRef<(kind: string, id: string) => void>(() => undefined);
   // Historial local para deshacer/rehacer. stateRef siempre refleja el estado actual.
   const historyRef = useRef<{ past: HistorySnapshot[]; future: HistorySnapshot[]; lastPush: number }>({ past: [], future: [], lastPush: 0 });
   const stateRef = useRef<HistorySnapshot>({ content, design, sections, templateId });
@@ -450,6 +452,10 @@ export function SiteEditorV2({ initialSite }: { initialSite: EditorSiteV2 }) {
       }
       if (data.kind === "undo") { undo(); return; }
       if (data.kind === "redo") { redo(); return; }
+      if (data.kind === "delete-element" && typeof data.id === "string" && typeof data.targetKind === "string") {
+        deleteDispatchRef.current(data.targetKind, data.id);
+        return;
+      }
       if (data.kind === "edit-text" && typeof data.id === "string") {
         const found = findWidget(stateRef.current.sections, data.id);
         if (!found || (found.widget.type !== "heading" && found.widget.type !== "text" && found.widget.type !== "button")) return;
@@ -619,6 +625,30 @@ export function SiteEditorV2({ initialSite }: { initialSite: EditorSiteV2 }) {
     setSelection(null);
     setMessage(`Sección "${source.name}" eliminada. Puedes deshacer con Ctrl+Z.`);
   };
+
+  // Borrado por teclado (Supr): despacha segun el tipo de elemento seleccionado.
+  useEffect(() => {
+    deleteDispatchRef.current = (kind, id) => {
+      if (kind === "widget") deleteWidgetById(id);
+      else if (kind === "column") deleteColumnById(id);
+      else if (kind === "row") deleteRowById(id);
+      else if (kind === "section") deleteSectionById(id);
+    };
+  });
+
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== "Delete") return;
+      const target = event.target as HTMLElement | null;
+      if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.tagName === "SELECT" || target.isContentEditable)) return;
+      const active = selectionRef.current;
+      if (!active) return;
+      event.preventDefault();
+      deleteDispatchRef.current(active.kind, active.id);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   const deleteSelection = () => {
     if (!selection) return;
