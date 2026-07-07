@@ -47,6 +47,7 @@ function socialImageFor(content: SiteContentV2, explicit?: string) {
 const GOOGLE_FONT_AXES: Record<string, string> = {
   Anton: "400", Inter: "400;600;700;900", Sora: "400;600;700;800", Outfit: "400;600;700;900",
   "Playfair Display": "400;600;700;900", Nunito: "400;600;700;900", Poppins: "400;500;600;700",
+  "Space Grotesk": "400;500;600;700", "Cormorant Garamond": "400;500;600;700", Karla: "400;500;700",
 };
 
 function fontLinksFor(theme: ThemeTokensV2) {

@@ -38,6 +38,12 @@ const THEMES: Record<V2TemplateId, ThemeTokensV2> = {
   deco: { primary: "#0d3152", secondary: "#071421", accent: "#d3a33f", background: "#f5f0e6", text: "#10263a", muted: "#6c655a", headingFont: "Copperplate, Georgia, serif", bodyFont: "Arial, Helvetica, sans-serif", radius: "none", motion: "subtle" },
   impact: { primary: "#14432e", secondary: "#123829", accent: "#f2ca3b", background: "#f0efe8", text: "#173a2a", muted: "#5f6d61", headingFont: "Anton, 'Arial Narrow', sans-serif", bodyFont: "Poppins, 'Segoe UI', sans-serif", headingCase: "uppercase", radius: "lg", motion: "stagger" },
   "hvac-premium": { primary: "#3b82f6", secondary: "#111827", accent: "#3b82f6", background: "#ffffff", text: "#111111", muted: "#666666", headingFont: "Arial, Helvetica, sans-serif", bodyFont: "Arial, Helvetica, sans-serif", radius: "sm", motion: "subtle" },
+  // Brandkit "Dark Developer/Builder": precision de constructor, un solo acento cian.
+  terminal: { primary: "#22d3ee", secondary: "#0d1319", accent: "#22d3ee", background: "#0b1117", text: "#e2e8f0", muted: "#8a99a8", headingFont: "'Space Grotesk', 'Segoe UI', sans-serif", bodyFont: "Inter, system-ui, sans-serif", radius: "sm", motion: "stagger" },
+  // Brandkit "Dark Nature/Calm System": bosque profundo, lima como señal, calma cinematica.
+  horizonte: { primary: "#b7e264", secondary: "#0c1912", accent: "#b7e264", background: "#101f16", text: "#e7efe6", muted: "#93a898", headingFont: "Sora, 'Segoe UI', sans-serif", bodyFont: "Nunito, 'Segoe UI', sans-serif", radius: "lg", motion: "cinematic" },
+  // Brandkit "Luxury/Beauty" en clave fria: porcelana, tinta y un burdeos de sello.
+  astre: { primary: "#7c2743", secondary: "#1c1a1d", accent: "#7c2743", background: "#f4f3f1", text: "#211f22", muted: "#6f6a70", headingFont: "'Cormorant Garamond', Georgia, serif", bodyFont: "Karla, 'Segoe UI', sans-serif", radius: "none", motion: "subtle" },
 };
 
 const TEMPLATES: Record<V2TemplateId, TemplateDefinitionV2> = {
@@ -278,9 +284,74 @@ const TEMPLATES: Record<V2TemplateId, TemplateDefinitionV2> = {
       ], { desktop: { background: "#ffffff", color: "#111111", padding: "xl", width: "full" } }),
     ],
   },
+  terminal: {
+    version: 2, id: "terminal", name: "Terminal", description: "Identidad de constructor para estudios de software y servicios tech: fondo casi negro, precisión de retícula y un solo acento cian.", thumbnail: "/templates/v2/terminal.svg", theme: THEMES.terminal,
+    sections: [header("bordered"),
+      section("hero", "Portada", "main", [row(column(8, [text("hero.subtitle", { desktop: { fontSize: "sm", color: "#22d3ee", fontWeight: "bold" } }), heading("hero.title", "h1"), text("hero.body", { desktop: { fontSize: "lg" } }), button()]), column(4, [widget("list", "about.highlights", "minimal")]))], { desktop: { padding: "xl" } }),
+      section("proof", "Números", "main", [row(column(12, [widget("list", "benefits", "metrics")]))], { desktop: { background: "#0d1319", padding: "lg" } }),
+      section("services", "Capacidades", "main", [row(column(12, [heading("business.type", "h2"), widget("list", "services", "bento")]))], { desktop: { padding: "xl" } }),
+      section("about", "El equipo", "main", [row(column(5, [image("about.media", "monochrome")]), column(7, [heading("about.title"), text("about.body", { desktop: { fontSize: "lg" } })]))], { desktop: { background: "#0d1319", padding: "lg" } }),
+      section("reviews", "Referencias", "main", [row(column(4, [heading("business.name")]), column(8, [widget("testimonials", "reviews", "quotes")]))]),
+      section("faq", "Preguntas", "main", [row(column(12, [widget("accordion", "faqs", "lines")]))], { desktop: { background: "#0d1319", padding: "lg" } }),
+      section("contact", "Contacto", "main", [row(column(5, [heading("contact.title"), text("contact.body"), widget("business_info", undefined, "stacked")]), column(7, [widget("form", undefined, "minimal", { buttonSlot: "contact.ctaText" })]))], { desktop: { padding: "xl" } }), footer("minimal")],
+  },
+  horizonte: {
+    version: 2, id: "horizonte", name: "Horizonte", description: "Calma de bosque para turismo, aventura y marcas eco: paisaje a pantalla completa, lima como señal y ritmo cinematográfico.", thumbnail: "/templates/v2/horizonte.svg", theme: THEMES.horizonte,
+    sections: [header("bar"),
+      section("hero", "Paisaje", "main", [row(column(12, [image("hero.media", "background"), text("hero.subtitle", { desktop: { fontSize: "sm" } }), heading("hero.title", "h1", { desktop: { fontSize: "display", fontWeight: "semibold" } }), text("hero.body", { desktop: { fontSize: "lg" } }), button()]))], { desktop: { padding: "none", width: "full" } }),
+      section("about", "Manifiesto", "main", [row(column(12, [heading("about.title", "h2", { desktop: { align: "center" } }), text("about.body", { desktop: { align: "center", fontSize: "lg", width: "content" } })]))], { desktop: { padding: "xl" } }),
+      section("services", "Experiencias", "main", [row(column(12, [widget("list", "services", "cards")]))], { desktop: { background: "#0c1912", padding: "lg" } }),
+      section("gallery", "Bitácora", "main", [row(column(12, [widget("gallery", "media", "filmstrip")]))]),
+      section("reviews", "Viajeros", "main", [row(column(12, [widget("testimonials", "reviews", "featured")]))], { desktop: { background: "#0c1912", padding: "lg" } }),
+      section("location", "Punto de partida", "main", [row(column(5, [widget("map")]), column(7, [heading("about.subtitle"), widget("business_info", undefined, "stacked")]))]),
+      section("contact", "Reserva", "main", [row(column(6, [heading("contact.title"), text("contact.body")]), column(6, [widget("form", undefined, "minimal", { buttonSlot: "contact.ctaText" })]))], { desktop: { background: "#0c1912", padding: "xl" } }), footer("minimal")],
+  },
+  astre: {
+    version: 2, id: "astre", name: "Astre", description: "Lujo frío para belleza, joyería y servicios premium: porcelana, serif de alta costura y un burdeos que actúa como sello.", thumbnail: "/templates/v2/astre.svg", theme: THEMES.astre,
+    sections: [header("minimal"),
+      section("hero", "Vitrina", "main", [row(column(6, [image("hero.media", "portrait")]), column(6, [text("hero.subtitle", { desktop: { fontSize: "sm", color: "#7c2743", fontWeight: "bold" } }), heading("hero.title", "h1"), text("hero.body", { desktop: { fontSize: "lg" } }), button()]))], { desktop: { padding: "xl", width: "wide" } }),
+      section("services", "La carta", "main", [row(column(5, [heading("business.type", "h2")]), column(7, [widget("list", "services", "minimal")]))], { desktop: { padding: "xl" } }),
+      section("about", "La casa", "main", [row(column(12, [text("about.subtitle", { desktop: { fontSize: "sm", align: "center", color: "#7c2743", fontWeight: "bold" } }), heading("about.title", "h2", { desktop: { align: "center" } }), text("about.body", { desktop: { align: "center", width: "content", fontSize: "lg" } })]))], { desktop: { background: "#ebe7e4", padding: "xl" } }),
+      section("gallery", "Piezas", "main", [row(column(12, [widget("gallery", "media", "editorial")]))]),
+      section("reviews", "Clientas", "main", [row(column(12, [widget("testimonials", "reviews", "featured")]))], { desktop: { background: "#ebe7e4", padding: "lg" } }),
+      section("contact", "Cita privada", "main", [row(column(5, [heading("contact.title"), text("contact.body"), widget("business_info", undefined, "stacked")]), column(7, [widget("form", undefined, "card", { buttonSlot: "contact.ctaText" })]))], { desktop: { padding: "xl" } }), footer("columns")],
+  },
 };
 
 export const SECTION_LIBRARY_V2: SectionSeed[] = [
+  section("library-hero-split-image-v2", "Hero normal: texto + imagen", "main", [row(column(6, [text("hero.subtitle", { desktop: { fontSize: "sm" } }), heading("hero.title", "h1", { desktop: { fontSize: "display", fontWeight: "bold" } }), text("hero.body", { desktop: { fontSize: "lg" } }), button()]), column(6, [image("hero.media", "wide")]))], { desktop: { padding: "xl", width: "wide" } }),
+  section("library-hero-background-image-v2", "Hero normal: imagen de fondo", "main", [row(column(12, [image("hero.media", "background"), text("hero.subtitle", { desktop: { fontSize: "sm" } }), heading("hero.title", "h1", { desktop: { fontSize: "display", fontWeight: "bold" } }), text("hero.body", { desktop: { fontSize: "lg", width: "content" } }), button()]))], { desktop: { padding: "xl", width: "full", background: "#111827", color: "#ffffff" } }),
+  section("library-hero-video-background-v2", "Hero normal: video de fondo", "main", [row(column(12, [widget("video", "hero.media", "background"), text("hero.subtitle", { desktop: { fontSize: "sm" } }), heading("hero.title", "h1", { desktop: { fontSize: "display", fontWeight: "black" } }), text("hero.body", { desktop: { fontSize: "lg", width: "content" } }), button()]))], { desktop: { padding: "xl", width: "full", background: "#0f172a", color: "#ffffff" } }),
+  section("library-hero-centered-v2", "Hero normal: centrado", "main", [row(column(12, [text("hero.subtitle", { desktop: { align: "center", fontSize: "sm" } }), heading("hero.title", "h1", { desktop: { align: "center", fontSize: "display", fontWeight: "bold" } }), text("hero.body", { desktop: { align: "center", fontSize: "lg", width: "content" } }), button()]))], { desktop: { padding: "xl", width: "wide" } }),
+
+  section("library-about-split-v2", "Nosotros: imagen + historia", "main", [row(column(5, [image("about.media", "portrait")]), column(7, [text("about.subtitle", { desktop: { fontSize: "sm" } }), heading("about.title"), text("about.body", { desktop: { fontSize: "lg" } }), widget("list", "about.highlights", "badges")]))], { desktop: { padding: "xl" } }),
+  section("library-about-minimal-v2", "Nosotros: texto amplio", "main", [row(column(4, [text("about.subtitle", { desktop: { fontSize: "sm" } })]), column(8, [heading("about.title", "h2", { desktop: { fontSize: "2xl" } }), text("about.body", { desktop: { fontSize: "lg" } })]))], { desktop: { padding: "xl" } }),
+
+  section("library-services-cards-v2", "Servicios: tarjetas", "main", [row(column(4, [heading("business.type"), text("about.subtitle")]), column(8, [widget("list", "services", "cards")]))], { desktop: { padding: "lg" } }),
+  section("library-services-editorial-v2", "Servicios: editorial", "main", [row(column(12, [widget("list", "services", "editorial")]))], { desktop: { padding: "xl" } }),
+  section("library-services-catalog-v2", "Servicios: catalogo visual", "main", [row(column(12, [widget("list", "services", "catalog")]))], { desktop: { background: "#f8fafc", padding: "xl" } }),
+
+  section("library-benefits-metrics-v2", "Beneficios: metricas", "main", [row(column(5, [heading("about.subtitle"), text("about.body")]), column(7, [widget("list", "benefits", "metrics")]))], { desktop: { padding: "lg" } }),
+  section("library-benefits-pills-v2", "Beneficios: pildoras", "main", [row(column(12, [heading("about.title"), widget("list", "benefits", "pills")]))], { desktop: { padding: "lg" } }),
+  section("library-benefits-numbered-v2", "Beneficios: numerados", "main", [row(column(12, [widget("list", "benefits", "numbered")]))], { desktop: { padding: "lg" } }),
+
+  section("library-gallery-grid-v2", "Galeria: grilla", "main", [row(column(12, [widget("gallery", "media", "grid")]))], { desktop: { padding: "xl" } }),
+  section("library-gallery-mosaic-v2", "Galeria: mosaico", "main", [row(column(12, [widget("gallery", "media", "mosaic")]))], { desktop: { padding: "xl" } }),
+
+  section("library-cta-card-v2", "CTA: tarjeta centrada", "main", [row(column(12, [heading("contact.title", "h2", { desktop: { align: "center" } }), text("contact.body", { desktop: { align: "center" } }), button("contact.ctaText", "hero.ctaLink")]))], { desktop: { background: "#f4f4f5", padding: "xl", radius: "lg" } }),
+  section("library-cta-split-v2", "CTA: texto + contacto", "main", [row(column(7, [heading("contact.title"), text("contact.body")]), column(5, [widget("business_info", undefined, "stacked"), button("contact.ctaText", "hero.ctaLink")]))], { desktop: { padding: "xl" } }),
+
+  section("library-reviews-cards-v2", "Resenas: tarjetas", "main", [row(column(12, [widget("testimonials", "reviews", "cards")]))], { desktop: { padding: "lg" } }),
+  section("library-reviews-wall-v2", "Resenas: muro", "main", [row(column(12, [widget("testimonials", "reviews", "wall")]))], { desktop: { background: "#111827", color: "#ffffff", padding: "xl" } }),
+
+  section("library-faq-minimal-v2", "FAQ: minimal", "main", [row(column(4, [heading("contact.title"), text("contact.body")]), column(8, [widget("accordion", "faqs", "minimal")]))], { desktop: { padding: "xl" } }),
+  section("library-faq-cards-v2", "FAQ: tarjetas", "main", [row(column(12, [widget("accordion", "faqs", "cards")]))], { desktop: { padding: "lg" } }),
+
+  section("library-contact-split-v2", "Contacto: formulario dividido", "main", [row(column(6, [heading("contact.title"), text("contact.body"), widget("social", "social", "buttons")]), column(6, [widget("form", undefined, "split", { titleSlot: "contact.title", bodySlot: "contact.body", buttonSlot: "contact.ctaText" })]))], { desktop: { padding: "xl" } }),
+  section("library-contact-map-v2", "Contacto: mapa + formulario", "main", [row(column(6, [widget("map", "business.location", "card"), widget("business_info", undefined, "compact")]), column(6, [widget("form", undefined, "card", { buttonSlot: "contact.ctaText" })]))], { desktop: { padding: "xl" } }),
+
+  section("library-footer-columns-v2", "Footer: columnas", "footer", [row(column(5, [widget("brand", "business.name", "columns"), text("business.type")]), column(4, [widget("business_info", undefined, "compact")]), column(3, [widget("social", "social", "icons")]))], { desktop: { padding: "lg", width: "full" } }),
+  section("library-footer-minimal-v2", "Footer: minimal", "footer", [row(column(6, [widget("brand", "business.name", "minimal")]), column(6, [widget("social", "social", "icons")]))], { desktop: { padding: "lg", width: "full" } }),
   section("library-split-hero", "Hero dividido", "main", [row(column(6, [heading("hero.title", "h1"), text("hero.body"), button()]), column(6, [image("hero.media", "offset")]))]),
   section("library-pixel-hero", "Portada animada", "main", [row(column(12, [widget("hero_pixel")]))], { desktop: { padding: "none", width: "full" } }),
   section("library-poster-hero", "Hero poster", "main", [row(column(12, [heading("hero.title", "h1", { desktop: { fontSize: "display", fontWeight: "black", align: "center" } }), text("hero.subtitle", { desktop: { align: "center" } }), button()]))], { desktop: { background: "#111827", color: "#ffffff", padding: "xl" } }),
