@@ -53,7 +53,7 @@ function Showcase({ sites }: { sites: ShowcaseSite[] }) {
             <Image src={site.image} alt={`Sitio publicado de ${site.name}`} fill unoptimized loading="lazy" sizes="(max-width: 1024px) 100vw, 33vw" className="object-cover transition-transform duration-500 motion-reduce:transition-none group-hover:scale-[1.03]" />
             <span className="absolute right-3 top-3 rounded-full bg-[#18131f]/90 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[.12em] text-white backdrop-blur">{site.category}</span>
             <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/60 to-transparent" aria-hidden="true" />
-            <div className="absolute bottom-4 left-4 flex gap-1.5" aria-label={`Paleta de ${site.name}`}>{site.colors.map((color) => <span key={color} className="h-5 w-5 rounded-full border-2 border-white shadow" style={{ backgroundColor: color }} />)}</div>
+            <div className="absolute bottom-4 left-4 flex gap-1.5" aria-label={`Paleta de ${site.name}`}>{site.colors.map((color, swatch) => <span key={`${swatch}-${color}`} className="h-5 w-5 rounded-full border-2 border-white shadow" style={{ backgroundColor: color }} />)}</div>
           </div>
           <div className="p-3 pb-4 pt-5">
             <div className="flex items-start justify-between gap-4"><div><h3 className="font-[var(--font-outfit)] text-2xl font-semibold tracking-tight">{site.seoTitle}</h3><p className="mt-2 leading-6 text-[#665e6d]">{site.description}</p></div><Link href={`/s/${site.slug}`} target="_blank" aria-label={`Ver el sitio web de ${site.name}`} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#18131f] text-white transition-colors hover:bg-[#6d35db]"><ArrowUpRight className="h-4 w-4" /></Link></div>
