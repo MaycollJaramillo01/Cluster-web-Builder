@@ -161,6 +161,19 @@ test("el modo editable solo se inyecta en el preview del editor", () => {
   assert.match(editorRender.script, /innerText/);
 });
 
+test("los fondos de sección por token siguen la paleta del cliente", () => {
+  const document = instantiateTemplateV2("impact", content);
+  const withToken = document.sections.find((section) => section.style?.desktop?.background === "secondary");
+  assert.ok(withToken, "impact debería usar el token secondary en alguna banda");
+  const normalized = normalizeCanvasSectionsV2(document.sections);
+  assert.ok(normalized.some((section) => section.style?.desktop?.background === "secondary"));
+  const rendered = renderSiteV2({ content: document.content, design: { ...document.template.theme, secondary: "#332244" }, sections: normalized, leadEndpoint: "/api/leads" });
+  assert.match(rendered.css, /--secondary:#332244/);
+  assert.match(rendered.css, /background:var\(--secondary\)/);
+  assert.match(rendered.css, /color:var\(--on-secondary\)/);
+  assert.doesNotMatch(rendered.css, /background:secondary/);
+});
+
 test("el fondo de imagen se valida y genera CSS seguro", () => {
   const document = instantiateTemplateV2("minimal", content);
   document.sections[1].style = { desktop: { background: "#112233", backgroundImage: "https://images.example.com/fondo.webp", padding: "xl", width: "wide" } };

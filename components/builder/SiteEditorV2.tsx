@@ -1080,13 +1080,28 @@ function SelectionPanel({ siteId, content, setContent, selection, selectedWidget
     return <>
       <p className="mb-4 text-xs leading-relaxed text-zinc-500">Haz clic en un texto, imagen o botón dentro de la sección para editarlo directamente.</p>
       <h3 className="v2-label">Fondo de la sección</h3>
-      <label className="mb-4 flex min-h-11 items-center justify-between rounded-lg border border-zinc-200 px-3 text-xs font-medium">
-        Color
-        <span className="flex items-center gap-2">
-          {desktop.background && <button type="button" className="text-xs text-zinc-500 underline" onClick={() => updateSectionStyle({ background: undefined })}>Quitar</button>}
-          <input type="color" className="h-7 w-9 cursor-pointer rounded border border-zinc-200" value={desktop.background || "#ffffff"} onChange={(event) => updateSectionStyle({ background: event.target.value })} />
-        </span>
-      </label>
+      {/* Los fondos de paleta siguen los colores del sitio cuando el cliente los cambia;
+          el personalizado queda fijo en el hex elegido. */}
+      <select className="v2-field mb-2" value={["primary", "secondary", "accent", "background"].includes(desktop.background || "") ? desktop.background : desktop.background ? "custom" : "none"}
+        onChange={(event) => {
+          const value = event.target.value;
+          if (value === "none") updateSectionStyle({ background: undefined });
+          else if (value === "custom") updateSectionStyle({ background: "#ffffff" });
+          else updateSectionStyle({ background: value });
+        }}>
+        <option value="none">Sin fondo</option>
+        <option value="primary">Color primario del sitio</option>
+        <option value="secondary">Color secundario del sitio</option>
+        <option value="accent">Color de acento del sitio</option>
+        <option value="background">Fondo general del sitio</option>
+        <option value="custom">Color personalizado</option>
+      </select>
+      {desktop.background && !["primary", "secondary", "accent", "background"].includes(desktop.background) && (
+        <label className="mb-4 flex min-h-11 items-center justify-between rounded-lg border border-zinc-200 px-3 text-xs font-medium">
+          Color personalizado
+          <input type="color" className="h-7 w-9 cursor-pointer rounded border border-zinc-200" value={desktop.background.startsWith("#") ? desktop.background : "#ffffff"} onChange={(event) => updateSectionStyle({ background: event.target.value })} />
+        </label>
+      )}
       <EditorMediaField siteId={siteId} kind="image" tone="light" value={desktop.backgroundImage || ""} onChange={(url) => updateSectionStyle({ backgroundImage: url || undefined })} onUsageChange={() => undefined} />
 
       <h3 className="v2-label mt-5">Espaciado vertical</h3>

@@ -141,7 +141,7 @@ export function V2WidgetSettings({ siteId, widget, content, setContent, updateWi
       const items = readItems<V2Media>();
       return <>
         <SelectControl label="Presentación" value={widget.variant || "grid"} onChange={(value) => updateWidget({ variant: value })}
-          options={[["grid", "Cuadrícula"], ["mosaic", "Mosaico (primera grande)"], ["filmstrip", "Tira horizontal"]]} />
+          options={[["grid", "Cuadrícula"], ["mosaic", "Mosaico (primera grande)"], ["filmstrip", "Tira horizontal"], ["bento", "Bento con leyendas"]]} />
         <ItemList items={items} onChange={writeItems} addLabel="Agregar imagen" max={36}
           create={() => ({ url: "", alt: "" })}
           render={(item, patch) => <>

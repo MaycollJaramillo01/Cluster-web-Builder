@@ -57,6 +57,11 @@ export type ThemeTokensV2 = {
   motion: "none" | "subtle" | "stagger" | "cinematic";
 };
 
+/** Nombres de color de la paleta que un estilo puede referenciar en lugar de un hex.
+ *  Al usarlos, la sección sigue la paleta del cliente cuando este la cambia. */
+export const V2_THEME_COLOR_KEYS = ["primary", "secondary", "accent", "background", "text", "muted"] as const;
+export type V2ThemeColorKey = (typeof V2_THEME_COLOR_KEYS)[number];
+
 export type StyleTokensV2 = {
   color?: string;
   background?: string;
@@ -109,8 +114,9 @@ export type TemplateDefinitionV2 = {
 };
 
 const hex = z.string().regex(/^#[0-9a-fA-F]{6}$/);
+const themeColor = z.union([hex, z.enum(V2_THEME_COLOR_KEYS)]);
 const styleSchema = z.object({
-  color: hex.optional(), background: hex.optional(),
+  color: themeColor.optional(), background: themeColor.optional(),
   backgroundImage: z.string().max(2000).transform((value) => sanitizeLink(value)).optional(),
   align: z.enum(["left", "center", "right"]).optional(),
   fontSize: z.enum(["xs", "sm", "md", "lg", "xl", "2xl", "display"]).optional(),
