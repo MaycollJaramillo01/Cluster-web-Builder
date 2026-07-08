@@ -124,7 +124,7 @@ export function ServicesBlock({ section, theme, preset, site }: BlockProps) {
           <div className="mt-12 grid auto-rows-[14rem] gap-4 md:grid-cols-2 lg:grid-cols-3">
             {items.map((item, i) => (
               <article key={i} data-motion-item className={`relative overflow-hidden p-7 ${i === 0 ? "md:col-span-2 lg:row-span-2 lg:min-h-[29rem]" : ""} ${preset.cardShadow}`} style={{ backgroundColor: i === 0 ? theme.secondary : surface.panel, color: i === 0 ? "#fff" : theme.text, borderRadius: "var(--site-radius)" }}>
-                {i === 0 && <div className="absolute inset-0 bg-cover bg-center opacity-25" style={{ backgroundImage: `url("${stockImageUrl(site.businessType, "service-feature", 900, 700)}")` }} />}
+                {i === 0 && <div className="absolute inset-0 bg-cover bg-center opacity-25" style={{ backgroundImage: `url("${(item.image as string) || stockImageUrl(site.businessType, "service-feature", 900, 700)}")` }} />}
                 <div className="relative flex h-full flex-col justify-end">
                   <span className="text-xs font-bold uppercase tracking-widest" style={{ color: i === 0 ? theme.accent : theme.primary }}>{String(i + 1).padStart(2, "0")}</span>
                   <h3 className={`${i === 0 ? "text-3xl sm:text-4xl" : "text-xl"} mt-3 font-semibold`} style={{ fontFamily: "var(--site-heading)" }}>{titleFor(item)}</h3>
@@ -157,7 +157,7 @@ export function ServicesBlock({ section, theme, preset, site }: BlockProps) {
             >
               <div className="relative h-40 overflow-hidden">
                 <img
-                  src={stockImageUrl(site.businessType, `service-${i}`, 500, 320)}
+                  src={(item.image as string) || stockImageUrl(site.businessType, `service-${i}`, 500, 320)}
                   alt={String(item.name ?? item.title ?? "Servicio")}
                   loading="lazy"
                   className="h-full w-full object-cover"

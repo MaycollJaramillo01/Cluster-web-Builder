@@ -11,7 +11,7 @@ import type { BlockProps } from "./types";
  * sueltas con formas decorativas.
  */
 
-type CellItem = { label: string; meta: string };
+type CellItem = { label: string; meta: string; image?: string };
 type Tone = "image" | "accent" | "primary";
 type CellSpec = { span: string; tone: Tone; aspect?: string; wide?: boolean };
 
@@ -23,6 +23,7 @@ function readItems(section: BlockProps["section"], businessType: string): CellIt
     .map((item) => ({
       label: String(item.name ?? item.title ?? "").trim(),
       meta: String(item.description ?? "").trim(),
+      image: typeof item.image === "string" && item.image ? item.image : undefined,
     }))
     .filter((item) => item.label);
   if (items.length) return items;
@@ -49,7 +50,7 @@ export function GalleryBlock({ section, theme, preset, site }: BlockProps) {
     const meta = truncateAtWord(item.meta || site.businessType, 52);
     const image = (
       <img
-        src={stockImageUrl(site.businessType, `gallery-${i}`, spec.wide ? 900 : 640, spec.wide ? 500 : 640)}
+        src={item.image || stockImageUrl(site.businessType, `gallery-${i}`, spec.wide ? 900 : 640, spec.wide ? 500 : 640)}
         alt={`${site.businessName} — ${item.label}`}
         loading="lazy"
         className="h-full w-full object-cover transition-transform duration-300 hover:scale-[1.03]"
@@ -179,9 +180,10 @@ export function GalleryBlock({ section, theme, preset, site }: BlockProps) {
     ], "grid-cols-2 sm:grid-cols-3");
   }
 
-  // ── GRID (default): seis tarjetas uniformes ──
+  // ── GRID (default): tarjetas uniformes — sigue el numero de items reales cuando hay fotos propias ──
+  const gridCount = Math.min(Math.max(items.length, 4), 12);
   return layout(
-    Array.from({ length: 6 }, () => ({ span: "", tone: "image" as Tone, aspect: "1/1" })),
+    Array.from({ length: gridCount }, () => ({ span: "", tone: "image" as Tone, aspect: "1/1" })),
     preset.sectionStyle === "grid" ? "grid-cols-2 gap-1 sm:grid-cols-3" : "grid-cols-2 sm:grid-cols-3",
   );
 }
