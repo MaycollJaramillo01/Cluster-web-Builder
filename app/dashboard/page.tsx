@@ -30,6 +30,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
     select: {
       id: true, businessName: true, businessType: true, status: true, publicSlug: true, customDomain: true, domainVerifiedAt: true,
       createdAt: true, updatedAt: true, downloadedAt: true, primaryColor: true, secondaryColor: true, accentColor: true,
+      _count: { select: { leads: { where: { readAt: null } } } },
     },
   });
 
@@ -42,6 +43,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
     primaryColor: site.primaryColor ?? "#15121b",
     secondaryColor: site.secondaryColor ?? "#d0bcff",
     accentColor: site.accentColor ?? "#8b5cf6",
+    unreadLeads: site._count.leads,
   }));
 
   return (

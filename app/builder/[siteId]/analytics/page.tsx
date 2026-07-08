@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { ArrowLeft, BarChart3, Eye, TrendingUp } from "lucide-react";
+import { ArrowLeft, BarChart3, Eye, Inbox, TrendingUp } from "lucide-react";
 import { cookies } from "next/headers";
 
 import { getCurrentUser, GUEST_COOKIE, hashGuestToken } from "@/lib/auth";
@@ -50,7 +50,6 @@ export default async function SiteAnalyticsPage({
   if (!site) notFound();
 
   const thirtyDaysAgo = daysAgoStr(29);
-  const sevenDaysAgo = daysAgoStr(6);
   const today = todayStr();
 
   const allViews = await prisma.siteView.findMany({
@@ -60,11 +59,12 @@ export default async function SiteAnalyticsPage({
 
   const totalViews = allViews.reduce((sum, v) => sum + v.views, 0);
 
+  // Contactos: total y tasa de conversión respecto a las visitas.
+  const totalLeads = await prisma.lead.count({ where: { siteId } });
+  const conversion = totalViews > 0 ? Math.round((totalLeads / totalViews) * 1000) / 10 : 0;
+
   const last30 = allViews.filter((v) => v.date >= thirtyDaysAgo);
   const views30 = last30.reduce((sum, v) => sum + v.views, 0);
-
-  const last7 = allViews.filter((v) => v.date >= sevenDaysAgo);
-  const views7 = last7.reduce((sum, v) => sum + v.views, 0);
 
   // Build a complete 30-day series filling missing days with 0
   const viewMap = new Map(allViews.map((v) => [v.date, v.views]));
@@ -105,10 +105,11 @@ export default async function SiteAnalyticsPage({
         </div>
 
         {/* Stat cards */}
-        <div className="grid gap-4 sm:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <StatCard icon={Eye} label="Visitas totales" value={totalViews.toLocaleString("es")} />
           <StatCard icon={BarChart3} label="Ultimos 30 dias" value={views30.toLocaleString("es")} />
-          <StatCard icon={TrendingUp} label="Ultimos 7 dias" value={views7.toLocaleString("es")} />
+          <StatCard icon={Inbox} label="Contactos recibidos" value={totalLeads.toLocaleString("es")} />
+          <StatCard icon={TrendingUp} label="Conversion" value={`${conversion.toLocaleString("es")}%`} hint="Contactos por cada 100 visitas" />
         </div>
 
         {/* Best day */}
@@ -197,10 +198,12 @@ function StatCard({
   icon: Icon,
   label,
   value,
+  hint,
 }: {
   icon: React.ComponentType<{ className?: string }>;
   label: string;
   value: string;
+  hint?: string;
 }) {
   return (
     <div className="rounded-xl border border-border bg-card p-6">
@@ -209,6 +212,7 @@ function StatCard({
         <p className="text-sm">{label}</p>
       </div>
       <p className="mt-3 text-4xl font-semibold tabular-nums">{value}</p>
+      {hint && <p className="mt-1 text-xs text-muted-foreground">{hint}</p>}
     </div>
   );
 }

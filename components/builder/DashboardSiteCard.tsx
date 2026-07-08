@@ -12,6 +12,7 @@ export type DashboardSite = {
   customDomain: string | null; domainVerifiedAt: string | null;
   createdAt: string; updatedAt: string; primaryColor: string; secondaryColor: string; accentColor: string;
   downloadedAt: string | null;
+  unreadLeads: number;
 };
 
 const STATUS_LABEL: Record<string, { label: string; dot: string; text: string; border: string }> = {
@@ -70,7 +71,16 @@ export function DashboardSiteCard({ site }: { site: DashboardSite }) {
         <div className="mt-5 flex items-center justify-between border-t border-border pt-4">
           <p className="text-xs text-muted-foreground">Actualizado el {date}</p>
           <div className="flex gap-2">
-            <Button asChild size="icon" variant="outline"><Link href={`/builder/${site.id}/leads`} aria-label={`Contactos de ${site.businessName}`}><Inbox /></Link></Button>
+            <Button asChild size="icon" variant="outline" className="relative">
+              <Link href={`/builder/${site.id}/leads`} aria-label={site.unreadLeads > 0 ? `${site.unreadLeads} contactos nuevos de ${site.businessName}` : `Contactos de ${site.businessName}`}>
+                <Inbox />
+                {site.unreadLeads > 0 && (
+                  <span className="absolute -right-1.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#8b5cf6] px-1 text-[10px] font-bold leading-none text-white">
+                    {site.unreadLeads > 9 ? "9+" : site.unreadLeads}
+                  </span>
+                )}
+              </Link>
+            </Button>
             <Button asChild size="icon" variant="outline"><Link href={`/builder/${site.id}/domain`} aria-label={`Dominio de ${site.businessName}`}><Globe /></Link></Button>
             <Button asChild size="sm"><Link href={`/builder/${site.id}`}><Pencil /> Editar</Link></Button>
           </div>

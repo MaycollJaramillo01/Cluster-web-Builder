@@ -137,7 +137,7 @@ export function V2WidgetSettings({ siteId, widget, content, setContent, updateWi
             <TextControl label="Título" value={item.title} onChange={(value) => patch({ title: value })} compact />
             <TextControl label="Descripción" value={item.description} onChange={(value) => patch({ description: value })} textarea rows={2} compact />
             <TextControl label="Dato extra" value={item.meta ?? ""} onChange={(value) => patch({ meta: value })} placeholder="Precio, cifra o etiqueta" compact />
-            <TextControl label="Imagen (URL)" value={item.image ?? ""} onChange={(value) => patch({ image: value })} placeholder="https://... (opcional)" compact />
+            <EditorMediaField tone="light" siteId={siteId} kind="image" value={item.image ?? ""} onChange={(url) => patch({ image: url })} onUsageChange={() => undefined} />
           </>} />
         <StyleControls widget={widget} updateWidget={updateWidget} />
       </>;
@@ -151,10 +151,9 @@ export function V2WidgetSettings({ siteId, widget, content, setContent, updateWi
         <ItemList items={items} onChange={writeItems} addLabel="Agregar imagen" max={36}
           create={() => ({ url: "", alt: "" })}
           render={(item, patch) => <>
-            {/* eslint-disable-next-line @next/next/no-img-element -- miniatura del panel con URLs arbitrarias del usuario; next/image exigiría permitir cualquier dominio remoto */}
-            {item.url ? <img src={item.url} alt="" className="mb-1 h-20 w-full rounded object-cover" /> : null}
-            <TextControl label="URL de la imagen" value={item.url} onChange={(value) => patch({ url: value })} placeholder="https://..." compact />
-            <TextControl label="Descripción" value={item.alt} onChange={(value) => patch({ alt: value })} placeholder="Qué se ve (opcional)" compact />
+            <EditorMediaField tone="light" siteId={siteId} kind="image" value={item.url} onChange={(url) => patch({ url })} onUsageChange={() => undefined} />
+            <TextControl label="O pega una URL" value={item.url} onChange={(value) => patch({ url: value })} placeholder="https://..." compact />
+            <TextControl label="Descripción" value={item.alt} onChange={(value) => patch({ alt: value })} placeholder="Qué se ve (se usa como leyenda en el bento)" compact />
           </>} />
       </>;
     }

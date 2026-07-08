@@ -6,6 +6,7 @@ import { dnsRecordsForDomain } from "../lib/site/domain-dns";
 import { publishedSiteMetadata, publishedSiteStructuredData } from "../lib/site/metadata";
 import { parseV2Clipboard } from "../lib/site/v2-clipboard";
 import { getAllTemplatesV2, instantiateTemplateV2, LEGACY_TEMPLATE_MIGRATION, SECTION_LIBRARY_V2 } from "../lib/site/v2-templates";
+import { chooseTemplateForBusiness } from "../lib/site/v2-migrate";
 import { normalizeCanvasSectionsV2, normalizeSiteContentV2, normalizeWidgetV2, V2_TEMPLATE_IDS, V2_WIDGET_TYPES } from "../lib/site/v2-schema";
 
 const content = normalizeSiteContentV2({
@@ -105,6 +106,19 @@ test("Servicio premium replica el recorrido completo de un negocio local", () =>
   assert.match(rendered.css, /HVAC Premium: faithful service-business composition/);
   assert.match(rendered.css, /\.v2-key-hvac-service-areas/);
   assert.doesNotMatch(rendered.body, /Made in Framer/);
+});
+
+test("el rubro del negocio alcanza las plantillas nuevas", () => {
+  assert.equal(chooseTemplateForBusiness("Restaurante", null), "gastro");
+  assert.equal(chooseTemplateForBusiness("Gimnasio y entrenamiento", null), "metro");
+  assert.equal(chooseTemplateForBusiness("Joyería a medida", null), "astre");
+  assert.equal(chooseTemplateForBusiness("Desarrollo de software", null), "terminal");
+  assert.equal(chooseTemplateForBusiness("Expediciones y turismo de montaña", null), "horizonte");
+  assert.equal(chooseTemplateForBusiness("Servicios legales", null), "assurance");
+  assert.equal(chooseTemplateForBusiness("Techos y reparaciones", null), "hvac-premium");
+  // Sin coincidencia de rubro cae al mapeo por estilo visual (comportamiento previo intacto).
+  assert.ok(V2_TEMPLATE_IDS.includes(chooseTemplateForBusiness("Algo inclasificable", "Editorial")));
+  assert.equal(chooseTemplateForBusiness("", null), "conversion");
 });
 
 test("cambiar plantilla conserva contenido y secciones personalizadas", () => {

@@ -650,13 +650,10 @@ export function SiteEditorV2({ initialSite }: { initialSite: EditorSiteV2 }) {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
+  // Reusa las funciones protegidas: deleteSectionById ya bloquea header/footer globales.
   const deleteSelection = () => {
     if (!selection) return;
-    const { kind, id } = selection;
-    if (kind === "section") mutateSections((draft) => draft.filter((item) => item.id !== id));
-    if (kind === "row") mutateSections((draft) => draft.map((section) => ({ ...section, rows: section.rows.filter((row) => row.id !== id) })));
-    if (kind === "widget") mutateSections((draft) => draft.map((section) => ({ ...section, rows: section.rows.map((row) => ({ ...row, columns: row.columns.map((column) => ({ ...column, widgets: column.widgets.filter((widget) => widget.id !== id) })) })) })));
-    setSelection(null);
+    deleteDispatchRef.current(selection.kind, selection.id);
   };
 
   const onDragEnd = ({ active, over }: DragEndEvent) => {

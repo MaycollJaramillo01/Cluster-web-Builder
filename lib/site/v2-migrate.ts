@@ -55,8 +55,32 @@ export function chooseV2Template(visualStyle: string | null | undefined): V2Temp
   return LEGACY_TEMPLATE_MIGRATION[canonical]?.template || "conversion";
 }
 
+// El rubro del negocio decide la plantilla de mejor ajuste entre las nuevas; sin esto
+// el generador solo alcanzaba las 6 plantillas originales del mapeo por estilo visual.
+// Cada entrada es [plantilla, patrón sobre el tipo de negocio en minúsculas].
+const BUSINESS_TEMPLATE_RULES: Array<[V2TemplateId, RegExp]> = [
+  ["gastro", /restaurant|comida|cafeter|cafe|café|bar |bistr|cocina|gastro|panader|reposter|taquer|pizzer|menu|menú/],
+  ["metro", /gimnasio|gym|fitness|entrenamiento|crossfit|deporte|box(?:eo)?|yoga|pilates/],
+  ["astre", /joyer|joya|belleza|salon|salón|spa|estetic|estétic|maquilla|uñas|peluquer|barber|lujo|boutique|moda/],
+  ["terminal", /software|desarrollo|programaci|tecnolog|app\b|saas|startup|datos|ciberseg|devops|api\b|nube|it\b/],
+  ["horizonte", /turismo|viaje|expedici|aventura|hotel|hosped|hostal|monta|ecoturismo|tour|senderis|camping|naturaleza/],
+  ["assurance", /legal|abogad|bufete|jurídic|juridic|notari|contabil|conta\b|fiscal|asesor|consultor|complian|financ|seguro|clínica|clinica|médic|medic|salud|dental|dentist/],
+  ["impact", /agencia|marketing|publicidad|creativ|branding|diseño|diseno|estudio|comunicaci|producci|audiovisual|fotograf/],
+  ["nordic", /interior|arquitect|mueble|decorac|inmobili|bienes raíces|bienes raices|construc|reforma|carpinter/],
+  ["hvac-premium", /techo|roofing|pintura|painting|jardin|landscap|limpieza|cleaning|plomer|electric|clima|hvac|fontaner|mantenimien|instalaci|reparaci/],
+];
+
+export function chooseTemplateForBusiness(businessType: string | null | undefined, visualStyle: string | null | undefined): V2TemplateId {
+  const label = (businessType || "").toLowerCase();
+  if (label) {
+    const match = BUSINESS_TEMPLATE_RULES.find(([, pattern]) => pattern.test(label));
+    if (match) return match[0];
+  }
+  return chooseV2Template(visualStyle);
+}
+
 export function migrateLegacySiteDocument(site: LegacySite, sections: LegacySectionRow[]) {
-  const templateId = chooseV2Template(site.visualStyle);
+  const templateId = chooseTemplateForBusiness(site.businessType, site.visualStyle);
   const content = contentFromLegacySite(site, sections);
   const instantiated = instantiateTemplateV2(templateId, content);
   const baseTheme = getTemplateV2(templateId).theme;
