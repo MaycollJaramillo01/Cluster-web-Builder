@@ -949,10 +949,11 @@ export function SiteEditorPanel({
               onClick={() => void download()}
               disabled={downloading || dirty}
               title={dirty ? "Guarda tus cambios antes de descargar" : undefined}
-              className="hidden min-h-11 gap-2 md:inline-flex"
+              className="min-h-11 gap-2 border-[#8b5cf6] bg-[#8b5cf6] text-white hover:bg-[#7c3aed]"
             >
               {downloading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-              Descargar ZIP
+              <span className="hidden sm:inline">Descargar ZIP</span>
+              <span className="sm:hidden">ZIP</span>
             </Button>
             <Button
               asChild
