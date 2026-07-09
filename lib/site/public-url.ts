@@ -20,7 +20,9 @@ export function absolutePublicSiteUrl(slug: string, origin?: string) {
 
 export function appOrigin(fallback = "http://localhost:3000") {
   const configured = process.env.NEXT_PUBLIC_APP_URL;
-  for (const candidate of [configured, fallback]) {
+  const vercel = process.env.VERCEL_PROJECT_PRODUCTION_URL || process.env.VERCEL_URL;
+  const vercelOrigin = vercel ? `https://${vercel.replace(/^https?:\/\//, "").replace(/\/$/, "")}` : undefined;
+  for (const candidate of [configured, vercelOrigin, fallback]) {
     try {
       const url = new URL(candidate || "");
       if (url.protocol === "http:" || url.protocol === "https:") return url.origin;

@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { headers } from "next/headers";
 
 import { SitePreview } from "@/components/builder/SitePreview";
 import { SitePreviewV2 } from "@/components/builder/SitePreviewV2";
@@ -11,23 +10,16 @@ import { toRenderSection } from "@/lib/site/section";
 import { themeFromSite } from "@/lib/site/theme";
 import { socialLinksFromBlueprint } from "@/lib/site/social-links";
 import { hasProAccess } from "@/lib/entitlements";
-import { trackSiteView } from "@/lib/site/track-view";
 
 export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
-
-async function requestOrigin() {
-  const values = await headers();
-  const host = values.get("x-forwarded-host") || values.get("host");
-  const protocol = values.get("x-forwarded-proto") || (host?.startsWith("localhost") ? "http" : "https");
-  return host ? `${protocol}://${host}` : undefined;
-}
+export const dynamic = "force-static";
+export const revalidate = 300;
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
   const site = await prisma.site.findFirst({ where: { publicSlug: slug, status: "PUBLISHED" } });
   if (!site) return { title: "Sitio no encontrado", robots: { index: false, follow: false } };
-  const url = site.domainVerifiedAt && site.customDomain ? `https://${site.customDomain}` : absolutePublicSiteUrl(site.publicSlug, await requestOrigin());
+  const url = site.domainVerifiedAt && site.customDomain ? `https://${site.customDomain}` : absolutePublicSiteUrl(site.publicSlug);
   return publishedSiteMetadata(site, url);
 }
 
@@ -39,9 +31,7 @@ export default async function PublicSitePage({ params }: { params: Promise<{ slu
   });
   if (!site) notFound();
 
-  void trackSiteView(site.id);
-
-  const publicUrl = site.domainVerifiedAt && site.customDomain ? `https://${site.customDomain}` : absolutePublicSiteUrl(site.publicSlug, await requestOrigin());
+  const publicUrl = site.domainVerifiedAt && site.customDomain ? `https://${site.customDomain}` : absolutePublicSiteUrl(site.publicSlug);
 
   if (site.builderVersion === 2) {
     return <main>
@@ -54,6 +44,7 @@ export default async function PublicSitePage({ params }: { params: Promise<{ slu
         publicUrl={publicUrl}
         indexable
       />
+      <ViewPixel slug={site.publicSlug} />
     </main>;
   }
 
@@ -75,6 +66,11 @@ export default async function PublicSitePage({ params }: { params: Promise<{ slu
         visualStyle={site.visualStyle}
         sections={site.sections.map(toRenderSection)}
       />
+      <ViewPixel slug={site.publicSlug} />
     </main>
   );
+}
+
+function ViewPixel({ slug }: { slug: string }) {
+  return <img src={`/api/public/sites/${encodeURIComponent(slug)}/view`} alt="" aria-hidden="true" style={{ display: "none" }} />;
 }

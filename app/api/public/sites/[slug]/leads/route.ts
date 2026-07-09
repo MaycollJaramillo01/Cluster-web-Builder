@@ -7,7 +7,7 @@ import { escapeHtml, sendEmail } from "@/lib/email";
 import { trackProductEvent } from "@/lib/product-events";
 
 export const runtime = "nodejs";
-const cors = { "Access-Control-Allow-Origin": "*" };
+const cors = { "Access-Control-Allow-Origin": "*", "Cache-Control": "no-store, max-age=0" };
 const inputSchema = z.object({
   name: z.string().trim().min(2).max(120),
   email: z.string().trim().email().max(160).optional().or(z.literal("")),
