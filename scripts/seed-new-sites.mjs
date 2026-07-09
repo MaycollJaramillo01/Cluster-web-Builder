@@ -765,7 +765,7 @@ async function main() {
   for (const def of SITES) {
     const publicSlug = slug(def.domain || def.businessName);
 
-    const site = await prisma.site.create({
+    await prisma.site.create({
       data: {
         userId: user?.id ?? null,
         businessName: def.businessName,

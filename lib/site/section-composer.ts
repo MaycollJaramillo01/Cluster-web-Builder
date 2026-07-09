@@ -4,7 +4,6 @@ import {
   normalizeSiteContentV2,
   normalizeThemeV2,
   type CanvasSectionV2,
-  type SiteContentV2,
   type ThemeTokensV2,
 } from "@/lib/site/v2-schema";
 

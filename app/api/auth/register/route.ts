@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
     username,
     email: parsed.data.email,
     name: parsed.data.name,
-    passwordHash: hashPassword(parsed.data.password),
+    passwordHash: await hashPassword(parsed.data.password),
   } });
   const claimedProjects = await claimGuestProjects(user.id, request.cookies.get(GUEST_COOKIE)?.value);
   const session = await createSession(user.id);

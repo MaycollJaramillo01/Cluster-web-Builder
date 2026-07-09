@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { openrouterChatComplete } from "@/lib/openrouter";
+import { getUserBySessionToken, SESSION_COOKIE } from "@/lib/auth";
+import { consumeRateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -23,10 +25,20 @@ function isValidHex(color: string): boolean {
 }
 
 export async function POST(req: NextRequest) {
+  // Este endpoint dispara una llamada a un LLM de pago, así que limitamos el ritmo
+  // por usuario (o por IP para invitados en onboarding) para evitar abuso de costo.
+  const authUser = await getUserBySessionToken(req.cookies.get(SESSION_COOKIE)?.value);
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || req.headers.get("x-real-ip") || "local";
+  const rateId = authUser?.id ?? ip;
+  const limit = authUser ? 30 : 15;
+  if (!(await consumeRateLimit("generate-logo", rateId, limit, 60 * 60 * 1000))) {
+    return NextResponse.json({ error: "Demasiadas solicitudes de logo. Intenta más tarde." }, { status: 429 });
+  }
+
   let prompt: string;
   try {
     const body = await req.json();
-    prompt = typeof body?.prompt === "string" ? body.prompt.trim() : "";
+    prompt = typeof body?.prompt === "string" ? body.prompt.trim().slice(0, 500) : "";
   } catch {
     return NextResponse.json({ error: "prompt requerido" }, { status: 400 });
   }

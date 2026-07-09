@@ -13,11 +13,11 @@ test("solo Pro y administradores acceden a acciones comerciales", () => {
   assert.equal(hasProAccess({ role: "ADMIN", planStatus: "FREE" }), true);
 });
 
-test("las contraseñas se guardan con sal y se verifican", () => {
-  const hash = hashPassword("ClusterSeguro2026");
+test("las contraseñas se guardan con sal y se verifican", async () => {
+  const hash = await hashPassword("ClusterSeguro2026");
   assert.notEqual(hash, "ClusterSeguro2026");
-  assert.equal(verifyPassword("ClusterSeguro2026", hash), true);
-  assert.equal(verifyPassword("incorrecta", hash), false);
+  assert.equal(await verifyPassword("ClusterSeguro2026", hash), true);
+  assert.equal(await verifyPassword("incorrecta", hash), false);
 });
 
 test("logo y portada válidos viajan con el onboarding", () => {

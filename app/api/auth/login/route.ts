@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
     { username: { equals: username, mode: "insensitive" } },
     { email: { equals: username, mode: "insensitive" } },
   ] } });
-  if (!user || !verifyPassword(password, user.passwordHash)) {
+  if (!user || !(await verifyPassword(password, user.passwordHash))) {
     return NextResponse.json({ error: "Usuario o contraseña incorrectos." }, { status: 401 });
   }
 

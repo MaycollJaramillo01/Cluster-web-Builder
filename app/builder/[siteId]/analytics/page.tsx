@@ -20,7 +20,7 @@ function daysAgoStr(n: number) {
 }
 
 function formatDate(dateStr: string): string {
-  const [year, month, day] = dateStr.split("-");
+  const [, month, day] = dateStr.split("-");
   const months = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
   return `${parseInt(day)} ${months[parseInt(month) - 1]}`;
 }

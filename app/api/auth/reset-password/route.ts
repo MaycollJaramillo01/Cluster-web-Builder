@@ -20,8 +20,9 @@ export async function POST(request: NextRequest) {
   });
   if (!reset) return NextResponse.json({ error: "El enlace venció o ya fue utilizado." }, { status: 400 });
 
+  const passwordHash = await hashPassword(parsed.data.password);
   await prisma.$transaction([
-    prisma.user.update({ where: { id: reset.userId }, data: { passwordHash: hashPassword(parsed.data.password) } }),
+    prisma.user.update({ where: { id: reset.userId }, data: { passwordHash } }),
     prisma.passwordReset.update({ where: { id: reset.id }, data: { usedAt: new Date() } }),
     prisma.session.deleteMany({ where: { userId: reset.userId } }),
   ]);

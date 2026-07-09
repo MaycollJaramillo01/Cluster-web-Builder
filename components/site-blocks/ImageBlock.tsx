@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 import { sectionImageUrl } from "@/lib/site/images";
 import { getStyleOverride, resolveElementStyle } from "@/lib/site/element-style";
 import { getThemeSurface } from "@/lib/site/theme-surface";

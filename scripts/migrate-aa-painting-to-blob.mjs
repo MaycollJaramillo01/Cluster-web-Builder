@@ -1,4 +1,3 @@
-import { readFile } from "node:fs/promises";
 import { createReadStream, existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { put } from "@vercel/blob";
