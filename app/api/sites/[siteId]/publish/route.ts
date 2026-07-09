@@ -73,6 +73,9 @@ export async function POST(
     }
     await trackProductEvent("site_published", { userId: user.id, siteId: publishedId });
     revalidatePath("/");
+    revalidatePath(`/s/${publishedSlug}`);
+    if (existing.customDomain) revalidatePath(`/d/${existing.customDomain}`);
+    if (existing.replacesSite?.customDomain) revalidatePath(`/d/${existing.replacesSite.customDomain}`);
 
     return NextResponse.json({ ok: true, site: { id: publishedId, status: "PUBLISHED", publicUrl: publicSiteUrl(publishedSlug) } });
   } catch {

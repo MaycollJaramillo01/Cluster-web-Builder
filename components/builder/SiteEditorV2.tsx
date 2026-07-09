@@ -357,6 +357,14 @@ export function SiteEditorV2({ initialSite }: { initialSite: EditorSiteV2 }) {
       if (dirty && !(await save())) return;
       const response = await fetch(`/api/sites/${initialSite.id}/publish`, { method: "POST" });
       const data = await response.json().catch(() => ({}));
+      if (response.status === 401) {
+        window.location.href = `/login?from=${encodeURIComponent(`/builder/${initialSite.id}?publish=1`)}`;
+        return;
+      }
+      if (response.status === 402) {
+        window.location.href = `/billing?from=${encodeURIComponent(`/builder/${initialSite.id}`)}`;
+        return;
+      }
       if (!response.ok) throw new Error(data.error || "No se pudo publicar.");
       // Al publicar un borrador que reemplaza a un sitio existente, el servidor fusiona
       // ambos y el sitio queda bajo otro ID: hay que reabrir el editor en esa direccion.
@@ -367,7 +375,7 @@ export function SiteEditorV2({ initialSite }: { initialSite: EditorSiteV2 }) {
       }
       setStatus("PUBLISHED");
       if (data.site?.publicUrl) setPublicUrl(data.site.publicUrl);
-      setMessage("Tu sitio ya está publicado.");
+      setMessage(status === "PUBLISHED" ? "Sitio publicado actualizado." : "Tu sitio ya está publicado.");
     } catch (reason) { setMessage(reason instanceof Error ? reason.message : "No se pudo publicar."); }
     finally { setPublishing(false); }
   };
@@ -689,6 +697,14 @@ export function SiteEditorV2({ initialSite }: { initialSite: EditorSiteV2 }) {
     : selection?.kind === "row" ? "Fila"
     : selectedSection ? selectedSection.name
     : "";
+  const hasWidgetType = (type: V2WidgetType) => sections.some((section) => section.rows.some((row) => row.columns.some((column) => column.widgets.some((widget) => widget.type === type))));
+  const launchReady = {
+    content: Boolean(content.business.name && content.hero.title && content.hero.ctaText),
+    media: Boolean(content.business.logo || content.hero.media || content.about.media || content.media.length),
+    contact: Boolean(content.business.phone || content.business.email || content.business.location),
+    form: hasWidgetType("form"),
+    published: status === "PUBLISHED",
+  };
 
   return <main className="flex h-dvh flex-col bg-zinc-100 text-zinc-900">
     <header className="flex h-14 shrink-0 items-center justify-between gap-3 border-b border-zinc-200 bg-white px-3 sm:px-4">
@@ -723,11 +739,9 @@ export function SiteEditorV2({ initialSite }: { initialSite: EditorSiteV2 }) {
         <button className="v2-btn" disabled={saving || publishing} onClick={() => void save()}>
           <Save className="h-4 w-4" />{saving ? "Guardando…" : "Guardar"}
         </button>
-        {status !== "PUBLISHED" && (
-          <button className="v2-btn border-violet-600 bg-violet-600 text-white hover:bg-violet-700" disabled={publishing || saving} onClick={publish}>
-            <Globe className="h-4 w-4" />{publishing ? "Publicando…" : "Publicar"}
-          </button>
-        )}
+        <button className="v2-btn border-violet-600 bg-violet-600 text-white hover:bg-violet-700" disabled={publishing || saving} onClick={publish}>
+          <Globe className="h-4 w-4" />{publishing ? "Publicando…" : status === "PUBLISHED" ? "Actualizar" : "Publicar"}
+        </button>
       </div>
     </header>
 
@@ -770,6 +784,20 @@ export function SiteEditorV2({ initialSite }: { initialSite: EditorSiteV2 }) {
 
               <div className="min-h-0 flex-1 overflow-y-auto p-4">
                 {tab === "add" && <>
+                  <LaunchChecklist
+                    siteId={initialSite.id}
+                    dirty={dirty}
+                    status={status}
+                    publicUrl={publicUrl}
+                    ready={launchReady}
+                    saving={saving}
+                    publishing={publishing}
+                    downloading={downloading}
+                    onSave={() => void save()}
+                    onPublish={() => void publish()}
+                    onDownload={() => void downloadZip()}
+                  />
+
                   <label className="relative mb-4 block">
                     <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
                     <input className="v2-field pl-9" placeholder="Buscar bloque..." value={query} onChange={(event) => setQuery(event.target.value)} aria-label="Buscar bloque" />
@@ -1095,6 +1123,69 @@ function AddSearchResults({ query, addLibrarySection, addWidget, clearCanvasDrop
       </div>
     </>}
   </>;
+}
+
+function LaunchChecklist({
+  siteId,
+  dirty,
+  status,
+  publicUrl,
+  ready,
+  saving,
+  publishing,
+  downloading,
+  onSave,
+  onPublish,
+  onDownload,
+}: {
+  siteId: string;
+  dirty: boolean;
+  status: string;
+  publicUrl: string;
+  ready: { content: boolean; media: boolean; contact: boolean; form: boolean; published: boolean };
+  saving: boolean;
+  publishing: boolean;
+  downloading: boolean;
+  onSave: () => void;
+  onPublish: () => void;
+  onDownload: () => void;
+}) {
+  const items = [
+    ["Contenido base", ready.content],
+    ["Logo o portada", ready.media],
+    ["Datos de contacto", ready.contact],
+    ["Formulario activo", ready.form],
+    ["Sitio publicado", ready.published],
+  ] as const;
+  const done = items.filter(([, ok]) => ok).length;
+  const busy = saving || publishing || downloading;
+
+  return <section className="mb-4 rounded-xl border border-violet-200 bg-violet-50 p-3" aria-label="Checklist para lanzar">
+    <div className="flex items-start justify-between gap-3">
+      <div>
+        <p className="text-xs font-bold uppercase tracking-[0.12em] text-violet-700">Checklist para lanzar</p>
+        <p className="mt-1 text-xs leading-5 text-violet-950/70">{done}/{items.length} listo. Guarda, publica, revisa contactos y descarga el ZIP desde aquí.</p>
+      </div>
+      <span className="rounded-full bg-white px-2 py-1 text-xs font-bold text-violet-700 shadow-sm">{status === "PUBLISHED" ? "Publicado" : "Borrador"}</span>
+    </div>
+    <div className="mt-3 grid gap-1.5">
+      {items.map(([label, ok]) => (
+        <div key={label} className="flex min-h-8 items-center gap-2 rounded-lg bg-white/80 px-2 text-xs text-zinc-700">
+          <BadgeCheck className={`h-3.5 w-3.5 ${ok ? "text-emerald-600" : "text-zinc-300"}`} />
+          <span>{label}</span>
+        </div>
+      ))}
+    </div>
+    <div className="mt-3 grid grid-cols-2 gap-2">
+      <button type="button" className="v2-btn justify-center bg-white" disabled={busy} onClick={onSave}><Save className="h-4 w-4" />{dirty ? "Guardar" : "Guardado"}</button>
+      <button type="button" className="v2-btn justify-center border-violet-600 bg-violet-600 text-white hover:bg-violet-700" disabled={saving || publishing} onClick={onPublish}><Globe className="h-4 w-4" />{status === "PUBLISHED" ? "Actualizar" : "Publicar"}</button>
+      {publicUrl ? <a href={publicUrl} target="_blank" rel="noreferrer" className="v2-btn justify-center bg-white"><ExternalLink className="h-4 w-4" />Ver sitio</a>
+        : <span className="v2-btn justify-center bg-white text-zinc-400"><ExternalLink className="h-4 w-4" />Ver sitio</span>}
+      <Link href={`/builder/${siteId}/leads`} className="v2-btn justify-center bg-white"><Mail className="h-4 w-4" />Contactos</Link>
+      <button type="button" className="v2-btn justify-center bg-white" disabled={busy} onClick={onDownload}><Download className="h-4 w-4" />ZIP</button>
+      <Link href={`/builder/${siteId}/domain`} className="v2-btn justify-center bg-white"><Globe className="h-4 w-4" />Dominio</Link>
+    </div>
+  </section>;
 }
 
 function SelectionPanel({ siteId, content, setContent, selection, selectedWidget, selectedColumn, selectedSection, selectedRow, addRow, mutate }: {
