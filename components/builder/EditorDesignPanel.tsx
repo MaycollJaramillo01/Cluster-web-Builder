@@ -1,9 +1,5 @@
 "use client";
 
-import Link from "next/link";
-import { Layout } from "lucide-react";
-
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
@@ -43,9 +39,8 @@ export function EditorDesignPanel(props: Props) {
       <ColorField label="Color de acento" hint="Botones y elementos destacados" value={props.accent} onChange={props.onAccentChange} />
     </SettingsGroup>
 
-    <SettingsGroup title="Plantilla">
-      <p className="mb-4 text-xs leading-5 text-muted-foreground">Cambia la composición sin perder tus textos ni colores.</p>
-      <Button asChild variant="outline" className="w-full"><Link href={`/builder/${props.siteId}/templates`}><Layout /> Cambiar plantilla</Link></Button>
+    <SettingsGroup title="Estructura">
+      <p className="text-xs leading-5 text-muted-foreground">El sitio se arma con secciones editables. Agrega, mueve o elimina bloques desde el editor.</p>
     </SettingsGroup>
   </div>;
 }

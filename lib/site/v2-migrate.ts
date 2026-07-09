@@ -1,7 +1,8 @@
 import { resolveDesignStyleId } from "@/lib/site/design";
 import { sectionImageUrl } from "@/lib/site/images";
-import { LEGACY_TEMPLATE_MIGRATION, getTemplateV2, instantiateTemplateV2 } from "@/lib/site/v2-templates";
-import { normalizeCanvasSectionsV2, normalizeSiteContentV2, normalizeThemeV2, type CanvasSectionV2, type SiteContentV2, type V2TemplateId } from "@/lib/site/v2-schema";
+import { composeSiteSectionsV2 } from "@/lib/site/section-composer";
+import { LEGACY_TEMPLATE_MIGRATION } from "@/lib/site/v2-templates";
+import { normalizeCanvasSectionsV2, normalizeSiteContentV2, type CanvasSectionV2, type SiteContentV2, type V2TemplateId } from "@/lib/site/v2-schema";
 
 type LegacySectionRow = { type: string; title: string | null; content: unknown; settingsJson: unknown; order: number };
 type LegacySite = {
@@ -82,15 +83,18 @@ export function chooseTemplateForBusiness(businessType: string | null | undefine
 export function migrateLegacySiteDocument(site: LegacySite, sections: LegacySectionRow[]) {
   const templateId = chooseTemplateForBusiness(site.businessType, site.visualStyle);
   const content = contentFromLegacySite(site, sections);
-  const instantiated = instantiateTemplateV2(templateId, content);
-  const baseTheme = getTemplateV2(templateId).theme;
-  const design = normalizeThemeV2({
-    ...baseTheme,
-    primary: site.primaryColor || baseTheme.primary,
-    secondary: site.secondaryColor || baseTheme.secondary,
-    accent: site.accentColor || baseTheme.accent,
+  const composed = composeSiteSectionsV2({
+    content,
+    businessType: site.businessType,
+    visualStyle: site.visualStyle,
+    theme: {
+      primary: site.primaryColor || undefined,
+      secondary: site.secondaryColor || undefined,
+      accent: site.accentColor || undefined,
+    },
   });
-  return { templateId, content, design, sections: instantiated.sections };
+  // ponytail: templateId queda como metadato legacy; las secciones guardadas mandan el render.
+  return { templateId, content: composed.content, design: composed.design, sections: composed.sections };
 }
 
 export function canvasSectionsFromRows(rows: Array<{ content: unknown }>): CanvasSectionV2[] {

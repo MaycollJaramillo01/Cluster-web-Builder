@@ -60,7 +60,7 @@ function Pricing() {
 function Help() {
   const questions = [
     ["¿Puedo probar sin registrarme?", "Sí. Solo pedimos acceso cuando guardas mejoras, publicas o descargas."],
-    ["¿Cómo cambio el diseño?", "Abre Diseño → Plantilla dentro del editor."],
+    ["¿Cómo cambio el diseño?", "Abre el editor y ajusta secciones, bloques, colores y tipografía."],
     ["¿Cómo publico?", "Guarda los cambios e inicia sesión al usar Publicar."],
     ["¿Dónde llegan los formularios?", "Los contactos aparecen en la sección Contactos de cada proyecto."],
     ["¿Puedo usar mi dominio?", "Sí, con Cluster Pro desde la opción Dominio del proyecto."],

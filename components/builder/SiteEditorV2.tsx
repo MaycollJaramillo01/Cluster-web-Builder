@@ -11,9 +11,9 @@ import { SortableContext, sortableKeyboardCoordinates, useSortable, verticalList
 import { CSS } from "@dnd-kit/utilities";
 import {
   ArrowDown, ArrowLeft, ArrowUp, BadgeCheck, Briefcase, Building2, ChevronDown, ChevronLeft, ChevronUp,
-  ClipboardPaste, Code2, Copy, ExternalLink, Globe, GripVertical, Heading1, HelpCircle, Image as ImageIcon, Layers,
-  LayoutGrid, LayoutTemplate, List as ListIcon, Mail, MapPin, Megaphone, Menu as MenuIcon, Minus, Monitor,
-  MousePointerClick, MoveVertical, Paintbrush, Palette, PanelsTopLeft, Pencil, Plus, Presentation, Redo2, Save, Search,
+  ClipboardPaste, Code2, Copy, Download, ExternalLink, Globe, GripVertical, Heading1, HelpCircle, Image as ImageIcon, Layers,
+  LayoutGrid, List as ListIcon, Mail, MapPin, Megaphone, Menu as MenuIcon, Minus, Monitor,
+  Loader2, MousePointerClick, MoveVertical, Paintbrush, Palette, PanelsTopLeft, Pencil, Plus, Presentation, Redo2, Save, Search,
   Share2, Smartphone, Sparkles, Star, Text as TextIcon, Trash2, Undo2, Users, Video as VideoIcon,
 } from "lucide-react";
 
@@ -26,7 +26,7 @@ import {
   type CanvasColumnV2, type CanvasRowV2, type CanvasSectionV2, type SiteContentV2,
   type ThemeTokensV2, type V2TemplateId, type V2WidgetType, type WidgetV2,
 } from "@/lib/site/v2-schema";
-import { getAllTemplatesV2, SECTION_LIBRARY_V2 } from "@/lib/site/v2-templates";
+import { SECTION_LIBRARY_V2 } from "@/lib/site/v2-templates";
 
 type EditorSiteV2 = {
   id: string;
@@ -170,12 +170,12 @@ export function SiteEditorV2({ initialSite }: { initialSite: EditorSiteV2 }) {
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
+  const [downloading, setDownloading] = useState(false);
   const [status, setStatus] = useState(initialSite.status);
   const [publicUrl, setPublicUrl] = useState(initialSite.publicUrl);
   const [message, setMessage] = useState("");
   const [menu, setMenu] = useState<ContextMenuState>(null);
   const [clipboard, setClipboard] = useState<V2Clipboard | null>(null);
-  const [undoRevision, setUndoRevision] = useState<string | null>(null);
   const [, setHistoryVersion] = useState(0);
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
   // Medidas del lienzo para escalar el preview al ancho real del dispositivo.
@@ -372,25 +372,39 @@ export function SiteEditorV2({ initialSite }: { initialSite: EditorSiteV2 }) {
     finally { setPublishing(false); }
   };
 
-  const applyTemplate = async (nextId: V2TemplateId) => {
-    if (nextId === templateId || !window.confirm("Verás una nueva composición. El contenido y los bloques personalizados se conservarán. ¿Continuar?")) return;
-    const response = await fetch(`/api/sites/${initialSite.id}/template`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ templateId: nextId }) });
-    const data = await response.json().catch(() => ({}));
-    if (!response.ok) return setMessage(data.error || "No se pudo cambiar la plantilla.");
-    pushHistory();
-    setTemplateId(data.templateId); setDesign(data.design); setSections(data.sections); setUndoRevision(data.revisionId); setSelection(null); setDirty(false);
-    setMessage("Plantilla aplicada. Puedes deshacer este cambio.");
+  const downloadZip = async () => {
+    setDownloading(true); setMessage("");
+    try {
+      if (dirty && !(await save())) return;
+      const response = await fetch(`/api/sites/${initialSite.id}/download`);
+      if (response.status === 401) {
+        window.location.href = `/login?from=${encodeURIComponent(`/builder/${initialSite.id}?download=1`)}`;
+        return;
+      }
+      if (response.status === 402) {
+        window.location.href = `/billing?from=${encodeURIComponent(`/builder/${initialSite.id}`)}`;
+        return;
+      }
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || "No se pudo descargar el sitio.");
+      }
+      const blob = await response.blob();
+      const href = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = href;
+      link.download = `${initialSite.publicSlug || initialSite.id}.zip`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(href);
+      setMessage("ZIP descargado.");
+    } catch (reason) {
+      setMessage(reason instanceof Error ? reason.message : "No se pudo descargar el sitio.");
+    } finally {
+      setDownloading(false);
+    }
   };
-
-  const undoTemplate = async () => {
-    if (!undoRevision) return;
-    const response = await fetch(`/api/sites/${initialSite.id}/revisions/${undoRevision}/restore`, { method: "POST" });
-    const data = await response.json().catch(() => ({}));
-    if (!response.ok) return setMessage(data.error || "No se pudo restaurar.");
-    pushHistory();
-    setTemplateId(data.templateId); setContent(data.content); setDesign(data.design); setSections(data.sections); setUndoRevision(data.revisionId); setDirty(false);
-  };
-
   const addLibrarySection = (seed: Omit<CanvasSectionV2, "id">, targetSectionId?: string, position?: "before" | "after") => {
     const copy = cloneSection(seed);
     copy.region = "main";
@@ -698,10 +712,14 @@ export function SiteEditorV2({ initialSite }: { initialSite: EditorSiteV2 }) {
       <div className="flex shrink-0 items-center gap-2">
         <button className="v2-btn px-2.5" aria-label="Deshacer" title="Deshacer (Ctrl+Z)" disabled={!historyRef.current.past.length} onClick={undo}><Undo2 className="h-4 w-4" /></button>
         <button className="v2-btn px-2.5" aria-label="Rehacer" title="Rehacer (Ctrl+Y)" disabled={!historyRef.current.future.length} onClick={redo}><Redo2 className="h-4 w-4" /></button>
-        {undoRevision && <button className="v2-btn" onClick={undoTemplate}><Redo2 className="h-4 w-4" /><span className="hidden sm:inline">Deshacer plantilla</span></button>}
         {status === "PUBLISHED" && publicUrl && (
           <a href={publicUrl} target="_blank" rel="noreferrer" className="v2-btn"><ExternalLink className="h-4 w-4" /><span className="hidden sm:inline">Ver sitio</span></a>
         )}
+        <button className="v2-btn border-violet-600 bg-violet-600 text-white hover:bg-violet-700" disabled={downloading || saving || publishing} onClick={() => void downloadZip()}>
+          {downloading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+          <span className="hidden sm:inline">{downloading ? "Descargando..." : "Descargar ZIP"}</span>
+          <span className="sm:hidden">ZIP</span>
+        </button>
         <button className="v2-btn" disabled={saving || publishing} onClick={() => void save()}>
           <Save className="h-4 w-4" />{saving ? "Guardando…" : "Guardar"}
         </button>
@@ -817,17 +835,6 @@ export function SiteEditorV2({ initialSite }: { initialSite: EditorSiteV2 }) {
                 </>}
 
                 {tab === "design" && <>
-                  <h2 className="v2-label">Plantilla</h2>
-                  <p className="mb-3 text-xs text-zinc-500">Cambia la composición completa. Tu contenido se conserva.</p>
-                  <div className="mb-6 grid gap-2">
-                    {getAllTemplatesV2().map((template) => (
-                      <button key={template.id} onClick={() => applyTemplate(template.id)}
-                        className={`rounded-lg border p-3 text-left text-xs leading-relaxed ${templateId === template.id ? "border-violet-600 bg-violet-50 text-zinc-900" : "border-zinc-200 text-zinc-600 hover:border-zinc-300"}`}>
-                        <span className="mb-0.5 flex items-center gap-1.5 text-sm font-semibold text-zinc-900"><LayoutTemplate className="h-3.5 w-3.5 text-violet-600" />{template.name}</span>
-                        {template.description}
-                      </button>
-                    ))}
-                  </div>
                   <h2 className="v2-label">Colores del sitio</h2>
                   <p className="mb-3 text-xs text-zinc-500">Se aplican a todo el sitio publicado.</p>
                   <div className="grid gap-2">
@@ -1179,12 +1186,31 @@ function SectionTree({ section, selection, setSelection, mutate }: {
 }) {
   const sortable = useSortable({ id: `section:${section.id}`, data: { kind: "section", sectionId: section.id, id: section.id } satisfies DragData });
   const selected = selection?.id === section.id;
+  const move = (direction: -1 | 1) => mutate((draft) => {
+    const index = draft.findIndex((item) => item.id === section.id);
+    if (index < 0) return draft;
+    let target = index + direction;
+    while (target >= 0 && target < draft.length && draft[target].region !== section.region) target += direction;
+    return target < 0 || target >= draft.length ? draft : moveAt(draft, index, target);
+  });
+  const duplicate = () => mutate((draft) => {
+    const index = draft.findIndex((item) => item.id === section.id);
+    const copy = cloneSection(section);
+    draft.splice(index < 0 ? draft.length : index + 1, 0, copy);
+    setSelection({ kind: "section", id: copy.id });
+    return draft;
+  });
   return <div ref={sortable.setNodeRef} style={{ transform: CSS.Transform.toString(sortable.transform), transition: sortable.transition }}
     className={`rounded-lg border bg-white p-2 ${selected ? "border-violet-600" : "border-zinc-200"}`}>
     <div className="flex items-center gap-1">
-      <button {...sortable.attributes} {...sortable.listeners} className="cursor-grab p-2 text-zinc-400 hover:text-zinc-600" aria-label="Arrastrar sección"><GripVertical className="h-4 w-4" /></button>
+      <button {...sortable.attributes} {...sortable.listeners} className="cursor-grab p-2 text-zinc-400 hover:text-zinc-600" aria-label="Arrastrar secci?n"><GripVertical className="h-4 w-4" /></button>
       <button className={`min-w-0 flex-1 truncate text-left text-sm font-medium ${selected ? "text-violet-700" : "text-zinc-800"}`} onClick={() => setSelection({ kind: "section", id: section.id })}>{section.name}</button>
-      {section.region === "main" && <button title="Eliminar sección" aria-label="Eliminar sección" className="p-2 text-zinc-400 hover:text-red-600" onClick={() => mutate((draft) => draft.filter((item) => item.id !== section.id))}><Trash2 className="h-4 w-4" /></button>}
+      {section.region === "main" && <>
+        <button title="Subir secci?n" aria-label="Subir secci?n" className="p-2 text-zinc-400 hover:text-zinc-700" onClick={() => move(-1)}><ChevronUp className="h-4 w-4" /></button>
+        <button title="Bajar secci?n" aria-label="Bajar secci?n" className="p-2 text-zinc-400 hover:text-zinc-700" onClick={() => move(1)}><ChevronDown className="h-4 w-4" /></button>
+        <button title="Duplicar secci?n" aria-label="Duplicar secci?n" className="p-2 text-zinc-400 hover:text-violet-700" onClick={duplicate}><Copy className="h-4 w-4" /></button>
+        <button title="Eliminar secci?n" aria-label="Eliminar secci?n" className="p-2 text-zinc-400 hover:text-red-600" onClick={() => mutate((draft) => draft.filter((item) => item.id !== section.id))}><Trash2 className="h-4 w-4" /></button>
+      </>}
     </div>
     <SortableContext items={section.rows.map((row) => `row:${row.id}`)} strategy={verticalListSortingStrategy}>
       <div className="space-y-2 pl-3">{section.rows.map((row) => <RowTree key={row.id} sectionId={section.id} row={row} selection={selection} setSelection={setSelection} mutate={mutate} />)}</div>

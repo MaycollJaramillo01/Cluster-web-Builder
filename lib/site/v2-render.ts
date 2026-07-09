@@ -170,10 +170,11 @@ function widgetHtml(widget: WidgetV2, content: SiteContentV2, theme: ThemeTokens
       const titleSlot = typeof widget.data?.titleSlot === "string" ? widget.data.titleSlot : "";
       const bodySlot = typeof widget.data?.bodySlot === "string" ? widget.data.bodySlot : "";
       const buttonSlot = typeof widget.data?.buttonSlot === "string" ? widget.data.buttonSlot : "contact.ctaText";
+      const anchorId = String(widget.data?.anchorId || "contact").replace(/[^a-zA-Z0-9_-]/g, "") || "contact";
       const title = titleSlot ? resolveContentSlot(content, titleSlot as never) : "";
       const body = bodySlot ? resolveContentSlot(content, bodySlot as never) : "";
       const buttonText = resolveContentSlot(content, buttonSlot as never) || "Enviar mensaje";
-      return `<div ${attr} id="contact" class="v2-form-wrap">${title ? `<h2>${escapeHtml(title)}</h2>` : ""}${body ? `<p>${escapeHtml(body)}</p>` : ""}<form data-cluster-form data-endpoint="${escapeHtml(leadEndpoint)}"><label>Nombre<input name="name" required maxlength="120" autocomplete="name"></label><label>Email<input name="email" type="email" maxlength="160" autocomplete="email"></label><label>Teléfono<input name="phone" type="tel" maxlength="40" autocomplete="tel"></label><label class="v2-wide">Mensaje<textarea name="message" required maxlength="2000"></textarea></label><input class="v2-trap" name="website" tabindex="-1" autocomplete="off"><button class="v2-button" type="submit">${escapeHtml(buttonText)}</button><output aria-live="polite"></output></form></div>`;
+      return `<div ${attr} id="${escapeHtml(anchorId)}" class="v2-form-wrap">${title ? `<h2>${escapeHtml(title)}</h2>` : ""}${body ? `<p>${escapeHtml(body)}</p>` : ""}<form data-cluster-form data-endpoint="${escapeHtml(leadEndpoint)}"><label>Nombre<input name="name" required maxlength="120" autocomplete="name"></label><label>Email<input name="email" type="email" maxlength="160" autocomplete="email"></label><label>Teléfono<input name="phone" type="tel" maxlength="40" autocomplete="tel"></label><label class="v2-wide">Mensaje<textarea name="message" required maxlength="2000"></textarea></label><input class="v2-trap" name="website" tabindex="-1" autocomplete="off"><button class="v2-button" type="submit">${escapeHtml(buttonText)}</button><output aria-live="polite"></output></form></div>`;
     }
     case "social": {
       const links = value && typeof value === "object" ? Object.entries(value as Record<string, unknown>) : [];
@@ -314,6 +315,27 @@ nav.v2-nav-open .v2-nav-toggle span:nth-child(1){transform:translateY(7px) rotat
 .v2-brand-aa img{width:54px;height:54px}.v2-brand-aa strong{font-size:1rem;font-weight:800;letter-spacing:.02em;color:var(--aa-navy)}
 .v2-site:has(.v2-brand-aa) .v2-button{background:var(--aa-red);color:#fff;border-color:var(--aa-red);box-shadow:0 12px 28px color-mix(in srgb,var(--aa-red) 22%,transparent)}
 .v2-site:has(.v2-brand-aa) .v2-button-outline{background:transparent;color:var(--aa-navy);border-color:var(--aa-navy);box-shadow:none}
+.v2-site:has(.v2-brand-aa) .v2-key-contact{padding:0!important;background:#fff!important;color:#111827}
+.v2-site:has(.v2-brand-aa) .v2-key-contact .v2-section-inner{width:100%;max-width:none}
+.v2-site:has(.v2-brand-aa) .v2-key-contact .v2-row{gap:0;align-items:stretch;min-height:680px}
+.v2-site:has(.v2-brand-aa) .v2-key-contact .v2-column:first-child{padding:clamp(3rem,6vw,5rem) clamp(1.5rem,7vw,8rem);justify-content:center;background:#fff}
+.v2-site:has(.v2-brand-aa) .v2-key-contact .v2-column:last-child{min-height:680px}
+.v2-site:has(.v2-brand-aa) .v2-key-contact h2{color:#8f898f;font-size:clamp(3rem,5vw,4.7rem);line-height:.95;letter-spacing:-.06em}
+.v2-site:has(.v2-brand-aa) .v2-key-contact h2::after{content:"";display:block;width:48px;height:2px;margin-top:2.2rem;background:#ddd}
+.v2-site:has(.v2-brand-aa) .v2-key-contact p{max-width:33rem;color:#263238;font-size:1.08rem;line-height:1.65}
+.v2-site:has(.v2-brand-aa) .v2-key-contact .v2-business-info{gap:1.1rem;margin-block:1.25rem;color:#263238;font-size:1.05rem}
+.v2-site:has(.v2-brand-aa) .v2-key-contact .v2-business-info strong{font-size:1.35rem;color:#111}
+.v2-site:has(.v2-brand-aa) .v2-key-contact .v2-business-info a{width:max-content;color:#111;text-decoration:none}
+.v2-site:has(.v2-brand-aa) .v2-key-contact .v2-business-info a:hover{text-decoration:underline}
+.v2-site:has(.v2-brand-aa) .v2-key-contact .v2-button{width:max-content;margin-top:1.2rem;border-radius:4px;background:#050505;border-color:#050505;box-shadow:none;letter-spacing:.07em;text-transform:uppercase}
+.v2-site:has(.v2-brand-aa) .v2-key-contact .v2-button-outline{background:transparent;color:var(--aa-red);border-color:var(--aa-red)}
+.v2-site:has(.v2-brand-aa) .v2-key-contact .v2-map{height:100%;min-height:680px;border-radius:0;background:#eef2f7}
+.v2-site:has(.v2-brand-aa) .v2-key-contact .v2-map iframe{height:100%;min-height:680px;filter:saturate(1.05) contrast(1)}
+.v2-site:has(.v2-brand-aa) .v2-key-contact .v2-map a{display:none}
+.v2-site:has(.v2-brand-aa) .v2-key-quote{background:var(--aa-paper)!important}
+.v2-site:has(.v2-brand-aa) .v2-key-quote .v2-section-inner{width:min(980px,100%)}
+.v2-site:has(.v2-brand-aa) .v2-key-quote h2{text-align:center}
+.v2-site:has(.v2-brand-aa) .v2-key-quote p{max-width:42rem;margin-inline:auto;text-align:center;color:#40514f}
 .v2-site:has(.v2-brand-aa) h1,.v2-site:has(.v2-brand-aa) h2{letter-spacing:-.035em;text-transform:none;color:var(--aa-navy)}
 .v2-site:has(.v2-brand-aa) .v2-key-hero{background:var(--aa-paper)!important;padding-block:clamp(4rem,7vw,7rem)!important}.v2-site:has(.v2-brand-aa) .v2-key-hero .v2-row{align-items:center}.v2-site:has(.v2-brand-aa) .v2-key-hero h1{max-width:13ch;font-size:clamp(3rem,6.5vw,6rem);line-height:.98}.v2-site:has(.v2-brand-aa) .v2-key-hero p{font-size:1.18rem;color:#334155}.v2-site:has(.v2-brand-aa) .v2-key-hero .v2-image{height:min(620px,70vh);border:10px solid #fff;border-radius:24px;box-shadow:0 28px 80px #18298c2e}
 .v2-list-aa-services{grid-template-columns:repeat(3,minmax(0,1fr));gap:1.25rem}.v2-list-aa-services article{min-height:390px;padding:1.25rem;border:1px solid #c8ced8;border-radius:18px;background:#fff}.v2-list-aa-services .v2-index{color:var(--aa-red);font-weight:900}.v2-list-aa-services img{height:170px;border-radius:12px}.v2-list-aa-services h3{margin:.7rem 0 .5rem;color:var(--aa-navy);font-size:1.3rem;line-height:1.05;text-transform:none}.v2-list-aa-services p{font-size:.95rem;color:#40514f}
@@ -322,7 +344,7 @@ nav.v2-nav-open .v2-nav-toggle span:nth-child(1){transform:translateY(7px) rotat
 .v2-accordion-aa{width:100%;max-width:980px;margin-inline:auto}.v2-accordion-aa details{margin-bottom:.85rem;border:1px solid color-mix(in srgb,var(--aa-blue) 35%,transparent);border-radius:18px;background:#fff;box-shadow:0 14px 34px #18298c12}.v2-accordion-aa summary{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:1.15rem 1.35rem;color:var(--aa-navy);list-style:none;font-size:1rem;font-weight:800}.v2-accordion-aa summary::after{content:"+";display:grid;width:28px;height:28px;place-items:center;border-radius:50%;background:var(--aa-red);color:#fff}.v2-accordion-aa details[open] summary::after{content:"−"}.v2-accordion-aa details p{padding:0 1.35rem 1.25rem;color:#40514f}
 .v2-site:has(.v2-brand-aa) .v2-key-gallery{background:#fff!important}.v2-site:has(.v2-brand-aa) .v2-key-faq{background:var(--aa-burgundy)!important;color:#fff}.v2-site:has(.v2-brand-aa) .v2-key-faq h2,.v2-site:has(.v2-brand-aa) .v2-key-faq p{color:#fff}.v2-site:has(.v2-brand-aa) .v2-region-footer{background:var(--aa-navy)!important;color:#fff!important}
 @media(max-width:1024px){.v2-list-aa-services,.v2-list-aa-benefits,.v2-gallery-aa-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:640px){.v2-list-aa-services,.v2-list-aa-benefits,.v2-gallery-aa-grid{grid-template-columns:1fr}.v2-list-aa-services article{min-height:0}.v2-site:has(.v2-brand-aa) .v2-key-hero h1{font-size:2.8rem}.v2-site:has(.v2-brand-aa) .v2-key-hero .v2-image{height:360px}}
+@media(max-width:640px){.v2-list-aa-services,.v2-list-aa-benefits,.v2-gallery-aa-grid{grid-template-columns:1fr}.v2-list-aa-services article{min-height:0}.v2-site:has(.v2-brand-aa) .v2-key-hero h1{font-size:2.8rem}.v2-site:has(.v2-brand-aa) .v2-key-hero .v2-image{height:360px}.v2-site:has(.v2-brand-aa) .v2-key-contact .v2-row{min-height:0}.v2-site:has(.v2-brand-aa) .v2-key-contact .v2-column:first-child{padding:3rem 1.25rem}.v2-site:has(.v2-brand-aa) .v2-key-contact .v2-column:last-child,.v2-site:has(.v2-brand-aa) .v2-key-contact .v2-map,.v2-site:has(.v2-brand-aa) .v2-key-contact .v2-map iframe{min-height:380px}.v2-site:has(.v2-brand-aa) .v2-key-contact h2{font-size:3rem}}
 .v2-pxh{position:relative;isolation:isolate;overflow:hidden;display:flex;width:100vw;min-height:min(94dvh,880px);flex-direction:column;justify-content:center;gap:clamp(2rem,5vh,3.5rem);margin-inline:calc(50% - 50vw);padding:clamp(3.5rem,9vh,6rem) max(5vw,1.25rem);background:var(--secondary);color:var(--footer-text);text-align:center}
 .v2-section:has(>.v2-section-inner .v2-pxh){padding:0}.v2-section:has(>.v2-section-inner .v2-pxh) .v2-section-inner{width:100%}
 .v2-pxh-content{margin-block:auto}.v2-pxh-trust{margin-top:auto}

@@ -55,7 +55,7 @@ export function useGenerationStream() {
       sessionStorage.removeItem(ONBOARDING_STORAGE_KEY);
       sessionStorage.removeItem("cluster_logo");
       sessionStorage.removeItem("cluster_cover");
-      router.push(`/builder/${payload.siteId}/templates`);
+      router.push(`/builder/${payload.siteId}`);
       return;
     }
     if (event === "error") {

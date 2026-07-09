@@ -57,7 +57,7 @@ const atomicSaveSchema = z.object({
 const v2SaveSchema = z.object({
   builderVersion: z.literal(2),
   site: updateSiteSchema,
-  templateId: z.enum(V2_TEMPLATE_IDS),
+  templateId: z.enum(V2_TEMPLATE_IDS).optional(),
   content: z.unknown(),
   design: z.unknown(),
   sections: z.array(z.unknown()).min(3).max(40),
@@ -164,7 +164,7 @@ export async function PUT(
 
     const ownedV2 = await prisma.site.findFirst({
       where: { id: siteId, ...(user.role === "ADMIN" ? {} : { userId: user.id }) },
-      select: { id: true, builderVersion: true },
+      select: { id: true, builderVersion: true, templateId: true },
     });
     if (!ownedV2) return NextResponse.json({ error: "Proyecto no encontrado." }, { status: 404 });
     if (ownedV2.builderVersion !== 2) {
@@ -190,7 +190,7 @@ export async function PUT(
         where: { id: siteId },
         data: {
           ...parsedV2.data.site,
-          templateId: parsedV2.data.templateId,
+          templateId: parsedV2.data.templateId ?? ownedV2.templateId,
           contentJson: content as object,
           designJson: design as object,
           primaryColor: design.primary,
@@ -219,7 +219,7 @@ export async function PUT(
       const { del } = await import("@vercel/blob");
       await del(staleMedia).catch(() => null);
     }
-    return NextResponse.json({ ok: true, builderVersion: 2, templateId: parsedV2.data.templateId, content, design, sections });
+    return NextResponse.json({ ok: true, builderVersion: 2, templateId: parsedV2.data.templateId ?? ownedV2.templateId, content, design, sections });
   }
 
   const parsed = atomicSaveSchema.safeParse(body);
