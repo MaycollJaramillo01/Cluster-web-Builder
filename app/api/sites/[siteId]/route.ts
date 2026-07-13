@@ -3,7 +3,7 @@ import { z } from "zod";
 
 import { getUserBySessionToken, GUEST_COOKIE, hashGuestToken, SESSION_COOKIE } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { deleteSiteMedia, getSiteMedia, isSiteMediaUrl } from "@/lib/site/media";
+import { deleteSiteMedia, getSiteMedia, isSiteMediaUrl, materializeDataUrlsForSite } from "@/lib/site/media";
 import { normalizeSectionSettings } from "@/lib/site/section-layout";
 import { sanitizeLink } from "@/lib/site/links";
 import { toRenderSection } from "@/lib/site/section";
@@ -171,9 +171,11 @@ export async function PUT(
       return NextResponse.json({ error: "Este proyecto V1 debe migrarse antes de editarlo.", code: "LEGACY_READ_ONLY" }, { status: 409 });
     }
 
-    const content = normalizeSiteContentV2(parsedV2.data.content);
+    const normalizedContent = normalizeSiteContentV2(parsedV2.data.content);
     const design = normalizeThemeV2(parsedV2.data.design);
-    const sections = normalizeCanvasSectionsV2(parsedV2.data.sections);
+    const normalizedSections = normalizeCanvasSectionsV2(parsedV2.data.sections);
+    const content = await materializeDataUrlsForSite(siteId, normalizedContent, "content");
+    const sections = await materializeDataUrlsForSite(siteId, normalizedSections, "section");
     if (sections.length !== parsedV2.data.sections.length) {
       return NextResponse.json({ error: "El documento contiene bloques o estilos no permitidos." }, { status: 400 });
     }
@@ -196,6 +198,8 @@ export async function PUT(
           primaryColor: design.primary,
           secondaryColor: design.secondary,
           accentColor: design.accent,
+          logoUrl: content.business.logo || null,
+          coverUrl: content.hero.media || content.about.media || content.media[0]?.url || null,
         },
       });
       await tx.siteSection.deleteMany({ where: { siteId } });

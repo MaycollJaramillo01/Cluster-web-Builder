@@ -4,6 +4,7 @@ import { ArrowUpRight } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { prisma } from "@/lib/db";
+import { normalizeSiteContentV2 } from "@/lib/site/v2-schema";
 
 export async function HomeSections() {
   const sites = await prisma.site.findMany({
@@ -21,6 +22,8 @@ export async function HomeSections() {
       businessType: true,
       publicSlug: true,
       location: true,
+      builderVersion: true,
+      contentJson: true,
       primaryColor: true,
       secondaryColor: true,
       accentColor: true,
@@ -75,27 +78,32 @@ function toShowcaseSite(site: {
   businessType: string;
   publicSlug: string;
   location: string | null;
+  builderVersion: number;
+  contentJson: unknown;
   primaryColor: string | null;
   secondaryColor: string | null;
   accentColor: string | null;
   publishedAt: Date | null;
   sections: { content: unknown }[];
 }) {
+  const v2 = site.builderVersion === 2 ? normalizeSiteContentV2(site.contentJson) : null;
   const hero = asRecord(site.sections[0]?.content);
-  const subtitle = typeof hero.subtitle === "string" ? hero.subtitle : "";
-  const body = typeof hero.body === "string" ? hero.body : "";
-  const ctaText = typeof hero.ctaText === "string" ? hero.ctaText : "Contactar";
-  const seoTitle = buildSeoTitle(site.businessName, site.businessType, site.location);
-  const description = buildDescription(subtitle, site.location);
+  const category = v2?.business.type || site.businessType;
+  const location = v2?.business.location || site.location || "En línea";
+  const subtitle = v2?.hero.subtitle || (typeof hero.subtitle === "string" ? hero.subtitle : "");
+  const body = v2?.hero.body || v2?.about.body || (typeof hero.body === "string" ? hero.body : "");
+  const ctaText = v2?.hero.ctaText || v2?.contact.ctaText || (typeof hero.ctaText === "string" ? hero.ctaText : "Contactar");
+  const seoTitle = v2?.seo.title || buildSeoTitle(site.businessName, category, location);
+  const description = v2?.seo.description || buildDescription(subtitle || body, location);
   return {
     name: site.businessName,
     seoTitle,
-    category: site.businessType,
+    category,
     slug: site.publicSlug,
     description,
     body: body || subtitle || "Un proyecto creado para presentar el negocio con claridad.",
     ctaText,
-    location: site.location || "En línea",
+    location,
     image: `/api/public/sites/${encodeURIComponent(site.publicSlug)}/cover`,
     colors: [site.secondaryColor || "#17131b", site.primaryColor || "#8b5cf6", site.accentColor || "#d0bcff"],
     publishedLabel: site.publishedAt ? new Intl.DateTimeFormat("es", { day: "numeric", month: "short", year: "numeric" }).format(site.publishedAt) : "Publicado recientemente",

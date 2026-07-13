@@ -4,8 +4,11 @@ import test from "node:test";
 import {
   IMAGE_MAX_BYTES,
   IMAGE_MEDIA_TYPES,
+  isDataUrl,
   isSiteMediaUrl,
+  materializeDataUrlsForSite,
   siteMediaPrefix,
+  stripDataUrls,
   VIDEO_MAX_BYTES,
   VIDEO_MEDIA_TYPES,
 } from "../lib/site/media";
@@ -20,6 +23,23 @@ test("los medios quedan aislados por sitio y con límites seguros", () => {
   assert.equal(isSiteMediaUrl("site-1", "https://example.public.blob.vercel-storage.com/sites/site-1/photo.webp"), true);
   assert.equal(isSiteMediaUrl("site-1", "https://example.public.blob.vercel-storage.com/sites/site-2/photo.webp"), false);
   assert.equal(isSiteMediaUrl("site-1", "data:image/png;base64,abc"), false);
+});
+
+test("los data URLs no llegan como URLs finales de sitio", async () => {
+  const dataUrl = "data:image/png;base64,aGVsbG8=";
+  const previousToken = process.env.BLOB_READ_WRITE_TOKEN;
+  delete process.env.BLOB_READ_WRITE_TOKEN;
+
+  try {
+    assert.equal(isDataUrl(dataUrl), true);
+    assert.deepEqual(stripDataUrls({ logo: dataUrl, nested: [{ media: "https://cdn.example.com/a.webp" }] }), {
+      logo: "",
+      nested: [{ media: "https://cdn.example.com/a.webp" }],
+    });
+    assert.deepEqual(await materializeDataUrlsForSite("site-1", { logo: dataUrl }), { logo: "" });
+  } finally {
+    if (previousToken) process.env.BLOB_READ_WRITE_TOKEN = previousToken;
+  }
 });
 
 test("el layout solo acepta opciones que no rompen el preset", () => {

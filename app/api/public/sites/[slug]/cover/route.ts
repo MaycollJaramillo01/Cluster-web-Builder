@@ -6,6 +6,7 @@ import { getDesignPreset, type HeroStyle } from "@/lib/site/design";
 import { sectionImageUrl } from "@/lib/site/images";
 import { getContrastText } from "@/lib/site/theme-surface";
 import { themeFromSite } from "@/lib/site/theme";
+import { normalizeSiteContentV2, normalizeThemeV2 } from "@/lib/site/v2-schema";
 
 export const runtime = "nodejs";
 
@@ -19,11 +20,14 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
       businessName: true,
       businessType: true,
       visualStyle: true,
+      builderVersion: true,
       primaryColor: true,
       secondaryColor: true,
       accentColor: true,
       coverUrl: true,
       blueprintJson: true,
+      contentJson: true,
+      designJson: true,
       sections: {
         where: { type: "hero", isVisible: true },
         orderBy: { order: "asc" },
@@ -35,17 +39,19 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
 
   if (!site) return new Response("Portada no encontrada", { status: 404 });
 
-  const hero = asRecord(site.sections[0]?.content);
   const preset = getDesignPreset(site.visualStyle);
-  const theme = themeFromSite(site);
-  const title = site.sections[0]?.title || site.businessName;
-  const subtitle = asString(hero.subtitle) || site.businessType;
-  const body = asString(hero.body);
-  const prompt = asString(hero.imagePrompt) || `${site.businessType} professional business`;
+  const legacyHero = asRecord(site.sections[0]?.content);
+  const v2Content = site.builderVersion === 2 ? normalizeSiteContentV2(site.contentJson) : null;
+  const theme = site.builderVersion === 2 ? normalizeThemeV2(site.designJson) : themeFromSite(site);
+  const title = v2Content?.hero.title || site.sections[0]?.title || site.businessName;
+  const subtitle = v2Content?.hero.subtitle || asString(legacyHero.subtitle) || site.businessType;
+  const body = v2Content?.hero.body || asString(legacyHero.body);
+  const prompt = asString(legacyHero.imagePrompt) || `${site.businessType} professional business`;
   const photo = heroPhoto(preset.heroStyle);
-  const photoUrl = site.coverUrl || (photo
-    ? `${new URL(sectionImageUrl({ prompt, businessType: site.businessType, ...photo }), request.url).toString()}&format=jpeg`
-    : null);
+  const photoUrl = imageUrlFor(
+    v2Content?.hero.media || v2Content?.about.media || v2Content?.media[0]?.url || site.coverUrl,
+    request.url,
+  ) || (photo ? `${new URL(sectionImageUrl({ prompt, businessType: site.businessType, ...photo }), request.url).toString()}&format=jpeg` : null);
 
   return new ImageResponse(
     h("div", { style: { width: "100%", height: "100%", display: "flex", flexDirection: "column", overflow: "hidden", background: theme.background, color: theme.text, fontFamily: "Arial, sans-serif" } },
@@ -143,4 +149,14 @@ function asRecord(value: unknown): Record<string, unknown> {
 
 function asString(value: unknown): string {
   return typeof value === "string" ? value : "";
+}
+
+function imageUrlFor(value: unknown, baseUrl: string): string | null {
+  if (typeof value !== "string" || !value.trim() || value.startsWith("data:")) return null;
+  try {
+    const url = new URL(value, baseUrl);
+    return url.protocol === "http:" || url.protocol === "https:" ? url.toString() : null;
+  } catch {
+    return null;
+  }
 }

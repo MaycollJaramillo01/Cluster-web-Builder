@@ -8,6 +8,7 @@ import { normalizeSocialLinks } from "@/lib/site/social-links";
 import { applyPageStructure } from "@/lib/site/structure";
 import { trackProductEvent } from "@/lib/product-events";
 import { migrateLegacySiteDocument } from "@/lib/site/v2-migrate";
+import { materializeDataUrlsForSite, stripDataUrls } from "@/lib/site/media";
 
 type GuestAccess = { tokenHash: string; expiresAt: Date } | null;
 
@@ -35,6 +36,8 @@ export async function persistGeneratedSite({
     colors: { ...theme },
   };
   blueprint.site.socialLinks = normalizeSocialLinks(input.socialLinks);
+  const uploadedLogoAsset = input.assets?.logoDataUrl || null;
+  const uploadedCoverAsset = input.assets?.coverDataUrl || null;
 
   const v2 = migrateLegacySiteDocument({
     businessName: input.businessName,
@@ -42,8 +45,8 @@ export async function persistGeneratedSite({
     location: input.location === "Zona por definir" ? null : input.location || null,
     phone: input.phone || null,
     email: input.email || null,
-    logoUrl: input.assets?.logoDataUrl || null,
-    coverUrl: input.assets?.coverDataUrl || null,
+    logoUrl: uploadedLogoAsset,
+    coverUrl: uploadedCoverAsset,
     visualStyle: plan.selectedDesignStyle,
     blueprintJson: blueprint,
     primaryColor: theme.primary,
@@ -69,7 +72,7 @@ export async function persistGeneratedSite({
       visualStyle: plan.selectedDesignStyle,
       builderVersion: 2,
       templateId: v2.templateId,
-      contentJson: v2.content as object,
+      contentJson: stripDataUrls(v2.content) as object,
       designJson: v2.design as object,
       location: input.location === "Zona por definir" ? null : input.location || null,
       phone: input.phone || null,
@@ -81,11 +84,24 @@ export async function persistGeneratedSite({
       primaryColor: theme.primary,
       secondaryColor: theme.secondary,
       accentColor: theme.accent,
-      logoUrl: input.assets?.logoDataUrl || null,
-      coverUrl: input.assets?.coverDataUrl || null,
+      logoUrl: null,
+      coverUrl: null,
       blueprintJson: blueprint as object,
+    },
+  });
+
+  const content = await materializeDataUrlsForSite(site.id, v2.content, "content");
+  const canvasSections = await materializeDataUrlsForSite(site.id, v2.sections, "section");
+  const coverUrl = content.hero.media || content.about.media || content.media[0]?.url || null;
+
+  await prisma.site.update({
+    where: { id: site.id },
+    data: {
+      contentJson: content as object,
+      logoUrl: content.business.logo || null,
+      coverUrl,
       sections: {
-        create: v2.sections.map((section) => ({
+        create: canvasSections.map((section) => ({
           type: "canvas",
           title: section.name,
           order: section.order,
