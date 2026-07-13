@@ -6,6 +6,7 @@ import { prisma } from "@/lib/db";
 import { hasProAccess, proRequiredResponse } from "@/lib/entitlements";
 import { trackProductEvent } from "@/lib/product-events";
 import { exportSiteHtml } from "@/lib/site/export-html";
+import { getSiteLaunchReadiness } from "@/lib/site/launch-readiness";
 import { toRenderSection } from "@/lib/site/section";
 import { themeFromSite } from "@/lib/site/theme";
 import { renderSiteV2 } from "@/lib/site/v2-render";
@@ -19,6 +20,15 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   const site = await prisma.site.findFirst({ where: { id: siteId, ...(user.role === "ADMIN" ? {} : { userId: user.id }) }, include: { sections: { orderBy: { order: "asc" } } } });
   if (!site) return NextResponse.json({ error: "Sitio no encontrado." }, { status: 404 });
   if (!hasProAccess(user)) return NextResponse.json(proRequiredResponse, { status: 402 });
+  const readiness = getSiteLaunchReadiness(site);
+  if (!readiness.canDownload) {
+    const missing = readiness.missingForDownload.join(", ");
+    return NextResponse.json({
+      error: `Antes de descargar completa: ${missing}. El ZIP usa el endpoint público de leads, por eso el sitio debe estar publicado.`,
+      code: "LAUNCH_NOT_READY",
+      readiness,
+    }, { status: 409 });
+  }
 
   const endpoint = `${request.nextUrl.origin}/api/public/sites/${site.publicSlug}/leads`;
   const showBranding = user.planStatus !== "ACTIVE";

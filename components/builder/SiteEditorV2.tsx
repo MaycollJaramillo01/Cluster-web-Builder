@@ -19,6 +19,7 @@ import {
 
 import { V2WidgetSettings } from "@/components/builder/V2WidgetSettings";
 import { EditorMediaField } from "@/components/builder/EditorMediaField";
+import { getLaunchReadinessV2, type LaunchReadiness } from "@/lib/site/launch-readiness";
 import { readV2Clipboard, V2_CLIPBOARD_KEY, type V2Clipboard } from "@/lib/site/v2-clipboard";
 import { renderSiteV2 } from "@/lib/site/v2-render";
 import {
@@ -354,15 +355,19 @@ export function SiteEditorV2({ initialSite }: { initialSite: EditorSiteV2 }) {
   const publish = async () => {
     setPublishing(true); setMessage("");
     try {
+      if (!launchReadiness.canPublish) {
+        setMessage(`Antes de publicar completa: ${launchReadiness.missingForPublish.join(", ")}.`);
+        return;
+      }
       if (dirty && !(await save())) return;
       const response = await fetch(`/api/sites/${initialSite.id}/publish`, { method: "POST" });
       const data = await response.json().catch(() => ({}));
       if (response.status === 401) {
-        window.location.href = `/login?from=${encodeURIComponent(`/builder/${initialSite.id}?publish=1`)}`;
+        window.location.assign(`/login?from=${encodeURIComponent(`/builder/${initialSite.id}?publish=1`)}`);
         return;
       }
       if (response.status === 402) {
-        window.location.href = `/billing?from=${encodeURIComponent(`/builder/${initialSite.id}`)}`;
+        window.location.assign(`/billing?from=${encodeURIComponent(`/builder/${initialSite.id}`)}`);
         return;
       }
       if (!response.ok) throw new Error(data.error || "No se pudo publicar.");
@@ -370,7 +375,7 @@ export function SiteEditorV2({ initialSite }: { initialSite: EditorSiteV2 }) {
       // ambos y el sitio queda bajo otro ID: hay que reabrir el editor en esa direccion.
       if (data.site?.id && data.site.id !== initialSite.id) {
         localStorage.removeItem(draftKey);
-        window.location.href = `/builder/${data.site.id}`;
+        window.location.assign(`/builder/${data.site.id}`);
         return;
       }
       setStatus("PUBLISHED");
@@ -383,14 +388,18 @@ export function SiteEditorV2({ initialSite }: { initialSite: EditorSiteV2 }) {
   const downloadZip = async () => {
     setDownloading(true); setMessage("");
     try {
+      if (!launchReadiness.canDownload) {
+        setMessage(`Antes de descargar completa: ${launchReadiness.missingForDownload.join(", ")}. Publica el sitio para activar los formularios del ZIP.`);
+        return;
+      }
       if (dirty && !(await save())) return;
       const response = await fetch(`/api/sites/${initialSite.id}/download`);
       if (response.status === 401) {
-        window.location.href = `/login?from=${encodeURIComponent(`/builder/${initialSite.id}?download=1`)}`;
+        window.location.assign(`/login?from=${encodeURIComponent(`/builder/${initialSite.id}?download=1`)}`);
         return;
       }
       if (response.status === 402) {
-        window.location.href = `/billing?from=${encodeURIComponent(`/builder/${initialSite.id}`)}`;
+        window.location.assign(`/billing?from=${encodeURIComponent(`/builder/${initialSite.id}`)}`);
         return;
       }
       if (!response.ok) {
@@ -697,14 +706,7 @@ export function SiteEditorV2({ initialSite }: { initialSite: EditorSiteV2 }) {
     : selection?.kind === "row" ? "Fila"
     : selectedSection ? selectedSection.name
     : "";
-  const hasWidgetType = (type: V2WidgetType) => sections.some((section) => section.rows.some((row) => row.columns.some((column) => column.widgets.some((widget) => widget.type === type))));
-  const launchReady = {
-    content: Boolean(content.business.name && content.hero.title && content.hero.ctaText),
-    media: Boolean(content.business.logo || content.hero.media || content.about.media || content.media.length),
-    contact: Boolean(content.business.phone || content.business.email || content.business.location),
-    form: hasWidgetType("form"),
-    published: status === "PUBLISHED",
-  };
+  const launchReadiness = getLaunchReadinessV2({ content, sections, status });
 
   return <main className="flex h-dvh flex-col bg-zinc-100 text-zinc-900">
     <header className="flex h-14 shrink-0 items-center justify-between gap-3 border-b border-zinc-200 bg-white px-3 sm:px-4">
@@ -731,7 +733,12 @@ export function SiteEditorV2({ initialSite }: { initialSite: EditorSiteV2 }) {
         {status === "PUBLISHED" && publicUrl && (
           <a href={publicUrl} target="_blank" rel="noreferrer" className="v2-btn"><ExternalLink className="h-4 w-4" /><span className="hidden sm:inline">Ver sitio</span></a>
         )}
-        <button className="v2-btn border-violet-600 bg-violet-600 text-white hover:bg-violet-700" disabled={downloading || saving || publishing} onClick={() => void downloadZip()}>
+        <button
+          className="v2-btn border-violet-600 bg-violet-600 text-white hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-60"
+          disabled={downloading || saving || publishing || !launchReadiness.canDownload}
+          title={launchReadiness.canDownload ? "Descargar ZIP" : `Completa: ${launchReadiness.missingForDownload.join(", ")}`}
+          onClick={() => void downloadZip()}
+        >
           {downloading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
           <span className="hidden sm:inline">{downloading ? "Descargando..." : "Descargar ZIP"}</span>
           <span className="sm:hidden">ZIP</span>
@@ -739,7 +746,12 @@ export function SiteEditorV2({ initialSite }: { initialSite: EditorSiteV2 }) {
         <button className="v2-btn" disabled={saving || publishing} onClick={() => void save()}>
           <Save className="h-4 w-4" />{saving ? "Guardando…" : "Guardar"}
         </button>
-        <button className="v2-btn border-violet-600 bg-violet-600 text-white hover:bg-violet-700" disabled={publishing || saving} onClick={publish}>
+        <button
+          className="v2-btn border-violet-600 bg-violet-600 text-white hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-60"
+          disabled={publishing || saving || !launchReadiness.canPublish}
+          title={launchReadiness.canPublish ? "Publicar" : `Completa: ${launchReadiness.missingForPublish.join(", ")}`}
+          onClick={publish}
+        >
           <Globe className="h-4 w-4" />{publishing ? "Publicando…" : status === "PUBLISHED" ? "Actualizar" : "Publicar"}
         </button>
       </div>
@@ -789,7 +801,7 @@ export function SiteEditorV2({ initialSite }: { initialSite: EditorSiteV2 }) {
                     dirty={dirty}
                     status={status}
                     publicUrl={publicUrl}
-                    ready={launchReady}
+                    readiness={launchReadiness}
                     saving={saving}
                     publishing={publishing}
                     downloading={downloading}
@@ -1130,7 +1142,7 @@ function LaunchChecklist({
   dirty,
   status,
   publicUrl,
-  ready,
+  readiness,
   saving,
   publishing,
   downloading,
@@ -1142,7 +1154,7 @@ function LaunchChecklist({
   dirty: boolean;
   status: string;
   publicUrl: string;
-  ready: { content: boolean; media: boolean; contact: boolean; form: boolean; published: boolean };
+  readiness: LaunchReadiness;
   saving: boolean;
   publishing: boolean;
   downloading: boolean;
@@ -1150,39 +1162,43 @@ function LaunchChecklist({
   onPublish: () => void;
   onDownload: () => void;
 }) {
-  const items = [
-    ["Contenido base", ready.content],
-    ["Logo o portada", ready.media],
-    ["Datos de contacto", ready.contact],
-    ["Formulario activo", ready.form],
-    ["Sitio publicado", ready.published],
-  ] as const;
-  const done = items.filter(([, ok]) => ok).length;
   const busy = saving || publishing || downloading;
+  const publishBlocked = !readiness.canPublish;
+  const downloadBlocked = !readiness.canDownload;
 
   return <section className="mb-4 rounded-xl border border-violet-200 bg-violet-50 p-3" aria-label="Checklist para lanzar">
     <div className="flex items-start justify-between gap-3">
       <div>
         <p className="text-xs font-bold uppercase tracking-[0.12em] text-violet-700">Checklist para lanzar</p>
-        <p className="mt-1 text-xs leading-5 text-violet-950/70">{done}/{items.length} listo. Guarda, publica, revisa contactos y descarga el ZIP desde aquí.</p>
+        <p className="mt-1 text-xs leading-5 text-violet-950/70">{readiness.passed}/{readiness.total} listo. Guarda, publica, revisa contactos y descarga el ZIP desde aquí.</p>
       </div>
       <span className="rounded-full bg-white px-2 py-1 text-xs font-bold text-violet-700 shadow-sm">{status === "PUBLISHED" ? "Publicado" : "Borrador"}</span>
     </div>
+    {publishBlocked ? (
+      <p className="mt-3 rounded-lg bg-white/80 px-2 py-2 text-xs leading-5 text-amber-800">
+        Falta para publicar: {readiness.missingForPublish.join(", ")}.
+      </p>
+    ) : downloadBlocked ? (
+      <p className="mt-3 rounded-lg bg-white/80 px-2 py-2 text-xs leading-5 text-violet-900">
+        Publica el sitio para habilitar el ZIP con formularios funcionales.
+      </p>
+    ) : null}
     <div className="mt-3 grid gap-1.5">
-      {items.map(([label, ok]) => (
-        <div key={label} className="flex min-h-8 items-center gap-2 rounded-lg bg-white/80 px-2 text-xs text-zinc-700">
-          <BadgeCheck className={`h-3.5 w-3.5 ${ok ? "text-emerald-600" : "text-zinc-300"}`} />
-          <span>{label}</span>
+      {readiness.items.map((item) => (
+        <div key={item.key} className="flex min-h-8 items-center gap-2 rounded-lg bg-white/80 px-2 text-xs text-zinc-700" title={item.detail}>
+          <BadgeCheck className={`h-3.5 w-3.5 ${item.passed ? "text-emerald-600" : "text-zinc-300"}`} />
+          <span>{item.label}</span>
+          {!item.requiredForPublish && item.key !== "published" ? <span className="ml-auto text-[10px] uppercase tracking-wide text-zinc-400">Recomendado</span> : null}
         </div>
       ))}
     </div>
     <div className="mt-3 grid grid-cols-2 gap-2">
       <button type="button" className="v2-btn justify-center bg-white" disabled={busy} onClick={onSave}><Save className="h-4 w-4" />{dirty ? "Guardar" : "Guardado"}</button>
-      <button type="button" className="v2-btn justify-center border-violet-600 bg-violet-600 text-white hover:bg-violet-700" disabled={saving || publishing} onClick={onPublish}><Globe className="h-4 w-4" />{status === "PUBLISHED" ? "Actualizar" : "Publicar"}</button>
+      <button type="button" className="v2-btn justify-center border-violet-600 bg-violet-600 text-white hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-60" disabled={saving || publishing || publishBlocked} onClick={onPublish}><Globe className="h-4 w-4" />{status === "PUBLISHED" ? "Actualizar" : "Publicar"}</button>
       {publicUrl ? <a href={publicUrl} target="_blank" rel="noreferrer" className="v2-btn justify-center bg-white"><ExternalLink className="h-4 w-4" />Ver sitio</a>
         : <span className="v2-btn justify-center bg-white text-zinc-400"><ExternalLink className="h-4 w-4" />Ver sitio</span>}
       <Link href={`/builder/${siteId}/leads`} className="v2-btn justify-center bg-white"><Mail className="h-4 w-4" />Contactos</Link>
-      <button type="button" className="v2-btn justify-center bg-white" disabled={busy} onClick={onDownload}><Download className="h-4 w-4" />ZIP</button>
+      <button type="button" className="v2-btn justify-center bg-white disabled:cursor-not-allowed disabled:opacity-60" disabled={busy || downloadBlocked} onClick={onDownload}><Download className="h-4 w-4" />ZIP</button>
       <Link href={`/builder/${siteId}/domain`} className="v2-btn justify-center bg-white"><Globe className="h-4 w-4" />Dominio</Link>
     </div>
   </section>;

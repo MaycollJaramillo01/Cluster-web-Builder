@@ -4,6 +4,7 @@ import { z } from "zod";
 import { getUserBySessionToken, GUEST_COOKIE, hashGuestToken, SESSION_COOKIE } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { deleteSiteMedia, getSiteMedia, isSiteMediaUrl, materializeDataUrlsForSite } from "@/lib/site/media";
+import { getSiteLaunchReadiness } from "@/lib/site/launch-readiness";
 import { normalizeSectionSettings } from "@/lib/site/section-layout";
 import { sanitizeLink } from "@/lib/site/links";
 import { toRenderSection } from "@/lib/site/section";
@@ -108,6 +109,7 @@ export async function GET(
       replacesSiteId: site.replacesSiteId,
     },
     sections: site.builderVersion === 2 ? site.sections.map((section) => section.content) : site.sections.map(toRenderSection),
+    launchReadiness: getSiteLaunchReadiness(site),
   });
 }
 

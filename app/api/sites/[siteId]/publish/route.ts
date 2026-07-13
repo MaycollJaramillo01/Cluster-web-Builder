@@ -5,6 +5,7 @@ import { getUserBySessionToken, SESSION_COOKIE } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { hasProAccess, proRequiredResponse } from "@/lib/entitlements";
 import { trackProductEvent } from "@/lib/product-events";
+import { getSiteLaunchReadiness } from "@/lib/site/launch-readiness";
 import { publicSiteUrl } from "@/lib/site/public-url";
 
 export const runtime = "nodejs";
@@ -30,6 +31,14 @@ export async function POST(
     });
     if (!existing) throw new Error("not-found");
     if (!hasProAccess(user)) return NextResponse.json(proRequiredResponse, { status: 402 });
+    const readiness = getSiteLaunchReadiness(existing);
+    if (!readiness.canPublish) {
+      return NextResponse.json({
+        error: `Antes de publicar completa: ${readiness.missingForPublish.join(", ")}.`,
+        code: "LAUNCH_NOT_READY",
+        readiness,
+      }, { status: 409 });
+    }
     let publishedId = existing.id;
     let publishedSlug = existing.publicSlug;
     if (existing.builderVersion === 2 && existing.replacesSite) {
