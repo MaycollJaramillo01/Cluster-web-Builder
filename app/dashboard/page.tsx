@@ -5,6 +5,7 @@ import { ArrowLeft, BarChart3, CreditCard, LayoutGrid, Plus, Search, Users } fro
 import { BrandMark } from "@/components/brand/BrandMark";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { getSiteLaunchReadiness } from "@/lib/site/launch-readiness";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DashboardSiteCard, type DashboardSite } from "@/components/builder/DashboardSiteCard";
@@ -30,21 +31,39 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
     select: {
       id: true, businessName: true, businessType: true, status: true, publicSlug: true, customDomain: true, domainVerifiedAt: true,
       createdAt: true, updatedAt: true, downloadedAt: true, primaryColor: true, secondaryColor: true, accentColor: true,
-      _count: { select: { leads: { where: { readAt: null } } } },
+      builderVersion: true, contentJson: true, logoUrl: true, coverUrl: true, phone: true, email: true,
+      sections: { orderBy: { order: "asc" }, select: { type: true, title: true, isVisible: true, content: true } },
+      leads: { where: { readAt: null }, select: { id: true } },
+      _count: { select: { leads: true } },
     },
   });
 
-  const data: DashboardSite[] = sites.map((site) => ({
-    ...site,
-    createdAt: site.createdAt.toISOString(),
-    updatedAt: site.updatedAt.toISOString(),
-    downloadedAt: site.downloadedAt?.toISOString() ?? null,
-    domainVerifiedAt: site.domainVerifiedAt?.toISOString() ?? null,
-    primaryColor: site.primaryColor ?? "#15121b",
-    secondaryColor: site.secondaryColor ?? "#d0bcff",
-    accentColor: site.accentColor ?? "#8b5cf6",
-    unreadLeads: site._count.leads,
-  }));
+  const data: DashboardSite[] = sites.map((site) => {
+    const readiness = getSiteLaunchReadiness(site);
+    return {
+      id: site.id,
+      businessName: site.businessName,
+      businessType: site.businessType,
+      status: site.status,
+      publicSlug: site.publicSlug,
+      customDomain: site.customDomain,
+      domainVerifiedAt: site.domainVerifiedAt?.toISOString() ?? null,
+      createdAt: site.createdAt.toISOString(),
+      updatedAt: site.updatedAt.toISOString(),
+      downloadedAt: site.downloadedAt?.toISOString() ?? null,
+      primaryColor: site.primaryColor ?? "#15121b",
+      secondaryColor: site.secondaryColor ?? "#d0bcff",
+      accentColor: site.accentColor ?? "#8b5cf6",
+      unreadLeads: site.leads.length,
+      totalLeads: site._count.leads,
+      launchPassed: readiness.passed,
+      launchTotal: readiness.total,
+      canPublish: readiness.canPublish,
+      canDownload: readiness.canDownload,
+      missingForPublish: readiness.missingForPublish,
+      missingForDownload: readiness.missingForDownload,
+    };
+  });
 
   return (
     <main className="min-h-dvh bg-background text-foreground">
@@ -83,7 +102,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
             <p className="mt-2 text-sm text-muted-foreground">
               {query ? `${data.length} resultados para “${query}”` : `${data.length} ${data.length === 1 ? "sitio guardado" : "sitios guardados"}`}
             </p>
-            {!query && <p className="mt-1 text-xs text-muted-foreground">{data.filter((site) => site.status === "PUBLISHED").length} publicados · {data.filter((site) => site.downloadedAt).length} descargados</p>}
+            {!query && <p className="mt-1 text-xs text-muted-foreground">{data.filter((site) => site.status === "PUBLISHED").length} publicados · {data.filter((site) => site.downloadedAt).length} descargados · {data.reduce((sum, site) => sum + site.totalLeads, 0)} contactos</p>}
           </div>
         </div>
 

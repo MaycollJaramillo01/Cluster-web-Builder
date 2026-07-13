@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowUpRight, Globe, Inbox, Pencil } from "lucide-react";
+import { AlertTriangle, ArrowUpRight, BarChart3, CheckCircle2, Download, Globe, Inbox, Pencil } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -13,6 +13,13 @@ export type DashboardSite = {
   createdAt: string; updatedAt: string; primaryColor: string; secondaryColor: string; accentColor: string;
   downloadedAt: string | null;
   unreadLeads: number;
+  totalLeads: number;
+  launchPassed: number;
+  launchTotal: number;
+  canPublish: boolean;
+  canDownload: boolean;
+  missingForPublish: string[];
+  missingForDownload: string[];
 };
 
 const STATUS_LABEL: Record<string, { label: string; dot: string; text: string; border: string }> = {
@@ -27,6 +34,9 @@ export function DashboardSiteCard({ site }: { site: DashboardSite }) {
     ? site.customDomain && site.domainVerifiedAt ? `https://${site.customDomain}` : `/s/${site.publicSlug}`
     : `/preview/${site.id}`;
   const date = new Date(site.updatedAt).toLocaleDateString("es", { year: "numeric", month: "short", day: "numeric" });
+  const launchPct = site.launchTotal > 0 ? Math.round((site.launchPassed / site.launchTotal) * 100) : 0;
+  const nextStep = getNextStep(site);
+  const NextStepIcon = nextStep.icon;
   return (
     <article className="group overflow-hidden rounded-lg border border-border bg-card shadow-[var(--shadow-sm)] transition-[border-color,box-shadow] duration-200 hover:border-[#8b5cf6] hover:shadow-[var(--shadow-glow)]">
       <div className="border-b border-border bg-[#0f0d15] p-2.5">
@@ -68,6 +78,23 @@ export function DashboardSiteCard({ site }: { site: DashboardSite }) {
             <span className={cn("h-1.5 w-1.5 rounded-full", status.dot)} />{status.label}
           </span>
         </div>
+        <div className="mt-5 rounded-lg border border-border bg-[#15121b] p-3" aria-label="Estado operativo">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">Estado operativo</p>
+              <p className={cn("mt-1 text-sm font-semibold", nextStep.tone)}>{nextStep.label}</p>
+              <p className="mt-1 line-clamp-2 text-xs leading-5 text-muted-foreground">{nextStep.detail}</p>
+            </div>
+            <NextStepIcon className={cn("mt-0.5 h-4 w-4 shrink-0", nextStep.tone)} />
+          </div>
+          <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-[#2d243d]">
+            <div className="h-full rounded-full bg-[#8b5cf6]" style={{ width: `${launchPct}%` }} />
+          </div>
+          <div className="mt-2 flex items-center justify-between text-[11px] text-muted-foreground">
+            <span>{site.launchPassed}/{site.launchTotal} checklist</span>
+            <span>{site.totalLeads} contactos · {site.downloadedAt ? "ZIP descargado" : "ZIP pendiente"}</span>
+          </div>
+        </div>
         <div className="mt-5 flex items-center justify-between border-t border-border pt-4">
           <p className="text-xs text-muted-foreground">Actualizado el {date}</p>
           <div className="flex gap-2">
@@ -81,6 +108,9 @@ export function DashboardSiteCard({ site }: { site: DashboardSite }) {
                 )}
               </Link>
             </Button>
+            <Button asChild size="icon" variant="outline">
+              <Link href={`/builder/${site.id}/analytics`} aria-label={`Analytics de ${site.businessName}`}><BarChart3 /></Link>
+            </Button>
             <Button asChild size="icon" variant="outline"><Link href={`/builder/${site.id}/domain`} aria-label={`Dominio de ${site.businessName}`}><Globe /></Link></Button>
             <Button asChild size="sm"><Link href={`/builder/${site.id}`}><Pencil /> Editar</Link></Button>
           </div>
@@ -88,4 +118,45 @@ export function DashboardSiteCard({ site }: { site: DashboardSite }) {
       </div>
     </article>
   );
+}
+
+function getNextStep(site: DashboardSite) {
+  if (!site.canPublish) {
+    return {
+      label: "Falta para publicar",
+      detail: site.missingForPublish.join(", "),
+      icon: AlertTriangle,
+      tone: "text-amber-300",
+    };
+  }
+  if (site.status !== "PUBLISHED") {
+    return {
+      label: "Listo para publicar",
+      detail: "El contenido mínimo y el formulario están completos. Abre el editor y publica.",
+      icon: CheckCircle2,
+      tone: "text-emerald-300",
+    };
+  }
+  if (!site.canDownload || !site.downloadedAt) {
+    return {
+      label: "Publicado, ZIP pendiente",
+      detail: site.canDownload ? "Puedes descargar el sitio cuando necesites entregar una copia." : site.missingForDownload.join(", "),
+      icon: Download,
+      tone: "text-[#d0bcff]",
+    };
+  }
+  if (site.unreadLeads > 0) {
+    return {
+      label: `${site.unreadLeads} contacto${site.unreadLeads === 1 ? "" : "s"} sin leer`,
+      detail: "Responde rápido desde Contactos para no perder oportunidades.",
+      icon: Inbox,
+      tone: "text-[#d0bcff]",
+    };
+  }
+  return {
+    label: "Operativo",
+    detail: "Publicado, exportable y sin contactos pendientes.",
+    icon: CheckCircle2,
+    tone: "text-emerald-300",
+  };
 }
