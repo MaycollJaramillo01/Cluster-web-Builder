@@ -1,0 +1,129 @@
+name: Temporary WilandCo Image Export
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  export-images:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        run: pip install requests beautifulsoup4
+      - name: Crawl and download images
+        shell: python
+        run: |
+          import re, csv, hashlib
+          from pathlib import Path
+          from urllib.parse import urljoin, urlparse, unquote
+          import requests
+          from bs4 import BeautifulSoup
+
+          ROOT = 'https://www.wilandcopainting.com/'
+          DOMAIN = 'www.wilandcopainting.com'
+          OUT = Path('wilandco-images')
+          OUT.mkdir(exist_ok=True)
+          session = requests.Session()
+          session.headers.update({'User-Agent':'Mozilla/5.0 (compatible; site asset exporter/1.0)'})
+
+          pages, queue = set(), [ROOT]
+          images = set()
+          css_urls = set()
+
+          def add_image(raw, base):
+              if not raw or raw.startswith(('data:','blob:')): return
+              raw = raw.strip().strip('"\'')
+              url = urljoin(base, raw)
+              if 'wixstatic.com' in url or urlparse(url).netloc.endswith(DOMAIN):
+                  images.add(url.split('#')[0])
+
+          while queue and len(pages) < 150:
+              url = queue.pop(0)
+              if url in pages: continue
+              try:
+                  r = session.get(url, timeout=30)
+                  if r.status_code != 200 or 'text/html' not in r.headers.get('content-type',''): continue
+              except Exception:
+                  continue
+              pages.add(url)
+              soup = BeautifulSoup(r.text, 'html.parser')
+              for tag in soup.find_all(True):
+                  for attr in ('src','data-src','data-image','data-background-image','poster'):
+                      add_image(tag.get(attr), url)
+                  for attr in ('srcset','data-srcset'):
+                      val = tag.get(attr)
+                      if val:
+                          for part in val.split(','):
+                              add_image(part.strip().split(' ')[0], url)
+                  for u in re.findall(r'url\(["\']?(.*?)["\']?\)', tag.get('style','')):
+                      add_image(u,url)
+              for meta in soup.select('meta[property="og:image"], meta[name="twitter:image"]'):
+                  add_image(meta.get('content'), url)
+              for link in soup.find_all('link', href=True):
+                  rel = ' '.join(link.get('rel',[]))
+                  href = urljoin(url, link['href'])
+                  if 'stylesheet' in rel: css_urls.add(href)
+                  if any(x in rel for x in ('icon','apple-touch-icon','image_src','preload')): add_image(href,url)
+              for a in soup.find_all('a', href=True):
+                  href = urljoin(url, a['href']).split('#')[0]
+                  p = urlparse(href)
+                  if p.netloc == DOMAIN and p.scheme in ('http','https') and href not in pages and href not in queue:
+                      if not re.search(r'\.(jpg|jpeg|png|webp|avif|gif|svg|pdf|zip)(\?|$)', href, re.I):
+                          queue.append(href)
+              for u in re.findall(r'https?://[^"\'<>\\\s]+', r.text):
+                  if 'wixstatic.com/media/' in u:
+                      add_image(u.replace('\\/','/'), url)
+
+          for css in list(css_urls):
+              try:
+                  r=session.get(css,timeout=30)
+                  if r.status_code==200:
+                      for u in re.findall(r'url\(["\']?(.*?)["\']?\)',r.text): add_image(u,css)
+              except Exception: pass
+
+          expanded=set(images)
+          for u in list(images):
+              if 'static.wixstatic.com/media/' in u and '/v1/' in u:
+                  expanded.add(u.split('/v1/')[0])
+          images=expanded
+
+          rows=[]; seen_hash=set(); count=0
+          for i,url in enumerate(sorted(images),1):
+              try:
+                  r=session.get(url,timeout=60)
+                  if r.status_code!=200: continue
+                  ctype=r.headers.get('content-type','').split(';')[0].lower()
+                  if not ctype.startswith('image/'): continue
+                  data=r.content
+                  if len(data)<300: continue
+                  digest=hashlib.sha256(data).hexdigest()
+                  if digest in seen_hash: continue
+                  seen_hash.add(digest)
+                  ext={'image/jpeg':'.jpg','image/png':'.png','image/webp':'.webp','image/avif':'.avif','image/gif':'.gif','image/svg+xml':'.svg'}.get(ctype)
+                  if not ext:
+                      ext=Path(unquote(urlparse(url).path)).suffix.lower() or '.img'
+                  base=Path(unquote(urlparse(url).path)).name.split('?')[0]
+                  stem=re.sub(r'[^A-Za-z0-9._-]+','-',Path(base).stem).strip('-._')[:90] or f'image-{i:03d}'
+                  filename=f'{i:03d}-{stem}{ext}'
+                  (OUT/filename).write_bytes(data)
+                  rows.append([filename,url,ctype,len(data),digest])
+                  count+=1
+              except Exception:
+                  continue
+
+          with open(OUT/'manifest.csv','w',newline='',encoding='utf-8') as f:
+              w=csv.writer(f); w.writerow(['filename','source_url','content_type','bytes','sha256']); w.writerows(rows)
+          (OUT/'README.txt').write_text(f'Pages crawled: {len(pages)}\nUnique images downloaded: {count}\nSource: {ROOT}\n',encoding='utf-8')
+          print(f'Pages crawled={len(pages)}, downloaded={count}')
+      - name: Upload ZIP artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: wilandco-all-images
+          path: wilandco-images/
+          compression-level: 6
+          retention-days: 1
