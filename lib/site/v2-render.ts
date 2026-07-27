@@ -29,13 +29,26 @@ const safeUrl = (value: unknown) => {
   return clean.startsWith("http://") ? "" : clean;
 };
 
+function relativeLuminance(hex: string) {
+  const channels = [0, 2, 4].map((offset) => Number.parseInt(hex.slice(offset, offset + 2), 16) / 255)
+    .map((value) => value <= .03928 ? value / 12.92 : ((value + .055) / 1.055) ** 2.4);
+  return .2126 * channels[0] + .7152 * channels[1] + .0722 * channels[2];
+}
+function contrastRatio(l1: number, l2: number) {
+  const lighter = Math.max(l1, l2);
+  const darker = Math.min(l1, l2);
+  return (lighter + .05) / (darker + .05);
+}
+// Elige negro o blanco comparando el contraste real contra el fondo, en vez
+// de un umbral de luminancia fijo — evita quedarse corto de WCAG AA en el
+// rango medio donde un umbral arbitrario elegía mal.
 function readableText(background: string) {
   const hex = background.replace("#", "");
   if (!/^[0-9a-f]{6}$/i.test(hex)) return "#ffffff";
-  const channels = [0, 2, 4].map((offset) => Number.parseInt(hex.slice(offset, offset + 2), 16) / 255)
-    .map((value) => value <= .03928 ? value / 12.92 : ((value + .055) / 1.055) ** 2.4);
-  const luminance = .2126 * channels[0] + .7152 * channels[1] + .0722 * channels[2];
-  return luminance > .42 ? "#111827" : "#ffffff";
+  const bgLuminance = relativeLuminance(hex);
+  const withBlack = contrastRatio(bgLuminance, relativeLuminance("111827"));
+  const withWhite = contrastRatio(bgLuminance, relativeLuminance("ffffff"));
+  return withBlack >= withWhite ? "#111827" : "#ffffff";
 }
 
 function socialImageFor(content: SiteContentV2, explicit?: string) {
@@ -121,10 +134,16 @@ function widgetSelector(widget: WidgetV2) { return `[data-widget-id="${widget.id
 
 const HEADING_FONT = "font-[var(--heading)]";
 const BODY_FONT = "font-[var(--body)]";
-const H1 = `${HEADING_FONT} max-w-[18ch] text-[clamp(2.6rem,6vw,5.5rem)] font-bold leading-[1.05] tracking-[-0.03em] text-[var(--text)]`;
-const H2 = `${HEADING_FONT} max-w-[24ch] text-[clamp(2rem,4vw,3.75rem)] font-bold leading-[1.06] tracking-[-0.02em] text-[var(--text)]`;
-const H3 = `${HEADING_FONT} text-[clamp(1.1rem,2vw,1.35rem)] font-semibold leading-snug text-[var(--text)]`;
-const BODY_P = `${BODY_FONT} max-w-[65ch] leading-relaxed text-[var(--text)]/80`;
+// Sin color propio: heredan el color de su sección para que un fondo oscuro
+// (background:"primary"/"secondary" u otro override dinámico) siga siendo
+// legible sin tener que repetir la lógica de contraste en cada widget.
+const H1 = `${HEADING_FONT} max-w-[18ch] text-[clamp(2.6rem,6vw,5.5rem)] font-bold leading-[1.05] tracking-[-0.03em]`;
+const H2 = `${HEADING_FONT} max-w-[24ch] text-[clamp(2rem,4vw,3.75rem)] font-bold leading-[1.06] tracking-[-0.02em]`;
+const H3 = `${HEADING_FONT} text-[clamp(1.1rem,2vw,1.35rem)] font-semibold leading-snug`;
+const BODY_P = `${BODY_FONT} max-w-[65ch] leading-relaxed opacity-80`;
+// Texto secundario/atenuado: opacidad sobre el color heredado, nunca un color
+// fijo — así se atenúa de forma correcta sobre cualquier fondo de sección.
+const MUTED = "opacity-65";
 
 function headingClasses(level: "h1" | "h2" | "h3", theme: ThemeTokensV2) {
   const base = level === "h1" ? H1 : level === "h3" ? H3 : H2;
@@ -150,7 +169,7 @@ const IMAGE_VARIANT: Record<string, string> = {
   wide: `${IMAGE_BASE} aspect-[16/8] rounded-[var(--radius)]`,
   monochrome: `${IMAGE_BASE} aspect-[4/3] rounded-[var(--radius)] grayscale`,
   framed: `${IMAGE_BASE} aspect-[4/3] rounded-[var(--radius)] shadow-2xl ring-8 ring-[var(--bg)]`,
-  product: `${IMAGE_BASE} aspect-square rounded-[var(--radius)] bg-[var(--text)]/[0.04] object-contain p-8 ring-1 ring-[var(--text)]/10`,
+  product: `${IMAGE_BASE} aspect-square rounded-[var(--radius)] bg-current/[0.04] object-contain p-8 ring-1 ring-current/10`,
   rounded: `${IMAGE_BASE} aspect-[4/3] rounded-[2rem]`,
   offset: `${IMAGE_BASE} aspect-[4/3] rounded-[var(--radius)] shadow-[16px_16px_0_var(--accent)]`,
   tilt: `${IMAGE_BASE} aspect-[4/3] w-[calc(100%-2.5rem)] -rotate-3 rounded-[1.4rem] shadow-[18px_-18px_0_-2px_var(--bg),0_24px_50px_rgba(0,0,0,0.18)] mx-auto my-4`,
@@ -162,13 +181,13 @@ const IMAGE_VARIANT: Record<string, string> = {
 
 const LIST_WRAP: Record<string, string> = {
   cards: "grid gap-6 sm:grid-cols-2 lg:grid-cols-3",
-  minimal: "flex flex-col divide-y divide-[var(--text)]/10",
+  minimal: "flex flex-col divide-y divide-current/10",
   editorial: "grid gap-x-10 gap-y-14 sm:grid-cols-2",
   catalog: "grid gap-4 sm:grid-cols-2 lg:grid-cols-3",
   pills: "flex flex-wrap gap-3",
   badges: "flex flex-wrap gap-3",
   metrics: "grid gap-8 text-center sm:grid-cols-2 lg:grid-cols-4",
-  numbered: "flex flex-col divide-y divide-[var(--text)]/10",
+  numbered: "flex flex-col divide-y divide-current/10",
   bento: "grid grid-cols-2 gap-4 sm:grid-cols-6",
 };
 
@@ -178,26 +197,28 @@ function listItemHtml(variant: string, item: Record<string, unknown>, index: num
   const meta = item.meta ? escapeHtml(item.meta) : "";
   const img = safeUrl(item.image as string);
   const idx = String(index + 1).padStart(2, "0");
-  const cardBase = "flex flex-col rounded-[var(--radius)] border border-[var(--text)]/10 bg-[var(--text)]/[0.03] p-6";
+  const cardBase = "flex flex-col rounded-[var(--radius)] border border-current/10 bg-current/[0.04] p-6";
   const cardImg = img ? `<img src="${img}" alt="" loading="lazy" class="mb-4 aspect-[4/3] w-full rounded-[calc(var(--radius)/1.4)] object-cover">` : "";
   switch (variant) {
     case "minimal":
-      return `<article class="flex items-start justify-between gap-6 py-5 first:pt-0 last:pb-0"><div class="min-w-0"><h3 class="${H3}">${title}</h3>${desc ? `<p class="mt-1 max-w-[55ch] text-sm text-[var(--muted)]">${desc}</p>` : ""}</div>${meta ? `<span class="shrink-0 ${HEADING_FONT} text-sm font-semibold text-[var(--muted)]">${meta}</span>` : ""}</article>`;
+      return `<article class="flex items-start justify-between gap-6 py-5 first:pt-0 last:pb-0"><div class="min-w-0"><h3 class="${H3}">${title}</h3>${desc ? `<p class="mt-1 max-w-[55ch] text-sm ${MUTED}">${desc}</p>` : ""}</div>${meta ? `<span class="shrink-0 ${HEADING_FONT} text-sm font-semibold ${MUTED}">${meta}</span>` : ""}</article>`;
     case "numbered":
-      return `<article class="flex items-start gap-5 py-5 first:pt-0 last:pb-0"><span class="font-mono text-sm font-bold text-[var(--accent)]">${idx}</span><div class="min-w-0"><h3 class="${H3}">${title}</h3>${desc ? `<p class="mt-1 max-w-[55ch] text-sm text-[var(--muted)]">${desc}</p>` : ""}</div></article>`;
+      return `<article class="flex items-start gap-5 py-5 first:pt-0 last:pb-0"><span class="font-mono text-sm font-bold text-[var(--accent)]">${idx}</span><div class="min-w-0"><h3 class="${H3}">${title}</h3>${desc ? `<p class="mt-1 max-w-[55ch] text-sm ${MUTED}">${desc}</p>` : ""}</div></article>`;
     case "pills":
     case "badges":
-      return `<article class="inline-flex max-w-full items-center gap-2 rounded-[var(--radius)] border border-[var(--text)]/12 bg-[var(--text)]/5 px-4 py-2.5"><span class="${HEADING_FONT} text-sm font-semibold text-[var(--text)]">${title}</span>${desc ? `<span class="text-xs text-[var(--muted)]">${desc}</span>` : ""}</article>`;
+      return `<article class="inline-flex max-w-full items-center gap-2 rounded-[var(--radius)] border border-current/15 bg-current/[0.05] px-4 py-2.5"><span class="${HEADING_FONT} text-sm font-semibold">${title}</span>${desc ? `<span class="text-xs ${MUTED}">${desc}</span>` : ""}</article>`;
     case "metrics":
-      return `<article><h3 class="${HEADING_FONT} text-[clamp(1.6rem,3vw,2.4rem)] font-bold leading-none text-[var(--text)]">${title}</h3><p class="mt-2 text-sm text-[var(--muted)]">${desc}</p></article>`;
+      // Rango de tamaño moderado: pensado para números cortos, pero no rompe
+      // si el contenido real trae una frase más larga en vez de un dato.
+      return `<article><h3 class="${HEADING_FONT} text-[clamp(1.35rem,2.6vw,2.1rem)] font-bold leading-tight text-balance">${title}</h3><p class="mt-2 text-sm ${MUTED}">${desc}</p></article>`;
     case "editorial":
-      return `<article class="${index % 2 === 1 ? "sm:mt-10" : ""}">${img ? `<img src="${img}" alt="" loading="lazy" class="mb-5 aspect-[4/3] w-full rounded-[var(--radius)] object-cover">` : ""}<h3 class="${H3} text-xl">${title}</h3>${desc ? `<p class="mt-2 max-w-[45ch] text-[var(--muted)]">${desc}</p>` : ""}</article>`;
+      return `<article class="${index % 2 === 1 ? "sm:mt-10" : ""}">${img ? `<img src="${img}" alt="" loading="lazy" class="mb-5 aspect-[4/3] w-full rounded-[var(--radius)] object-cover">` : ""}<h3 class="${H3} text-xl">${title}</h3>${desc ? `<p class="mt-2 max-w-[45ch] ${MUTED}">${desc}</p>` : ""}</article>`;
     case "catalog":
-      return `<article class="${cardBase}"><div class="flex items-baseline justify-between gap-3">${cardImg ? "" : ""}<h3 class="${H3}">${title}</h3>${meta ? `<span class="shrink-0 ${HEADING_FONT} text-lg font-bold text-[var(--accent)]">${meta}</span>` : ""}</div>${cardImg}${desc ? `<p class="mt-2 text-sm text-[var(--muted)]">${desc}</p>` : ""}</article>`;
+      return `<article class="${cardBase}"><div class="flex items-baseline justify-between gap-3">${cardImg ? "" : ""}<h3 class="${H3}">${title}</h3>${meta ? `<span class="shrink-0 ${HEADING_FONT} text-lg font-bold text-[var(--accent)]">${meta}</span>` : ""}</div>${cardImg}${desc ? `<p class="mt-2 text-sm ${MUTED}">${desc}</p>` : ""}</article>`;
     case "bento":
-      return `<article class="${index % 3 === 0 ? "col-span-2 sm:col-span-4" : "col-span-2 sm:col-span-2"} ${cardBase}">${cardImg || `<span class="font-mono text-xs font-bold text-[var(--accent)]">${idx}</span>`}<h3 class="mt-2 ${H3}">${title}</h3>${desc ? `<p class="mt-2 text-sm text-[var(--muted)]">${desc}</p>` : ""}</article>`;
+      return `<article class="${index % 3 === 0 ? "col-span-2 sm:col-span-4" : "col-span-2 sm:col-span-2"} ${cardBase}">${cardImg || `<span class="font-mono text-xs font-bold text-[var(--accent)]">${idx}</span>`}<h3 class="mt-2 ${H3}">${title}</h3>${desc ? `<p class="mt-2 text-sm ${MUTED}">${desc}</p>` : ""}</article>`;
     default:
-      return `<article class="${cardBase}">${cardImg || `<span class="font-mono text-xs font-bold text-[var(--accent)]">${idx}</span>`}<h3 class="mt-2 ${H3}">${title}</h3>${desc ? `<p class="mt-2 text-sm text-[var(--muted)]">${desc}</p>` : ""}${meta ? `<span class="mt-3 text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">${meta}</span>` : ""}</article>`;
+      return `<article class="${cardBase}">${cardImg || `<span class="font-mono text-xs font-bold text-[var(--accent)]">${idx}</span>`}<h3 class="mt-2 ${H3}">${title}</h3>${desc ? `<p class="mt-2 text-sm ${MUTED}">${desc}</p>` : ""}${meta ? `<span class="mt-3 text-xs font-semibold uppercase tracking-wide ${MUTED}">${meta}</span>` : ""}</article>`;
   }
 }
 
@@ -237,8 +258,8 @@ function galleryHtml(variant: string, items: Record<string, unknown>[], attr: st
   }
   if (variant === "editorial") {
     const [first, ...rest] = figures;
-    const heroFigure = first ? `<figure class="overflow-hidden rounded-[var(--radius)]"><img src="${first.source}" alt="${escapeHtml(first.alt)}" loading="lazy" class="aspect-[21/9] w-full object-cover">${first.alt ? `<figcaption class="mt-3 max-w-[55ch] text-sm text-[var(--muted)]">${escapeHtml(first.alt)}</figcaption>` : ""}</figure>` : "";
-    const restCells = rest.map(({ source, alt }) => `<figure class="overflow-hidden rounded-[var(--radius)]"><img src="${source}" alt="${escapeHtml(alt)}" loading="lazy" class="aspect-[4/3] w-full object-cover">${alt ? `<figcaption class="mt-2 text-sm text-[var(--muted)]">${escapeHtml(alt)}</figcaption>` : ""}</figure>`).join("");
+    const heroFigure = first ? `<figure class="overflow-hidden rounded-[var(--radius)]"><img src="${first.source}" alt="${escapeHtml(first.alt)}" loading="lazy" class="aspect-[21/9] w-full object-cover">${first.alt ? `<figcaption class="mt-3 max-w-[55ch] text-sm ${MUTED}">${escapeHtml(first.alt)}</figcaption>` : ""}</figure>` : "";
+    const restCells = rest.map(({ source, alt }) => `<figure class="overflow-hidden rounded-[var(--radius)]"><img src="${source}" alt="${escapeHtml(alt)}" loading="lazy" class="aspect-[4/3] w-full object-cover">${alt ? `<figcaption class="mt-2 text-sm ${MUTED}">${escapeHtml(alt)}</figcaption>` : ""}</figure>`).join("");
     return `<div ${attr} class="flex flex-col gap-10">${heroFigure}${restCells ? `<div class="grid gap-10 sm:grid-cols-2">${restCells}</div>` : ""}</div>`;
   }
   // grid (default)
@@ -256,24 +277,24 @@ function stars(rating: unknown) {
 
 function testimonialsHtml(variant: string, reviews: Record<string, unknown>[], attr: string) {
   if (!reviews.length) return "";
-  const card = (review: Record<string, unknown>) => `<figure class="flex flex-col rounded-[var(--radius)] border border-[var(--text)]/10 bg-[var(--text)]/[0.03] p-6">${stars(review.rating)}<blockquote class="mt-3 line-clamp-3 ${BODY_FONT} text-[var(--text)]">\u201c${escapeHtml(review.quote)}\u201d</blockquote><figcaption class="mt-4 flex flex-col ${HEADING_FONT}"><strong class="text-[var(--text)]">${escapeHtml(review.name)}</strong>${review.role ? `<span class="text-sm text-[var(--muted)]">${escapeHtml(review.role)}</span>` : ""}</figcaption></figure>`;
+  const card = (review: Record<string, unknown>) => `<figure class="flex flex-col rounded-[var(--radius)] border border-current/10 bg-current/[0.04] p-6">${stars(review.rating)}<blockquote class="mt-3 line-clamp-3 ${BODY_FONT}">\u201c${escapeHtml(review.quote)}\u201d</blockquote><figcaption class="mt-4 flex flex-col ${HEADING_FONT}"><strong>${escapeHtml(review.name)}</strong>${review.role ? `<span class="text-sm ${MUTED}">${escapeHtml(review.role)}</span>` : ""}</figcaption></figure>`;
 
   if (variant === "quotes") {
-    const items = reviews.map((review) => `<figure class="mx-auto max-w-[60ch] text-center"><blockquote class="${HEADING_FONT} text-[clamp(1.4rem,2.6vw,2rem)] font-medium leading-snug text-[var(--text)]">\u201c${escapeHtml(review.quote)}\u201d</blockquote><figcaption class="mt-5 flex flex-col items-center gap-1"><span class="${HEADING_FONT} font-semibold text-[var(--text)]">${escapeHtml(review.name)}</span>${review.role ? `<span class="text-sm text-[var(--muted)]">${escapeHtml(review.role)}</span>` : ""}</figcaption></figure>`).join("");
+    const items = reviews.map((review) => `<figure class="mx-auto max-w-[60ch] text-center"><blockquote class="${HEADING_FONT} text-[clamp(1.4rem,2.6vw,2rem)] font-medium leading-snug">\u201c${escapeHtml(review.quote)}\u201d</blockquote><figcaption class="mt-5 flex flex-col items-center gap-1"><span class="${HEADING_FONT} font-semibold">${escapeHtml(review.name)}</span>${review.role ? `<span class="text-sm ${MUTED}">${escapeHtml(review.role)}</span>` : ""}</figcaption></figure>`).join("");
     return `<div ${attr} class="flex flex-col gap-14 sm:gap-20">${items}</div>`;
   }
   if (variant === "featured") {
     const [first, ...rest] = reviews;
-    const featured = first ? `<figure class="flex flex-col justify-center rounded-[var(--radius)] border border-[var(--accent)]/30 bg-[var(--accent)]/[0.06] p-8 lg:col-span-7">${stars(first.rating)}<blockquote class="mt-4 ${HEADING_FONT} text-[clamp(1.3rem,2.2vw,1.8rem)] font-medium leading-snug text-[var(--text)]">\u201c${escapeHtml(first.quote)}\u201d</blockquote><figcaption class="mt-5 flex flex-col ${HEADING_FONT}"><strong class="text-[var(--text)]">${escapeHtml(first.name)}</strong>${first.role ? `<span class="text-sm text-[var(--muted)]">${escapeHtml(first.role)}</span>` : ""}</figcaption></figure>` : "";
-    const restCells = rest.slice(0, 3).map((review) => `<figure class="border-b border-[var(--text)]/10 pb-4 last:border-0 last:pb-0">${stars(review.rating)}<blockquote class="mt-2 line-clamp-2 text-sm text-[var(--text)]">\u201c${escapeHtml(review.quote)}\u201d</blockquote><figcaption class="mt-2 text-sm font-semibold text-[var(--text)]">${escapeHtml(review.name)}</figcaption></figure>`).join("");
+    const featured = first ? `<figure class="flex flex-col justify-center rounded-[var(--radius)] border border-[var(--accent)]/30 bg-[var(--accent)]/[0.06] p-8 lg:col-span-7">${stars(first.rating)}<blockquote class="mt-4 ${HEADING_FONT} text-[clamp(1.3rem,2.2vw,1.8rem)] font-medium leading-snug">\u201c${escapeHtml(first.quote)}\u201d</blockquote><figcaption class="mt-5 flex flex-col ${HEADING_FONT}"><strong>${escapeHtml(first.name)}</strong>${first.role ? `<span class="text-sm ${MUTED}">${escapeHtml(first.role)}</span>` : ""}</figcaption></figure>` : "";
+    const restCells = rest.slice(0, 3).map((review) => `<figure class="border-b border-current/10 pb-4 last:border-0 last:pb-0">${stars(review.rating)}<blockquote class="mt-2 line-clamp-2 text-sm">\u201c${escapeHtml(review.quote)}\u201d</blockquote><figcaption class="mt-2 text-sm font-semibold">${escapeHtml(review.name)}</figcaption></figure>`).join("");
     return `<div ${attr} class="grid gap-6 lg:grid-cols-12">${featured}<div class="flex flex-col gap-4 lg:col-span-5">${restCells}</div></div>`;
   }
   if (variant === "list") {
-    const items = reviews.map((review) => `<figure class="flex items-start gap-4 py-5 first:pt-0 last:pb-0"><span class="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[var(--accent)] font-[var(--heading)] font-bold text-[var(--on-accent)]">${escapeHtml(String(review.name || "").charAt(0) || "•")}</span><div class="min-w-0">${stars(review.rating)}<blockquote class="mt-1 text-[var(--text)]">\u201c${escapeHtml(review.quote)}\u201d</blockquote><figcaption class="mt-1 text-sm font-semibold text-[var(--muted)]">${escapeHtml(review.name)}${review.role ? ` · ${escapeHtml(review.role)}` : ""}</figcaption></div></figure>`).join("");
-    return `<div ${attr} class="flex flex-col divide-y divide-[var(--text)]/10">${items}</div>`;
+    const items = reviews.map((review) => `<figure class="flex items-start gap-4 py-5 first:pt-0 last:pb-0"><span class="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[var(--accent)] font-[var(--heading)] font-bold text-[var(--on-accent)]">${escapeHtml(String(review.name || "").charAt(0) || "•")}</span><div class="min-w-0">${stars(review.rating)}<blockquote class="mt-1">\u201c${escapeHtml(review.quote)}\u201d</blockquote><figcaption class="mt-1 text-sm font-semibold ${MUTED}">${escapeHtml(review.name)}${review.role ? ` · ${escapeHtml(review.role)}` : ""}</figcaption></div></figure>`).join("");
+    return `<div ${attr} class="flex flex-col divide-y divide-current/10">${items}</div>`;
   }
   if (variant === "wall") {
-    const items = reviews.map((review) => `<figure class="flex flex-col rounded-[var(--radius)] border border-[var(--text)]/10 p-5">${stars(review.rating)}<blockquote class="mt-2 line-clamp-3 text-sm text-[var(--text)]">\u201c${escapeHtml(review.quote)}\u201d</blockquote><figcaption class="mt-3 text-sm font-semibold text-[var(--text)]">${escapeHtml(review.name)}</figcaption></figure>`).join("");
+    const items = reviews.map((review) => `<figure class="flex flex-col rounded-[var(--radius)] border border-current/10 p-5">${stars(review.rating)}<blockquote class="mt-2 line-clamp-3 text-sm">\u201c${escapeHtml(review.quote)}\u201d</blockquote><figcaption class="mt-3 text-sm font-semibold">${escapeHtml(review.name)}</figcaption></figure>`).join("");
     return `<div ${attr} class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">${items}</div>`;
   }
   // cards (default)
@@ -287,15 +308,15 @@ function testimonialsHtml(variant: string, reviews: Record<string, unknown>[], a
 function accordionHtml(variant: string, faqs: Record<string, unknown>[], attr: string) {
   if (!faqs.length) return "";
   if (variant === "cards") {
-    const items = faqs.map((faq) => `<details class="group rounded-[var(--radius)] bg-[var(--text)]/[0.04] p-5 open:bg-[var(--text)]/[0.07]"><summary class="flex cursor-pointer list-none items-center justify-between gap-4 font-[var(--heading)] font-semibold text-[var(--text)]"><span>${escapeHtml(faq.question)}</span><span class="shrink-0 text-xl leading-none text-[var(--accent)] group-open:hidden">+</span><span class="hidden shrink-0 text-xl leading-none text-[var(--accent)] group-open:inline">−</span></summary><p class="mt-3 text-[var(--muted)]">${escapeHtml(faq.answer)}</p></details>`).join("");
+    const items = faqs.map((faq) => `<details class="group rounded-[var(--radius)] bg-current/[0.05] p-5 open:bg-current/10"><summary class="flex cursor-pointer list-none items-center justify-between gap-4 font-[var(--heading)] font-semibold"><span>${escapeHtml(faq.question)}</span><span class="shrink-0 text-xl leading-none text-[var(--accent)] group-open:hidden">+</span><span class="hidden shrink-0 text-xl leading-none text-[var(--accent)] group-open:inline">−</span></summary><p class="mt-3 ${MUTED}">${escapeHtml(faq.answer)}</p></details>`).join("");
     return `<div ${attr} class="mx-auto flex max-w-[900px] flex-col gap-3">${items}</div>`;
   }
   if (variant === "minimal") {
-    const items = faqs.map((faq) => `<details class="group py-6 first:pt-0 last:pb-0"><summary class="flex cursor-pointer list-none items-center justify-between gap-6 ${HEADING_FONT} text-lg font-medium text-[var(--text)]"><span>${escapeHtml(faq.question)}</span><span class="shrink-0 text-2xl font-light leading-none text-[var(--muted)] transition group-open:rotate-45">+</span></summary><p class="mt-3 max-w-[65ch] text-[var(--muted)]">${escapeHtml(faq.answer)}</p></details>`).join("");
-    return `<div ${attr} class="mx-auto flex max-w-[820px] flex-col divide-y divide-[var(--text)]/10">${items}</div>`;
+    const items = faqs.map((faq) => `<details class="group py-6 first:pt-0 last:pb-0"><summary class="flex cursor-pointer list-none items-center justify-between gap-6 ${HEADING_FONT} text-lg font-medium"><span>${escapeHtml(faq.question)}</span><span class="shrink-0 text-2xl font-light leading-none ${MUTED} transition group-open:rotate-45">+</span></summary><p class="mt-3 max-w-[65ch] ${MUTED}">${escapeHtml(faq.answer)}</p></details>`).join("");
+    return `<div ${attr} class="mx-auto flex max-w-[820px] flex-col divide-y divide-current/10">${items}</div>`;
   }
   // lines (default)
-  const items = faqs.map((faq) => `<details class="border-b border-[var(--text)]/12 py-5 first:pt-0 last:border-0 last:pb-0"><summary class="cursor-pointer list-none font-[var(--heading)] font-bold text-[var(--text)]">${escapeHtml(faq.question)}</summary><p class="mt-3 text-[var(--muted)]">${escapeHtml(faq.answer)}</p></details>`).join("");
+  const items = faqs.map((faq) => `<details class="border-b border-current/12 py-5 first:pt-0 last:border-0 last:pb-0"><summary class="cursor-pointer list-none font-[var(--heading)] font-bold">${escapeHtml(faq.question)}</summary><p class="mt-3 ${MUTED}">${escapeHtml(faq.answer)}</p></details>`).join("");
   return `<div ${attr} class="mx-auto flex max-w-[900px] flex-col">${items}</div>`;
 }
 
@@ -307,17 +328,17 @@ function accordionHtml(variant: string, faqs: Record<string, unknown>[], attr: s
 function headerChromeClasses(variant: string) {
   switch (variant) {
     case "floating":
-      return "sticky top-4 z-30 mx-auto mt-4 w-[min(1100px,94%)] rounded-[999px] border border-[var(--text)]/10 bg-[var(--bg)]/90 shadow-lg backdrop-blur";
+      return "sticky top-4 z-30 mx-auto mt-4 w-[min(1100px,94%)] rounded-[999px] border border-current/10 bg-[var(--bg)]/90 shadow-lg backdrop-blur";
     case "overlay":
       return "absolute inset-x-0 top-0 z-30 bg-transparent text-white";
     case "bordered":
-      return "sticky top-0 z-30 border-b-2 border-[var(--text)]/15 bg-[var(--bg)]";
+      return "sticky top-0 z-30 border-b-2 border-current/15 bg-[var(--bg)]";
     case "pill":
       return "sticky top-4 z-30 mx-auto mt-4 w-[min(760px,92%)] rounded-[999px] bg-[var(--secondary)] px-3 py-2 text-[var(--footer-text)] shadow-lg";
     case "hvac":
-      return "sticky top-0 z-30 border-b border-[var(--text)]/10 bg-[var(--bg)]";
+      return "sticky top-0 z-30 border-b border-current/10 bg-[var(--bg)]";
     default: // bar / minimal
-      return "sticky top-0 z-30 border-b border-[var(--text)]/10 bg-[var(--bg)]/95 backdrop-blur";
+      return "sticky top-0 z-30 border-b border-current/10 bg-[var(--bg)]/95 backdrop-blur";
   }
 }
 
@@ -326,13 +347,13 @@ function brandHtml(attr: string, variant: string, name: string, logo: string) {
   const isHvac = variant === "hvac";
   const isFooterWordmark = variant === "hvac-footer";
   if (isFooterWordmark) {
-    return `<span ${attr} class="mt-10 block ${HEADING_FONT} text-[clamp(3.5rem,9vw,8rem)] font-normal leading-none tracking-[-0.05em] text-[var(--text)]/15">${escapeHtml(name)}</span>`;
+    return `<span ${attr} class="mt-10 block ${HEADING_FONT} text-[clamp(3.5rem,9vw,8rem)] font-normal leading-none tracking-[-0.05em] opacity-10">${escapeHtml(name)}</span>`;
   }
   const wrap = isPill
     ? "inline-flex items-center gap-2 rounded-full bg-[var(--accent)] px-4 py-1.5"
     : "inline-flex items-center gap-3";
   const logoImg = logo ? `<img src="${escapeHtml(logo)}" alt="" loading="eager" class="h-8 w-8 object-contain">` : "";
-  const nameCls = isPill ? "text-sm font-bold text-[var(--on-accent)]" : isHvac ? "text-xl font-semibold tracking-[-0.03em] text-[var(--text)]" : "text-lg font-bold text-[var(--text)]";
+  const nameCls = isPill ? "text-sm font-bold text-[var(--on-accent)]" : isHvac ? "text-xl font-semibold tracking-[-0.03em]" : "text-lg font-bold";
   const hvacMark = isHvac ? `<span class="grid h-6 w-6 -rotate-12 place-items-center rounded-full bg-[var(--accent)] text-base font-black leading-none text-white">≋</span>` : "";
   return `<a ${attr} href="#top" class="${wrap} ${HEADING_FONT} no-underline">${hvacMark}${logoImg}<strong class="${nameCls}">${escapeHtml(name)}</strong></a>`;
 }
@@ -340,10 +361,10 @@ function brandHtml(attr: string, variant: string, name: string, logo: string) {
 function navHtml(attr: string, items: Record<string, unknown>[]) {
   const links = items.map((item) => {
     const href = safeUrl(item.href) || "#contact";
-    return `<a href="${escapeHtml(href)}" class="whitespace-nowrap text-sm text-[var(--text)] no-underline hover:text-[var(--accent)]">${escapeHtml(item.label)}</a>`;
+    return `<a href="${escapeHtml(href)}" class="whitespace-nowrap text-sm no-underline opacity-90 hover:opacity-100 hover:text-[var(--accent)]">${escapeHtml(item.label)}</a>`;
   }).join("");
   return `<nav ${attr} class="relative flex items-center justify-end" aria-label="Navegación principal">
-<button class="v2-nav-toggle relative z-10 flex h-11 w-11 flex-col items-center justify-center gap-[5px] rounded-md text-[var(--text)] lg:hidden" type="button" aria-label="Abrir menú" aria-expanded="false"><span class="block h-0.5 w-6 rounded bg-current"></span><span class="block h-0.5 w-6 rounded bg-current"></span><span class="block h-0.5 w-6 rounded bg-current"></span></button>
+<button class="v2-nav-toggle relative z-10 flex h-11 w-11 flex-col items-center justify-center gap-[5px] rounded-md lg:hidden" type="button" aria-label="Abrir menú" aria-expanded="false"><span class="block h-0.5 w-6 rounded bg-current"></span><span class="block h-0.5 w-6 rounded bg-current"></span><span class="block h-0.5 w-6 rounded bg-current"></span></button>
 <div class="v2-nav-links hidden flex-wrap items-center justify-end gap-6 lg:flex">${links}</div>
 </nav>`;
 }
@@ -353,14 +374,14 @@ function navHtml(attr: string, items: Record<string, unknown>[]) {
 // ---------------------------------------------------------------------------
 
 const FORM_INPUT = "min-h-[46px] w-full rounded-[calc(var(--radius)/2)] border border-[var(--text)]/25 bg-[var(--bg)] px-3 py-2 text-[var(--text)] focus:border-[var(--accent)] focus:outline focus:outline-[3px] focus:outline-[var(--accent)]/40";
-const FORM_LABEL = "flex flex-col gap-1.5 text-sm font-semibold text-[var(--text)]";
+const FORM_LABEL = "flex flex-col gap-1.5 text-sm font-semibold";
 
 function formHtml(attr: string, variant: string, anchorId: string, title: string, body: string, buttonText: string, leadEndpoint: string) {
   const wrapClass = variant === "dark"
     ? "rounded-[var(--radius)] border border-white/15 bg-black/20 p-6 sm:p-8"
     : variant === "inline"
       ? ""
-      : "rounded-[var(--radius)] border border-[var(--text)]/15 bg-[var(--text)]/[0.03] p-6 sm:p-8";
+      : "rounded-[var(--radius)] border border-current/15 bg-current/[0.04] p-6 sm:p-8";
   const gridClass = variant === "split" || variant === "inline" ? "grid gap-4 sm:grid-cols-2" : "grid gap-4 sm:grid-cols-2";
   return `<div ${attr} id="${escapeHtml(anchorId)}" class="${wrapClass}">
 ${title ? `<h2 class="${H2} text-[clamp(1.6rem,3vw,2.4rem)]">${escapeHtml(title)}</h2>` : ""}
@@ -372,7 +393,7 @@ ${body ? `<p class="mt-2 ${BODY_P}">${escapeHtml(body)}</p>` : ""}
 <label class="${FORM_LABEL} sm:col-span-2">Mensaje<textarea class="${FORM_INPUT} min-h-[130px]" name="message" required maxlength="2000"></textarea></label>
 <input class="hidden" name="website" tabindex="-1" autocomplete="off">
 <button class="${BUTTON_BASE} ${BUTTON_VARIANT.solid} sm:col-span-2" type="submit">${escapeHtml(buttonText)}</button>
-<output class="sm:col-span-2 text-sm text-[var(--muted)]" aria-live="polite"></output>
+<output class="sm:col-span-2 text-sm ${MUTED}" aria-live="polite"></output>
 </form>
 </div>`;
 }
@@ -428,7 +449,7 @@ function widgetHtml(widget: WidgetV2, content: SiteContentV2, theme: ThemeTokens
         content.business.email ? `<a class="w-max no-underline hover:text-[var(--accent)]" href="mailto:${escapeHtml(content.business.email)}">${escapeHtml(content.business.email)}</a>` : "",
         content.business.location ? `<span>${escapeHtml(content.business.location)}</span>` : "",
       ].join("");
-      return `<address ${attr} class="not-italic flex flex-col gap-2 text-[var(--text)]"><strong class="${HEADING_FONT}">${escapeHtml(content.business.name)}</strong>${rows}</address>`;
+      return `<address ${attr} class="not-italic flex flex-col gap-2"><strong class="${HEADING_FONT}">${escapeHtml(content.business.name)}</strong>${rows}</address>`;
     }
     case "list": {
       const items = Array.isArray(value) ? value as Record<string, unknown>[] : [];
@@ -473,7 +494,7 @@ function widgetHtml(widget: WidgetV2, content: SiteContentV2, theme: ThemeTokens
       const location = String(value || content.business.location);
       if (!location.trim()) return editable ? `<div ${attr} class="${emptyClass}">Agrega la ubicación</div>` : "";
       const query = encodeURIComponent(location);
-      return `<div ${attr} class="grid overflow-hidden rounded-[var(--radius)] bg-[var(--text)]/[0.05]"><iframe class="min-h-[280px] w-full border-0" title="Mapa de ${escapeHtml(content.business.name)}" src="https://maps.google.com/maps?q=${query}&output=embed" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe><a class="flex flex-col gap-1 p-5 no-underline hover:bg-[var(--text)]/[0.03]" href="https://www.google.com/maps/search/?api=1&query=${query}" target="_blank" rel="noreferrer"><span class="text-sm text-[var(--muted)]">Ubicación</span><strong class="text-[var(--text)]">${escapeHtml(location)}</strong><small class="text-[var(--muted)]">Abrir en Google Maps ↗</small></a></div>`;
+      return `<div ${attr} class="grid overflow-hidden rounded-[var(--radius)] bg-current/[0.05]"><iframe class="min-h-[280px] w-full border-0" title="Mapa de ${escapeHtml(content.business.name)}" src="https://maps.google.com/maps?q=${query}&output=embed" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe><a class="flex flex-col gap-1 p-5 no-underline hover:bg-current/[0.04]" href="https://www.google.com/maps/search/?api=1&query=${query}" target="_blank" rel="noreferrer"><span class="text-sm ${MUTED}">Ubicación</span><strong>${escapeHtml(location)}</strong><small class="${MUTED}">Abrir en Google Maps ↗</small></a></div>`;
     }
     case "hero_pixel": {
       const title = String(widget.data?.title || "").trim() || content.hero.title || content.business.name || "Tu negocio";
@@ -493,7 +514,7 @@ function widgetHtml(widget: WidgetV2, content: SiteContentV2, theme: ThemeTokens
       return `<div ${attr} class="relative isolate flex min-h-[min(94dvh,880px)] w-screen -mx-[50vw] left-1/2 flex-col justify-center gap-8 overflow-hidden bg-[var(--secondary)] px-5 py-16 text-center text-[var(--footer-text)] sm:px-8"><canvas class="absolute inset-0 -z-20 h-full w-full" data-pixel-hero data-colors="${escapeHtml(colors)}" aria-hidden="true"></canvas><div class="absolute inset-0 -z-10" style="background:radial-gradient(circle at center,transparent 0%,var(--secondary) 100%);opacity:.8" aria-hidden="true"></div><div class="mx-auto my-auto flex flex-col items-center gap-6"><h1 class="v2-pxh-title flex max-w-none flex-wrap justify-center gap-x-3 text-[clamp(2.8rem,8vw,7rem)] leading-none">${word1 ? `<em class="font-serif italic font-medium">${escapeHtml(word1)}</em>` : ""}${word2 ? `<strong class="${HEADING_FONT} font-black tracking-[-0.045em]">${escapeHtml(word2)}</strong>` : ""}</h1>${description ? `<p class="mx-auto max-w-[42rem] text-[clamp(1rem,1.6vw,1.25rem)] font-light opacity-85">${escapeHtml(description)}</p>` : ""}<div class="flex flex-wrap justify-center gap-3">${buttonHtml("", "solid", ctaLink, ctaText)}${secondaryText ? buttonHtml("", "outline", secondaryLink, secondaryText) : ""}</div></div>${marquee}</div>`;
     }
     case "divider":
-      return `<hr ${attr} class="border-[var(--text)]/12">`;
+      return `<hr ${attr} class="border-current/12">`;
     case "spacer": {
       const size = String(widget.data?.size || "md");
       const height = size === "sm" ? "h-4" : size === "lg" ? "h-20" : "h-10";
@@ -533,7 +554,7 @@ function columnHtml(column: CanvasColumnV2, content: SiteContentV2, theme: Theme
   return `<div class="${span} ${layoutClasses}" data-column-id="${escapeHtml(column.id)}">${scrim}${widgets}</div>`;
 }
 
-function sectionHtml(section: CanvasSectionV2, content: SiteContentV2, theme: ThemeTokensV2, leadEndpoint: string, editable = false) {
+function sectionHtml(section: CanvasSectionV2, content: SiteContentV2, theme: ThemeTokensV2, leadEndpoint: string, editable = false, mainIndex = 0) {
   const rows = section.rows.map((row) => {
     const columns = row.columns.map((column) => columnHtml(column, content, theme, leadEndpoint, editable, section.region)).join("");
     if (!columns && !editable) return "";
@@ -553,7 +574,9 @@ function sectionHtml(section: CanvasSectionV2, content: SiteContentV2, theme: Th
   const containerWidth = isHeader ? "max-w-wide" : "max-w-wide";
   const innerClass = `mx-auto w-full ${containerWidth}`;
 
-  return `<section id="${escapeHtml(section.key)}" class="v2-section relative ${padding} ${chrome} v2-key-${key}" data-section-id="${escapeHtml(section.id)}"><div class="${innerClass}">${rows}</div></section>`;
+  const reveal = section.region === "main" && !editable ? ` v2-reveal` : "";
+  const revealStyle = section.region === "main" && !editable ? ` style="--reveal-index:${mainIndex}"` : "";
+  return `<section id="${escapeHtml(section.key)}" class="v2-section relative ${padding} ${chrome} v2-key-${key}${reveal}" data-section-id="${escapeHtml(section.id)}"${revealStyle}><div class="${innerClass}">${rows}</div></section>`;
 }
 
 function dynamicCss(sections: CanvasSectionV2[]) {
@@ -662,6 +685,20 @@ function formScript() {
   return `document.querySelectorAll('[data-cluster-form]').forEach(form=>form.addEventListener('submit',async event=>{event.preventDefault();const output=form.querySelector('output');const button=form.querySelector('button');button.disabled=true;output.textContent='Enviando…';try{const response=await fetch(form.dataset.endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.fromEntries(new FormData(form)))});const data=await response.json().catch(()=>({}));if(!response.ok)throw new Error(data.error||'No se pudo enviar.');form.reset();output.textContent='Mensaje enviado correctamente.'}catch(error){output.textContent=error.message||'No se pudo enviar.'}finally{button.disabled=false}}));`;
 }
 
+// Revelado de secciones al entrar en viewport. Una sola vez por sección (se
+// deja de observar tras revelarla); sin esto el motion del tema (subtle/
+// stagger/cinematic) no tiene ningún efecto visible pese a estar definido.
+function revealScript() {
+  return `(function(){
+if(window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+var targets=document.querySelectorAll('.v2-reveal');
+if(!targets.length)return;
+if(!('IntersectionObserver' in window)){targets.forEach(function(el){el.classList.add('v2-in');});return;}
+var io=new IntersectionObserver(function(entries){entries.forEach(function(entry){if(entry.isIntersecting){entry.target.classList.add('v2-in');io.unobserve(entry.target);}});},{threshold:.15,rootMargin:'0px 0px -8% 0px'});
+targets.forEach(function(el){io.observe(el);});
+})();`;
+}
+
 // Motor de puntos del hero animado (puerto vanilla del efecto de canvas):
 // cada punto crece con un retraso proporcional a su distancia al centro y
 // luego titila. Respeta prefers-reduced-motion dejando el campo estático.
@@ -730,10 +767,11 @@ export function renderSiteV2(input: RenderSiteV2Input): RenderedSiteV2 {
     ...(Object.values(content.social).filter((url) => safeUrl(url)).length ? { sameAs: Object.values(content.social).map(safeUrl).filter(Boolean) } : {}),
   } : null;
   const structuredDataHtml = structuredData ? `<script type="application/ld+json">${JSON.stringify(structuredData).replace(/</g, "\\u003c")}</script>` : "";
-  const body = `<div id="top" class="flex min-h-dvh flex-col bg-[var(--bg)] text-[var(--text)]" style="font-family:var(--body)">${sections.map((section) => sectionHtml(section, content, theme, input.leadEndpoint, input.editable)).join("")}${input.showBranding ? `<div class="p-4 text-center text-xs text-[var(--muted)]">Creado con Cluster</div>` : ""}</div>${structuredDataHtml}`;
+  let mainCounter = 0;
+  const body = `<div id="top" class="v2-motion-${theme.motion} flex min-h-dvh flex-col bg-[var(--bg)] text-[var(--text)]" style="font-family:var(--body)">${sections.map((section) => sectionHtml(section, content, theme, input.leadEndpoint, input.editable, section.region === "main" ? mainCounter++ : 0)).join("")}${input.showBranding ? `<div class="p-4 text-center text-xs text-[var(--muted)]">Creado con Cluster</div>` : ""}</div>${structuredDataHtml}`;
   const css = `${baseCss(theme)}${dynamicCss(sections)}${mobileSafetyCss}${input.editable ? editorCss : ""}`;
   const hasPixelHero = sections.some((section) => section.rows.some((row) => row.columns.some((column) => column.widgets.some((widget) => widget.type === "hero_pixel"))));
-  const script = `${formScript()}${navScript()}${galleryScript()}${hasPixelHero ? pixelHeroScript() : ""}${input.editable ? editorScript() : ""}`;
+  const script = `${formScript()}${navScript()}${galleryScript()}${input.editable ? "" : revealScript()}${hasPixelHero ? pixelHeroScript() : ""}${input.editable ? editorScript() : ""}`;
   const head = [
     `<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">`,
     fontLinksFor(theme),

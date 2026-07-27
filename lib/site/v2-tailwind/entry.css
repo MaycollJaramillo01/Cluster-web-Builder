@@ -65,13 +65,13 @@
     animation: v2-pxh-marquee 25s linear infinite;
   }
 
-  /* Revelado de secciones al hacer scroll (activado por Reveal.tsx en el
-     editor / preview React; en el HTML exportado son solo las clases base). */
-  .v2-reveal-in {
-    animation: v2-reveal 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
-  }
-  .v2-cinema-in {
-    animation: v2-cinema 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  /* Revelado de secciones al entrar en viewport (ver revealScript() en
+     v2-render.ts, que agrega .v2-in vía IntersectionObserver). El estado
+     inicial oculto solo aplica si el tema tiene motion y el navegador no
+     pidió movimiento reducido — ver bloques @media más abajo. */
+  .v2-reveal {
+    transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1), transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+    transition-delay: calc(var(--reveal-index, 0) * var(--reveal-stagger, 0ms));
   }
 }
 
@@ -88,22 +88,26 @@
     background-position: 0% center;
   }
 }
-@keyframes v2-reveal {
-  from {
+/* Estado inicial oculto por perfil de movimiento del tema — se define solo
+   bajo prefers-reduced-motion:no-preference para que, sin JS o con el
+   observer aún sin disparar, el contenido nunca quede invisible por error. */
+@media (prefers-reduced-motion: no-preference) {
+  .v2-motion-subtle .v2-reveal {
     opacity: 0;
-    transform: translateY(18px);
+    transform: translateY(16px);
   }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-@keyframes v2-cinema {
-  from {
+  .v2-motion-stagger .v2-reveal {
     opacity: 0;
-    transform: scale(0.985);
+    transform: translateY(24px);
+    --reveal-stagger: 70ms;
   }
-  to {
+  .v2-motion-cinematic .v2-reveal {
+    opacity: 0;
+    transform: translateY(40px) scale(0.98);
+    transition-duration: 0.9s;
+    --reveal-stagger: 90ms;
+  }
+  .v2-reveal.v2-in {
     opacity: 1;
     transform: none;
   }
@@ -111,9 +115,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .v2-pxh-title,
-  .v2-pxh-track,
-  .v2-reveal-in,
-  .v2-cinema-in {
+  .v2-pxh-track {
     animation: none !important;
   }
 }
