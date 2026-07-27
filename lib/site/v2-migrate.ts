@@ -61,14 +61,28 @@ export function chooseV2Template(visualStyle: string | null | undefined): V2Temp
 // Cada entrada es [plantilla, patrón sobre el tipo de negocio en minúsculas].
 const BUSINESS_TEMPLATE_RULES: Array<[V2TemplateId, RegExp]> = [
   ["gastro", /restaurant|comida|cafeter|cafe|café|bar |bistr|cocina|gastro|panader|reposter|taquer|pizzer|menu|menú/],
-  ["metro", /gimnasio|gym|fitness|entrenamiento|crossfit|deporte|box(?:eo)?|yoga|pilates/],
-  ["astre", /joyer|joya|belleza|salon|salón|spa|estetic|estétic|maquilla|uñas|peluquer|barber|lujo|boutique|moda/],
+  ["vigor", /gimnasio|gym|fitness|entrenamiento personal|crossfit|box(?:eo)?|yoga|pilates|entrenador/],
+  ["astre", /joyer|joya|belleza|spa\b|estetic|estétic|maquilla|uñas|peluquer|barber|lujo|boutique|moda/],
   ["terminal", /software|desarrollo|programaci|tecnolog|app\b|saas|startup|datos|ciberseg|devops|api\b|nube|it\b/],
   ["horizonte", /turismo|viaje|expedici|aventura|hotel|hosped|hostal|monta|ecoturismo|tour|senderis|camping|naturaleza/],
-  ["assurance", /legal|abogad|bufete|jurídic|juridic|notari|contabil|conta\b|fiscal|asesor|consultor|complian|financ|seguro|clínica|clinica|médic|medic|salud|dental|dentist/],
-  ["impact", /agencia|marketing|publicidad|creativ|branding|diseño|diseno|estudio|comunicaci|producci|audiovisual|fotograf/],
-  ["nordic", /interior|arquitect|mueble|decorac|inmobili|bienes raíces|bienes raices|construc|reforma|carpinter/],
-  ["hvac-premium", /techo|roofing|pintura|painting|jardin|landscap|limpieza|cleaning|plomer|electric|clima|hvac|fontaner|mantenimien|instalaci|reparaci/],
+  // Rubros médicos y legales van a sus plantillas dedicadas (clinic/counsel) antes de
+  // caer al genérico "assurance", que ahora se enfoca en contable/financiero/seguros.
+  ["clinic", /clínica|clinica|médic|medic|salud|dental|dentist|consultorio|veterinari|fisioterap|terapia/],
+  ["counsel", /legal|abogad|bufete|jurídic|juridic|notari/],
+  ["assurance", /contabil|conta\b|fiscal|asesor|consultor|complian|financ|seguro/],
+  ["frame", /fotograf|videograf|filmmak|cinemat/],
+  ["impact", /agencia|marketing|publicidad|creativ|branding|diseño|diseno|estudio de|comunicaci|producci audiovisual/],
+  // Bienes raíces va a "realty" (listado de propiedades); nordic queda para interiorismo/mueble/construcción.
+  ["realty", /inmobili|bienes raíces|bienes raices|propiedad(?:es)?|listado de casas/],
+  ["nordic", /interior|arquitect|mueble|decorac|construc|reforma|carpinter/],
+  ["academy", /curso|academia|escuela online|infoproducto|capacitaci|coaching educativo|tutor/],
+  ["venue", /salón de eventos|salon de eventos|boda|evento|banquete|quinceañ/],
+  ["drive", /taller mecánic|taller mecanic|concesionario|autoparte|mecánica automotriz|mecanica automotriz|llantera/],
+  ["cause", /ong\b|fundaci|causa social|organizaci[oó]n sin fines|voluntari|donaci/],
+  // Techos, pintura y remodelación van al contratista genérico "craft"; hvac-premium
+  // se enfoca en climatización propiamente dicha.
+  ["craft", /techo|roofing|pintura|painting|jardin|landscap|limpieza|cleaning|plomer|electric|remodelaci|contratista|construcción residencial/],
+  ["hvac-premium", /clima|hvac|fontaner|calefacci|aire acondicionado/],
 ];
 
 export function chooseTemplateForBusiness(businessType: string | null | undefined, visualStyle: string | null | undefined): V2TemplateId {

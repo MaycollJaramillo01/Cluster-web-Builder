@@ -1,0 +1,119 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer components {
+  /* Galería en tira / marquee: scroll horizontal sin barra visible y con
+     desvanecido en los bordes. */
+  .v2-scroll-hide {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .v2-scroll-hide::-webkit-scrollbar {
+    display: none;
+  }
+  .v2-scroll-fade {
+    -webkit-mask-image: linear-gradient(to right, transparent, #000 4%, #000 96%, transparent);
+    mask-image: linear-gradient(to right, transparent, #000 4%, #000 96%, transparent);
+  }
+  .v2-gallery-filmstrip.v2-dragging {
+    cursor: grabbing;
+    scroll-snap-type: none;
+  }
+  .v2-gallery-filmstrip.v2-dragging img {
+    pointer-events: none;
+  }
+
+  /* Menú móvil: la hamburguesa se convierte en X cuando el nav está abierto. */
+  .v2-nav-toggle span {
+    transition: transform 0.25s ease, opacity 0.25s ease;
+  }
+  nav.v2-nav-open .v2-nav-toggle span:nth-child(1) {
+    transform: translateY(7px) rotate(45deg);
+  }
+  nav.v2-nav-open .v2-nav-toggle span:nth-child(2) {
+    opacity: 0;
+  }
+  nav.v2-nav-open .v2-nav-toggle span:nth-child(3) {
+    transform: translateY(-7px) rotate(-45deg);
+  }
+
+  /* Portada de puntos animados: texto con relleno degradado sutil. */
+  .v2-pxh-title em,
+  .v2-pxh-title strong {
+    filter: drop-shadow(0 15px 35px rgba(0, 0, 0, 0.35)) drop-shadow(0 5px 10px rgba(0, 0, 0, 0.2));
+  }
+  @supports (-webkit-background-clip: text) {
+    .v2-pxh-title {
+      color: transparent;
+      background: linear-gradient(
+        135deg,
+        var(--footer-text) 0%,
+        color-mix(in srgb, var(--footer-text) 60%, transparent) 25%,
+        color-mix(in srgb, var(--footer-text) 38%, transparent) 45%,
+        color-mix(in srgb, var(--footer-text) 92%, transparent) 55%,
+        color-mix(in srgb, var(--footer-text) 50%, transparent) 75%,
+        var(--footer-text) 100%
+      );
+      background-size: 200% auto;
+      -webkit-background-clip: text;
+      background-clip: text;
+      animation: v2-pxh-shimmer 8s linear infinite;
+    }
+  }
+  .v2-pxh-track {
+    animation: v2-pxh-marquee 25s linear infinite;
+  }
+
+  /* Revelado de secciones al hacer scroll (activado por Reveal.tsx en el
+     editor / preview React; en el HTML exportado son solo las clases base). */
+  .v2-reveal-in {
+    animation: v2-reveal 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  .v2-cinema-in {
+    animation: v2-cinema 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+}
+
+@keyframes v2-pxh-marquee {
+  to {
+    transform: translateX(calc(-50% - 1.5rem));
+  }
+}
+@keyframes v2-pxh-shimmer {
+  0% {
+    background-position: 200% center;
+  }
+  100% {
+    background-position: 0% center;
+  }
+}
+@keyframes v2-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes v2-cinema {
+  from {
+    opacity: 0;
+    transform: scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .v2-pxh-title,
+  .v2-pxh-track,
+  .v2-reveal-in,
+  .v2-cinema-in {
+    animation: none !important;
+  }
+}

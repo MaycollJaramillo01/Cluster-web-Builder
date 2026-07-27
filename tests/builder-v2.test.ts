@@ -64,7 +64,7 @@ test("las cuatro plantillas aleatorias tienen recorridos, paletas y formas indep
   }
   const imageFallback = instantiateTemplateV2("metro", content);
   const fallbackRender = renderSiteV2({ content: imageFallback.content, design: imageFallback.template.theme, sections: imageFallback.sections, leadEndpoint: "/api/leads" });
-  assert.match(fallbackRender.body, /v2-media-background/);
+  assert.match(fallbackRender.body, /v2-media-bg/);
   const videoContent = { ...content, hero: { ...content.hero, media: "https://cdn.example.com/hero.mp4" } };
   const videoDocument = instantiateTemplateV2("metro", videoContent);
   const videoRender = renderSiteV2({ content: videoDocument.content, design: videoDocument.template.theme, sections: videoDocument.sections, leadEndpoint: "/api/leads" });
@@ -100,22 +100,35 @@ test("Servicio premium replica el recorrido completo de un negocio local", () =>
     ],
   });
   const rendered = renderSiteV2({ content: document.content, design: document.template.theme, sections: document.sections, leadEndpoint: "/api/leads" });
-  assert.match(rendered.body, /v2-brand-hvac/);
-  assert.match(rendered.body, /v2-list-hvac-services/);
-  assert.match(rendered.body, /v2-testimonials-hvac-wall/);
-  assert.match(rendered.css, /HVAC Premium: faithful service-business composition/);
-  assert.match(rendered.css, /\.v2-key-hvac-service-areas/);
+  // Marca "hvac": ícono distintivo junto al nombre del negocio en el header.
+  assert.match(rendered.body, /-rotate-12/);
+  assert.match(rendered.body, /v2-key-services/);
+  // El muro de reseñas ("wall") renderiza el contenido real, no un placeholder.
+  assert.match(rendered.body, /Michael R/);
+  assert.match(rendered.css, /--accent:#3b82f6/);
+  assert.match(rendered.body, /v2-key-hvac-service-areas/);
   assert.doesNotMatch(rendered.body, /Made in Framer/);
 });
 
 test("el rubro del negocio alcanza las plantillas nuevas", () => {
   assert.equal(chooseTemplateForBusiness("Restaurante", null), "gastro");
-  assert.equal(chooseTemplateForBusiness("Gimnasio y entrenamiento", null), "metro");
+  assert.equal(chooseTemplateForBusiness("Gimnasio y entrenamiento personal", null), "vigor");
   assert.equal(chooseTemplateForBusiness("Joyería a medida", null), "astre");
   assert.equal(chooseTemplateForBusiness("Desarrollo de software", null), "terminal");
   assert.equal(chooseTemplateForBusiness("Expediciones y turismo de montaña", null), "horizonte");
-  assert.equal(chooseTemplateForBusiness("Servicios legales", null), "assurance");
-  assert.equal(chooseTemplateForBusiness("Techos y reparaciones", null), "hvac-premium");
+  // Legal y médico van a sus plantillas dedicadas; assurance queda para contable/financiero.
+  assert.equal(chooseTemplateForBusiness("Servicios legales", null), "counsel");
+  assert.equal(chooseTemplateForBusiness("Clínica dental", null), "clinic");
+  assert.equal(chooseTemplateForBusiness("Asesoría contable y fiscal", null), "assurance");
+  // Contratista general va al reemplazo genérico "craft"; hvac-premium queda para climatización.
+  assert.equal(chooseTemplateForBusiness("Techos y reparaciones", null), "craft");
+  assert.equal(chooseTemplateForBusiness("Instalación de aire acondicionado", null), "hvac-premium");
+  assert.equal(chooseTemplateForBusiness("Fotografía de bodas", null), "frame");
+  assert.equal(chooseTemplateForBusiness("Bienes raíces y propiedades", null), "realty");
+  assert.equal(chooseTemplateForBusiness("Academia de idiomas online", null), "academy");
+  assert.equal(chooseTemplateForBusiness("Salón de eventos y bodas", null), "venue");
+  assert.equal(chooseTemplateForBusiness("Taller mecánico automotriz", null), "drive");
+  assert.equal(chooseTemplateForBusiness("Fundación sin fines de lucro", null), "cause");
   // Sin coincidencia de rubro cae al mapeo por estilo visual (comportamiento previo intacto).
   assert.ok(V2_TEMPLATE_IDS.includes(chooseTemplateForBusiness("Algo inclasificable", "Editorial")));
   assert.equal(chooseTemplateForBusiness("", null), "conversion");
@@ -143,7 +156,7 @@ test("normalización rechaza widgets libres y IDs duplicados", () => {
 test("renderer único incluye responsive, formulario y sanitiza javascript", () => {
   const document = instantiateTemplateV2("local", { ...content, hero: { ...content.hero, ctaLink: "javascript:alert(1)" } });
   const rendered = renderSiteV2({ content: document.content, design: document.template.theme, sections: document.sections, leadEndpoint: "/api/leads" });
-  assert.match(rendered.html, /@media\(max-width:1024px\)/);
+  assert.match(rendered.html, /@media \(min-width:1024px\)/);
   assert.match(rendered.html, /data-cluster-form/);
   assert.match(rendered.html, /\/api\/leads/);
   assert.doesNotMatch(rendered.html, /javascript:alert/);
@@ -219,7 +232,7 @@ test("la portada animada renderiza canvas, sanitiza enlaces y solo inyecta su sc
   assert.equal(sections.length, document.sections.length);
   const rendered = renderSiteV2({ content: document.content, design: document.template.theme, sections, leadEndpoint: "/api/leads" });
   assert.match(rendered.body, /data-pixel-hero/);
-  assert.match(rendered.body, /<em>Espacios<\/em>/);
+  assert.match(rendered.body, /<em[^>]*>Espacios<\/em>/);
   assert.match(rendered.body, /Norte &amp; Co/);
   assert.doesNotMatch(rendered.body, /javascript:alert/);
   assert.match(rendered.script, /requestAnimationFrame/);
