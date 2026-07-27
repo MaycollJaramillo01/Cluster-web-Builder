@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-03T01:03:02.024Z",
+  "generatedAt": "2026-07-27T04:56:48.592Z",
   "viewportTargets": [
     "1440x900",
     "768x1024",
@@ -47,6 +47,174 @@
       "rows": 7,
       "widgets": 18,
       "motion": "none"
+    },
+    {
+      "id": "studio",
+      "sections": 8,
+      "rows": 8,
+      "widgets": 21,
+      "motion": "stagger"
+    },
+    {
+      "id": "saas",
+      "sections": 9,
+      "rows": 9,
+      "widgets": 21,
+      "motion": "stagger"
+    },
+    {
+      "id": "gastro",
+      "sections": 9,
+      "rows": 9,
+      "widgets": 21,
+      "motion": "subtle"
+    },
+    {
+      "id": "wellness",
+      "sections": 10,
+      "rows": 10,
+      "widgets": 26,
+      "motion": "subtle"
+    },
+    {
+      "id": "essential",
+      "sections": 9,
+      "rows": 9,
+      "widgets": 29,
+      "motion": "subtle"
+    },
+    {
+      "id": "assurance",
+      "sections": 9,
+      "rows": 9,
+      "widgets": 23,
+      "motion": "subtle"
+    },
+    {
+      "id": "nordic",
+      "sections": 9,
+      "rows": 9,
+      "widgets": 24,
+      "motion": "subtle"
+    },
+    {
+      "id": "metro",
+      "sections": 9,
+      "rows": 9,
+      "widgets": 20,
+      "motion": "stagger"
+    },
+    {
+      "id": "deco",
+      "sections": 10,
+      "rows": 10,
+      "widgets": 25,
+      "motion": "subtle"
+    },
+    {
+      "id": "impact",
+      "sections": 10,
+      "rows": 10,
+      "widgets": 25,
+      "motion": "stagger"
+    },
+    {
+      "id": "hvac-premium",
+      "sections": 13,
+      "rows": 20,
+      "widgets": 58,
+      "motion": "subtle"
+    },
+    {
+      "id": "terminal",
+      "sections": 9,
+      "rows": 9,
+      "widgets": 24,
+      "motion": "stagger"
+    },
+    {
+      "id": "horizonte",
+      "sections": 9,
+      "rows": 9,
+      "widgets": 22,
+      "motion": "cinematic"
+    },
+    {
+      "id": "astre",
+      "sections": 8,
+      "rows": 8,
+      "widgets": 22,
+      "motion": "subtle"
+    },
+    {
+      "id": "realty",
+      "sections": 9,
+      "rows": 9,
+      "widgets": 22,
+      "motion": "subtle"
+    },
+    {
+      "id": "clinic",
+      "sections": 9,
+      "rows": 9,
+      "widgets": 23,
+      "motion": "subtle"
+    },
+    {
+      "id": "counsel",
+      "sections": 9,
+      "rows": 9,
+      "widgets": 21,
+      "motion": "subtle"
+    },
+    {
+      "id": "academy",
+      "sections": 9,
+      "rows": 9,
+      "widgets": 22,
+      "motion": "stagger"
+    },
+    {
+      "id": "venue",
+      "sections": 8,
+      "rows": 8,
+      "widgets": 22,
+      "motion": "cinematic"
+    },
+    {
+      "id": "vigor",
+      "sections": 9,
+      "rows": 9,
+      "widgets": 23,
+      "motion": "stagger"
+    },
+    {
+      "id": "drive",
+      "sections": 9,
+      "rows": 9,
+      "widgets": 19,
+      "motion": "subtle"
+    },
+    {
+      "id": "cause",
+      "sections": 9,
+      "rows": 9,
+      "widgets": 21,
+      "motion": "subtle"
+    },
+    {
+      "id": "frame",
+      "sections": 9,
+      "rows": 9,
+      "widgets": 20,
+      "motion": "cinematic"
+    },
+    {
+      "id": "craft",
+      "sections": 9,
+      "rows": 9,
+      "widgets": 19,
+      "motion": "subtle"
     }
   ]
 }

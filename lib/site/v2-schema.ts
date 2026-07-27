@@ -4,7 +4,7 @@ import { sanitizeLink } from "@/lib/site/links";
 
 export const BUILDER_V2 = 2;
 
-export const V2_TEMPLATE_IDS = ["conversion", "editorial", "catalog", "local", "immersive", "minimal", "studio", "saas", "gastro", "wellness", "essential", "assurance", "nordic", "metro", "deco", "impact", "hvac-premium", "terminal", "horizonte", "astre"] as const;
+export const V2_TEMPLATE_IDS = ["conversion", "editorial", "catalog", "local", "immersive", "minimal", "studio", "saas", "gastro", "wellness", "essential", "assurance", "nordic", "metro", "deco", "impact", "hvac-premium", "terminal", "horizonte", "astre", "realty", "clinic", "counsel", "academy", "venue", "vigor", "drive", "cause", "frame", "craft"] as const;
 export type V2TemplateId = (typeof V2_TEMPLATE_IDS)[number];
 
 export const V2_WIDGET_TYPES = [

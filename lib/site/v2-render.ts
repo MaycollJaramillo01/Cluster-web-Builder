@@ -1,8 +1,9 @@
 import { sanitizeLink } from "@/lib/site/links";
 import {
   normalizeCanvasSectionsV2, normalizeSiteContentV2, normalizeThemeV2, resolveContentSlot,
-  type CanvasSectionV2, type ResponsiveStyleV2, type SiteContentV2, type StyleTokensV2, type ThemeTokensV2, type WidgetV2,
+  type CanvasColumnV2, type CanvasSectionV2, type ResponsiveStyleV2, type SiteContentV2, type StyleTokensV2, type ThemeTokensV2, type WidgetV2,
 } from "@/lib/site/v2-schema";
+import { V2_TAILWIND_CSS } from "@/lib/site/v2-tailwind.generated";
 
 export type RenderSiteV2Input = {
   content: unknown;
@@ -59,6 +60,17 @@ function fontLinksFor(theme: ThemeTokensV2) {
   return `<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?${families}&display=swap">`;
 }
 
+// ---------------------------------------------------------------------------
+// Sistema de estilo DINÁMICO (lo que el usuario ajusta en el editor por
+// widget/columna/sección: color, fondo, tipografía, padding por breakpoint).
+// Son valores arbitrarios elegidos en el momento — Tailwind no puede
+// precompilarlos, así que se quedan como CSS generado por instancia, igual
+// que antes de la migración. Todo lo DEMÁS (el sistema de diseño base de
+// cada widget/variante) ahora se expresa con clases Tailwind reales, ver
+// más abajo y lib/site/v2-tailwind.generated.ts (compilado por
+// scripts/build-v2-tailwind.mjs a partir de tailwind.v2.config.ts).
+// ---------------------------------------------------------------------------
+
 const FONT_SIZE: Record<NonNullable<StyleTokensV2["fontSize"]>, string> = { xs: ".75rem", sm: ".875rem", md: "1rem", lg: "1.25rem", xl: "1.75rem", "2xl": "2.5rem", display: "clamp(2.8rem,7vw,6rem)" };
 const FONT_WEIGHT = { normal: 400, medium: 500, semibold: 600, bold: 700, black: 900 } as const;
 const SPACE = { none: "0", sm: ".75rem", md: "1.5rem", lg: "3rem", xl: "5rem" } as const;
@@ -66,8 +78,6 @@ const RADIUS = { none: "0", sm: ".25rem", md: ".75rem", lg: "1.5rem", pill: "999
 const SHADOW = { none: "none", sm: "0 2px 8px #0001", md: "0 16px 40px #0002", lg: "0 30px 80px #0004" } as const;
 const WIDTH = { content: "760px", wide: "1200px", full: "none" } as const;
 
-// Un estilo puede referirse a la paleta por nombre; se resuelve a la variable CSS
-// para que siga a la paleta del cliente. `--on-<token>` da texto legible encima.
 const THEME_COLOR_VARS: Record<string, string> = { primary: "--primary", secondary: "--secondary", accent: "--accent", background: "--bg", text: "--text", muted: "--muted" };
 const resolveStyleColor = (value: string) => THEME_COLOR_VARS[value] ? `var(${THEME_COLOR_VARS[value]})` : value;
 
@@ -101,95 +111,371 @@ function responsiveCss(selector: string, style?: ResponsiveStyleV2) {
 function valueFor(widget: WidgetV2, content: SiteContentV2) { return widget.slot ? resolveContentSlot(content, widget.slot) : widget.data?.value ?? widget.data?.src ?? widget.data?.text; }
 function widgetSelector(widget: WidgetV2) { return `[data-widget-id="${widget.id.replace(/[^a-zA-Z0-9_-]/g, "")}"]`; }
 
+// ---------------------------------------------------------------------------
+// Sistema de diseño ESTÁTICO — Tailwind. Cada widget/variante compone clases
+// reales (compiladas por scripts/build-v2-tailwind.mjs). Colores y radio de
+// esquina siguen el tema vía var(--token) con sintaxis de valor arbitrario
+// de Tailwind (bg-[var(--accent)]) para que cada plantilla conserve su
+// paleta sin que el CSS deje de ser Tailwind.
+// ---------------------------------------------------------------------------
+
+const HEADING_FONT = "font-[var(--heading)]";
+const BODY_FONT = "font-[var(--body)]";
+const H1 = `${HEADING_FONT} max-w-[18ch] text-[clamp(2.6rem,6vw,5.5rem)] font-bold leading-[1.05] tracking-[-0.03em] text-[var(--text)]`;
+const H2 = `${HEADING_FONT} max-w-[24ch] text-[clamp(2rem,4vw,3.75rem)] font-bold leading-[1.06] tracking-[-0.02em] text-[var(--text)]`;
+const H3 = `${HEADING_FONT} text-[clamp(1.1rem,2vw,1.35rem)] font-semibold leading-snug text-[var(--text)]`;
+const BODY_P = `${BODY_FONT} max-w-[65ch] leading-relaxed text-[var(--text)]/80`;
+
+function headingClasses(level: "h1" | "h2" | "h3", theme: ThemeTokensV2) {
+  const base = level === "h1" ? H1 : level === "h3" ? H3 : H2;
+  return theme.headingCase === "uppercase" ? `${base} uppercase tracking-[0.01em]` : base;
+}
+
+const BUTTON_BASE = "inline-flex w-max min-h-[46px] max-w-full items-center justify-center whitespace-normal rounded-[var(--radius)] px-6 py-3 text-center font-bold leading-tight no-underline transition duration-200 active:translate-y-px focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-offset-[3px] focus-visible:outline-[var(--accent)]";
+const BUTTON_VARIANT: Record<string, string> = {
+  solid: "bg-[var(--accent)] text-[var(--on-accent)] hover:brightness-95",
+  outline: "border border-current bg-transparent text-current hover:bg-current/5",
+  dark: "bg-[var(--secondary)] text-[var(--footer-text)] hover:brightness-110",
+};
+
+function buttonHtml(attr: string, variant: string, href: string, label: string) {
+  const classes = `${BUTTON_BASE} ${BUTTON_VARIANT[variant] ?? BUTTON_VARIANT.solid}`;
+  return `<a ${attr} class="${classes}" href="${escapeHtml(href)}">${escapeHtml(label || "Contactar")}</a>`;
+}
+
+const IMAGE_BASE = "block w-full min-h-[220px] object-cover";
+const IMAGE_VARIANT: Record<string, string> = {
+  cover: `${IMAGE_BASE} aspect-[4/3] rounded-[var(--radius)]`,
+  portrait: `${IMAGE_BASE} aspect-[4/5] rounded-[var(--radius)]`,
+  wide: `${IMAGE_BASE} aspect-[16/8] rounded-[var(--radius)]`,
+  monochrome: `${IMAGE_BASE} aspect-[4/3] rounded-[var(--radius)] grayscale`,
+  framed: `${IMAGE_BASE} aspect-[4/3] rounded-[var(--radius)] shadow-2xl ring-8 ring-[var(--bg)]`,
+  product: `${IMAGE_BASE} aspect-square rounded-[var(--radius)] bg-[var(--text)]/[0.04] object-contain p-8 ring-1 ring-[var(--text)]/10`,
+  rounded: `${IMAGE_BASE} aspect-[4/3] rounded-[2rem]`,
+  offset: `${IMAGE_BASE} aspect-[4/3] rounded-[var(--radius)] shadow-[16px_16px_0_var(--accent)]`,
+  tilt: `${IMAGE_BASE} aspect-[4/3] w-[calc(100%-2.5rem)] -rotate-3 rounded-[1.4rem] shadow-[18px_-18px_0_-2px_var(--bg),0_24px_50px_rgba(0,0,0,0.18)] mx-auto my-4`,
+};
+
+// ---------------------------------------------------------------------------
+// Listas (services / benefits / highlights)
+// ---------------------------------------------------------------------------
+
+const LIST_WRAP: Record<string, string> = {
+  cards: "grid gap-6 sm:grid-cols-2 lg:grid-cols-3",
+  minimal: "flex flex-col divide-y divide-[var(--text)]/10",
+  editorial: "grid gap-x-10 gap-y-14 sm:grid-cols-2",
+  catalog: "grid gap-4 sm:grid-cols-2 lg:grid-cols-3",
+  pills: "flex flex-wrap gap-3",
+  badges: "flex flex-wrap gap-3",
+  metrics: "grid gap-8 text-center sm:grid-cols-2 lg:grid-cols-4",
+  numbered: "flex flex-col divide-y divide-[var(--text)]/10",
+  bento: "grid grid-cols-2 gap-4 sm:grid-cols-6",
+};
+
+function listItemHtml(variant: string, item: Record<string, unknown>, index: number) {
+  const title = escapeHtml(item.title);
+  const desc = escapeHtml(item.description);
+  const meta = item.meta ? escapeHtml(item.meta) : "";
+  const img = safeUrl(item.image as string);
+  const idx = String(index + 1).padStart(2, "0");
+  const cardBase = "flex flex-col rounded-[var(--radius)] border border-[var(--text)]/10 bg-[var(--text)]/[0.03] p-6";
+  const cardImg = img ? `<img src="${img}" alt="" loading="lazy" class="mb-4 aspect-[4/3] w-full rounded-[calc(var(--radius)/1.4)] object-cover">` : "";
+  switch (variant) {
+    case "minimal":
+      return `<article class="flex items-start justify-between gap-6 py-5 first:pt-0 last:pb-0"><div class="min-w-0"><h3 class="${H3}">${title}</h3>${desc ? `<p class="mt-1 max-w-[55ch] text-sm text-[var(--muted)]">${desc}</p>` : ""}</div>${meta ? `<span class="shrink-0 ${HEADING_FONT} text-sm font-semibold text-[var(--muted)]">${meta}</span>` : ""}</article>`;
+    case "numbered":
+      return `<article class="flex items-start gap-5 py-5 first:pt-0 last:pb-0"><span class="font-mono text-sm font-bold text-[var(--accent)]">${idx}</span><div class="min-w-0"><h3 class="${H3}">${title}</h3>${desc ? `<p class="mt-1 max-w-[55ch] text-sm text-[var(--muted)]">${desc}</p>` : ""}</div></article>`;
+    case "pills":
+    case "badges":
+      return `<article class="inline-flex max-w-full items-center gap-2 rounded-[var(--radius)] border border-[var(--text)]/12 bg-[var(--text)]/5 px-4 py-2.5"><span class="${HEADING_FONT} text-sm font-semibold text-[var(--text)]">${title}</span>${desc ? `<span class="text-xs text-[var(--muted)]">${desc}</span>` : ""}</article>`;
+    case "metrics":
+      return `<article><h3 class="${HEADING_FONT} text-[clamp(1.6rem,3vw,2.4rem)] font-bold leading-none text-[var(--text)]">${title}</h3><p class="mt-2 text-sm text-[var(--muted)]">${desc}</p></article>`;
+    case "editorial":
+      return `<article class="${index % 2 === 1 ? "sm:mt-10" : ""}">${img ? `<img src="${img}" alt="" loading="lazy" class="mb-5 aspect-[4/3] w-full rounded-[var(--radius)] object-cover">` : ""}<h3 class="${H3} text-xl">${title}</h3>${desc ? `<p class="mt-2 max-w-[45ch] text-[var(--muted)]">${desc}</p>` : ""}</article>`;
+    case "catalog":
+      return `<article class="${cardBase}"><div class="flex items-baseline justify-between gap-3">${cardImg ? "" : ""}<h3 class="${H3}">${title}</h3>${meta ? `<span class="shrink-0 ${HEADING_FONT} text-lg font-bold text-[var(--accent)]">${meta}</span>` : ""}</div>${cardImg}${desc ? `<p class="mt-2 text-sm text-[var(--muted)]">${desc}</p>` : ""}</article>`;
+    case "bento":
+      return `<article class="${index % 3 === 0 ? "col-span-2 sm:col-span-4" : "col-span-2 sm:col-span-2"} ${cardBase}">${cardImg || `<span class="font-mono text-xs font-bold text-[var(--accent)]">${idx}</span>`}<h3 class="mt-2 ${H3}">${title}</h3>${desc ? `<p class="mt-2 text-sm text-[var(--muted)]">${desc}</p>` : ""}</article>`;
+    default:
+      return `<article class="${cardBase}">${cardImg || `<span class="font-mono text-xs font-bold text-[var(--accent)]">${idx}</span>`}<h3 class="mt-2 ${H3}">${title}</h3>${desc ? `<p class="mt-2 text-sm text-[var(--muted)]">${desc}</p>` : ""}${meta ? `<span class="mt-3 text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">${meta}</span>` : ""}</article>`;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Galerías
+// ---------------------------------------------------------------------------
+
+function galleryHtml(variant: string, items: Record<string, unknown>[], attr: string) {
+  const figures = items.map((item, i) => {
+    const source = safeUrl(item.url as string);
+    if (!source) return "";
+    const alt = String(item.alt ?? "").trim();
+    return { source, alt, i };
+  }).filter((figure): figure is { source: string; alt: string; i: number } => Boolean(figure));
+  if (!figures.length) return "";
+
+  if (variant === "filmstrip") {
+    const cells = figures.map(({ source, alt }) => `<figure class="min-w-[78%] shrink-0 snap-start overflow-hidden rounded-[var(--radius)] sm:min-w-[46%] lg:min-w-[31%]"><img src="${source}" alt="${escapeHtml(alt)}" loading="lazy" class="h-[clamp(220px,26vw,360px)] w-full object-cover"></figure>`).join("");
+    return `<div ${attr} class="v2-gallery-filmstrip v2-scroll-hide v2-scroll-fade flex cursor-grab snap-x snap-mandatory gap-4 overflow-x-auto">${cells}</div>`;
+  }
+  if (variant === "mosaic") {
+    const cells = figures.map(({ source, alt, i }) => {
+      const cls = i === 0 ? "col-span-2 row-span-2 sm:col-span-4" : "col-span-2 sm:col-span-2";
+      const imgCls = i === 0 ? "h-full min-h-[320px] w-full object-cover" : "aspect-square w-full object-cover";
+      return `<figure class="${cls} overflow-hidden rounded-[var(--radius)]"><img src="${source}" alt="${escapeHtml(alt)}" loading="lazy" class="${imgCls}"></figure>`;
+    }).join("");
+    return `<div ${attr} class="grid grid-cols-4 gap-4 sm:grid-cols-8">${cells}</div>`;
+  }
+  if (variant === "bento") {
+    const cells = figures.map(({ source, alt, i }, pos) => {
+      const wide = i % 4 === 0 || i % 4 === 3;
+      const cls = wide ? "col-span-2 sm:col-span-4" : "col-span-2 sm:col-span-2";
+      const showCaption = Boolean(alt);
+      return `<figure class="group relative ${cls} overflow-hidden rounded-[var(--radius)]"><img src="${source}" alt="${escapeHtml(alt)}" loading="lazy" class="h-[clamp(220px,24vw,340px)] w-full object-cover transition duration-700 group-hover:scale-105">${showCaption ? `<figcaption class="absolute inset-x-0 bottom-0 flex items-baseline justify-between gap-3 bg-gradient-to-t from-black/70 to-transparent px-4 pb-3 pt-8 ${HEADING_FONT} text-sm font-semibold text-white"><span>${escapeHtml(alt)}</span><span class="font-mono text-[10px] font-normal tracking-[0.16em] opacity-70">${String(pos + 1).padStart(2, "0")}</span></figcaption>` : ""}</figure>`;
+    }).join("");
+    return `<div ${attr} class="grid grid-cols-4 gap-3 sm:grid-cols-8">${cells}</div>`;
+  }
+  if (variant === "editorial") {
+    const [first, ...rest] = figures;
+    const heroFigure = first ? `<figure class="overflow-hidden rounded-[var(--radius)]"><img src="${first.source}" alt="${escapeHtml(first.alt)}" loading="lazy" class="aspect-[21/9] w-full object-cover">${first.alt ? `<figcaption class="mt-3 max-w-[55ch] text-sm text-[var(--muted)]">${escapeHtml(first.alt)}</figcaption>` : ""}</figure>` : "";
+    const restCells = rest.map(({ source, alt }) => `<figure class="overflow-hidden rounded-[var(--radius)]"><img src="${source}" alt="${escapeHtml(alt)}" loading="lazy" class="aspect-[4/3] w-full object-cover">${alt ? `<figcaption class="mt-2 text-sm text-[var(--muted)]">${escapeHtml(alt)}</figcaption>` : ""}</figure>`).join("");
+    return `<div ${attr} class="flex flex-col gap-10">${heroFigure}${restCells ? `<div class="grid gap-10 sm:grid-cols-2">${restCells}</div>` : ""}</div>`;
+  }
+  // grid (default)
+  const cells = figures.map(({ source, alt }) => `<figure class="overflow-hidden rounded-[var(--radius)]"><img src="${source}" alt="${escapeHtml(alt)}" loading="lazy" class="aspect-[4/3] w-full object-cover"></figure>`).join("");
+  return `<div ${attr} class="grid grid-cols-2 gap-4 sm:grid-cols-3">${cells}</div>`;
+}
+
+// ---------------------------------------------------------------------------
+// Reseñas
+// ---------------------------------------------------------------------------
+
+function stars(rating: unknown) {
+  return `<div class="text-[var(--accent)] tracking-wide" aria-label="${escapeHtml(rating || 5)} de 5 estrellas">★★★★★</div>`;
+}
+
+function testimonialsHtml(variant: string, reviews: Record<string, unknown>[], attr: string) {
+  if (!reviews.length) return "";
+  const card = (review: Record<string, unknown>) => `<figure class="flex flex-col rounded-[var(--radius)] border border-[var(--text)]/10 bg-[var(--text)]/[0.03] p-6">${stars(review.rating)}<blockquote class="mt-3 line-clamp-3 ${BODY_FONT} text-[var(--text)]">\u201c${escapeHtml(review.quote)}\u201d</blockquote><figcaption class="mt-4 flex flex-col ${HEADING_FONT}"><strong class="text-[var(--text)]">${escapeHtml(review.name)}</strong>${review.role ? `<span class="text-sm text-[var(--muted)]">${escapeHtml(review.role)}</span>` : ""}</figcaption></figure>`;
+
+  if (variant === "quotes") {
+    const items = reviews.map((review) => `<figure class="mx-auto max-w-[60ch] text-center"><blockquote class="${HEADING_FONT} text-[clamp(1.4rem,2.6vw,2rem)] font-medium leading-snug text-[var(--text)]">\u201c${escapeHtml(review.quote)}\u201d</blockquote><figcaption class="mt-5 flex flex-col items-center gap-1"><span class="${HEADING_FONT} font-semibold text-[var(--text)]">${escapeHtml(review.name)}</span>${review.role ? `<span class="text-sm text-[var(--muted)]">${escapeHtml(review.role)}</span>` : ""}</figcaption></figure>`).join("");
+    return `<div ${attr} class="flex flex-col gap-14 sm:gap-20">${items}</div>`;
+  }
+  if (variant === "featured") {
+    const [first, ...rest] = reviews;
+    const featured = first ? `<figure class="flex flex-col justify-center rounded-[var(--radius)] border border-[var(--accent)]/30 bg-[var(--accent)]/[0.06] p-8 lg:col-span-7">${stars(first.rating)}<blockquote class="mt-4 ${HEADING_FONT} text-[clamp(1.3rem,2.2vw,1.8rem)] font-medium leading-snug text-[var(--text)]">\u201c${escapeHtml(first.quote)}\u201d</blockquote><figcaption class="mt-5 flex flex-col ${HEADING_FONT}"><strong class="text-[var(--text)]">${escapeHtml(first.name)}</strong>${first.role ? `<span class="text-sm text-[var(--muted)]">${escapeHtml(first.role)}</span>` : ""}</figcaption></figure>` : "";
+    const restCells = rest.slice(0, 3).map((review) => `<figure class="border-b border-[var(--text)]/10 pb-4 last:border-0 last:pb-0">${stars(review.rating)}<blockquote class="mt-2 line-clamp-2 text-sm text-[var(--text)]">\u201c${escapeHtml(review.quote)}\u201d</blockquote><figcaption class="mt-2 text-sm font-semibold text-[var(--text)]">${escapeHtml(review.name)}</figcaption></figure>`).join("");
+    return `<div ${attr} class="grid gap-6 lg:grid-cols-12">${featured}<div class="flex flex-col gap-4 lg:col-span-5">${restCells}</div></div>`;
+  }
+  if (variant === "list") {
+    const items = reviews.map((review) => `<figure class="flex items-start gap-4 py-5 first:pt-0 last:pb-0"><span class="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[var(--accent)] font-[var(--heading)] font-bold text-[var(--on-accent)]">${escapeHtml(String(review.name || "").charAt(0) || "•")}</span><div class="min-w-0">${stars(review.rating)}<blockquote class="mt-1 text-[var(--text)]">\u201c${escapeHtml(review.quote)}\u201d</blockquote><figcaption class="mt-1 text-sm font-semibold text-[var(--muted)]">${escapeHtml(review.name)}${review.role ? ` · ${escapeHtml(review.role)}` : ""}</figcaption></div></figure>`).join("");
+    return `<div ${attr} class="flex flex-col divide-y divide-[var(--text)]/10">${items}</div>`;
+  }
+  if (variant === "wall") {
+    const items = reviews.map((review) => `<figure class="flex flex-col rounded-[var(--radius)] border border-[var(--text)]/10 p-5">${stars(review.rating)}<blockquote class="mt-2 line-clamp-3 text-sm text-[var(--text)]">\u201c${escapeHtml(review.quote)}\u201d</blockquote><figcaption class="mt-3 text-sm font-semibold text-[var(--text)]">${escapeHtml(review.name)}</figcaption></figure>`).join("");
+    return `<div ${attr} class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">${items}</div>`;
+  }
+  // cards (default)
+  return `<div ${attr} class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">${reviews.map(card).join("")}</div>`;
+}
+
+// ---------------------------------------------------------------------------
+// Acordeón (FAQ)
+// ---------------------------------------------------------------------------
+
+function accordionHtml(variant: string, faqs: Record<string, unknown>[], attr: string) {
+  if (!faqs.length) return "";
+  if (variant === "cards") {
+    const items = faqs.map((faq) => `<details class="group rounded-[var(--radius)] bg-[var(--text)]/[0.04] p-5 open:bg-[var(--text)]/[0.07]"><summary class="flex cursor-pointer list-none items-center justify-between gap-4 font-[var(--heading)] font-semibold text-[var(--text)]"><span>${escapeHtml(faq.question)}</span><span class="shrink-0 text-xl leading-none text-[var(--accent)] group-open:hidden">+</span><span class="hidden shrink-0 text-xl leading-none text-[var(--accent)] group-open:inline">−</span></summary><p class="mt-3 text-[var(--muted)]">${escapeHtml(faq.answer)}</p></details>`).join("");
+    return `<div ${attr} class="mx-auto flex max-w-[900px] flex-col gap-3">${items}</div>`;
+  }
+  if (variant === "minimal") {
+    const items = faqs.map((faq) => `<details class="group py-6 first:pt-0 last:pb-0"><summary class="flex cursor-pointer list-none items-center justify-between gap-6 ${HEADING_FONT} text-lg font-medium text-[var(--text)]"><span>${escapeHtml(faq.question)}</span><span class="shrink-0 text-2xl font-light leading-none text-[var(--muted)] transition group-open:rotate-45">+</span></summary><p class="mt-3 max-w-[65ch] text-[var(--muted)]">${escapeHtml(faq.answer)}</p></details>`).join("");
+    return `<div ${attr} class="mx-auto flex max-w-[820px] flex-col divide-y divide-[var(--text)]/10">${items}</div>`;
+  }
+  // lines (default)
+  const items = faqs.map((faq) => `<details class="border-b border-[var(--text)]/12 py-5 first:pt-0 last:border-0 last:pb-0"><summary class="cursor-pointer list-none font-[var(--heading)] font-bold text-[var(--text)]">${escapeHtml(faq.question)}</summary><p class="mt-3 text-[var(--muted)]">${escapeHtml(faq.answer)}</p></details>`).join("");
+  return `<div ${attr} class="mx-auto flex max-w-[900px] flex-col">${items}</div>`;
+}
+
+// ---------------------------------------------------------------------------
+// Encabezado — el widget "brand" define la variante de todo el header
+// (se detecta a nivel de sección, ver headerChromeClasses()).
+// ---------------------------------------------------------------------------
+
+function headerChromeClasses(variant: string) {
+  switch (variant) {
+    case "floating":
+      return "sticky top-4 z-30 mx-auto mt-4 w-[min(1100px,94%)] rounded-[999px] border border-[var(--text)]/10 bg-[var(--bg)]/90 shadow-lg backdrop-blur";
+    case "overlay":
+      return "absolute inset-x-0 top-0 z-30 bg-transparent text-white";
+    case "bordered":
+      return "sticky top-0 z-30 border-b-2 border-[var(--text)]/15 bg-[var(--bg)]";
+    case "pill":
+      return "sticky top-4 z-30 mx-auto mt-4 w-[min(760px,92%)] rounded-[999px] bg-[var(--secondary)] px-3 py-2 text-[var(--footer-text)] shadow-lg";
+    case "hvac":
+      return "sticky top-0 z-30 border-b border-[var(--text)]/10 bg-[var(--bg)]";
+    default: // bar / minimal
+      return "sticky top-0 z-30 border-b border-[var(--text)]/10 bg-[var(--bg)]/95 backdrop-blur";
+  }
+}
+
+function brandHtml(attr: string, variant: string, name: string, logo: string) {
+  const isPill = variant === "pill";
+  const isHvac = variant === "hvac";
+  const isFooterWordmark = variant === "hvac-footer";
+  if (isFooterWordmark) {
+    return `<span ${attr} class="mt-10 block ${HEADING_FONT} text-[clamp(3.5rem,9vw,8rem)] font-normal leading-none tracking-[-0.05em] text-[var(--text)]/15">${escapeHtml(name)}</span>`;
+  }
+  const wrap = isPill
+    ? "inline-flex items-center gap-2 rounded-full bg-[var(--accent)] px-4 py-1.5"
+    : "inline-flex items-center gap-3";
+  const logoImg = logo ? `<img src="${escapeHtml(logo)}" alt="" loading="eager" class="h-8 w-8 object-contain">` : "";
+  const nameCls = isPill ? "text-sm font-bold text-[var(--on-accent)]" : isHvac ? "text-xl font-semibold tracking-[-0.03em] text-[var(--text)]" : "text-lg font-bold text-[var(--text)]";
+  const hvacMark = isHvac ? `<span class="grid h-6 w-6 -rotate-12 place-items-center rounded-full bg-[var(--accent)] text-base font-black leading-none text-white">≋</span>` : "";
+  return `<a ${attr} href="#top" class="${wrap} ${HEADING_FONT} no-underline">${hvacMark}${logoImg}<strong class="${nameCls}">${escapeHtml(name)}</strong></a>`;
+}
+
+function navHtml(attr: string, items: Record<string, unknown>[]) {
+  const links = items.map((item) => {
+    const href = safeUrl(item.href) || "#contact";
+    return `<a href="${escapeHtml(href)}" class="whitespace-nowrap text-sm text-[var(--text)] no-underline hover:text-[var(--accent)]">${escapeHtml(item.label)}</a>`;
+  }).join("");
+  return `<nav ${attr} class="relative flex items-center justify-end" aria-label="Navegación principal">
+<button class="v2-nav-toggle relative z-10 flex h-11 w-11 flex-col items-center justify-center gap-[5px] rounded-md text-[var(--text)] lg:hidden" type="button" aria-label="Abrir menú" aria-expanded="false"><span class="block h-0.5 w-6 rounded bg-current"></span><span class="block h-0.5 w-6 rounded bg-current"></span><span class="block h-0.5 w-6 rounded bg-current"></span></button>
+<div class="v2-nav-links hidden flex-wrap items-center justify-end gap-6 lg:flex">${links}</div>
+</nav>`;
+}
+
+// ---------------------------------------------------------------------------
+// Formularios
+// ---------------------------------------------------------------------------
+
+const FORM_INPUT = "min-h-[46px] w-full rounded-[calc(var(--radius)/2)] border border-[var(--text)]/25 bg-[var(--bg)] px-3 py-2 text-[var(--text)] focus:border-[var(--accent)] focus:outline focus:outline-[3px] focus:outline-[var(--accent)]/40";
+const FORM_LABEL = "flex flex-col gap-1.5 text-sm font-semibold text-[var(--text)]";
+
+function formHtml(attr: string, variant: string, anchorId: string, title: string, body: string, buttonText: string, leadEndpoint: string) {
+  const wrapClass = variant === "dark"
+    ? "rounded-[var(--radius)] border border-white/15 bg-black/20 p-6 sm:p-8"
+    : variant === "inline"
+      ? ""
+      : "rounded-[var(--radius)] border border-[var(--text)]/15 bg-[var(--text)]/[0.03] p-6 sm:p-8";
+  const gridClass = variant === "split" || variant === "inline" ? "grid gap-4 sm:grid-cols-2" : "grid gap-4 sm:grid-cols-2";
+  return `<div ${attr} id="${escapeHtml(anchorId)}" class="${wrapClass}">
+${title ? `<h2 class="${H2} text-[clamp(1.6rem,3vw,2.4rem)]">${escapeHtml(title)}</h2>` : ""}
+${body ? `<p class="mt-2 ${BODY_P}">${escapeHtml(body)}</p>` : ""}
+<form data-cluster-form data-endpoint="${escapeHtml(leadEndpoint)}" class="${gridClass} ${title || body ? "mt-6" : ""}">
+<label class="${FORM_LABEL}">Nombre<input class="${FORM_INPUT}" name="name" required maxlength="120" autocomplete="name"></label>
+<label class="${FORM_LABEL}">Email<input class="${FORM_INPUT}" name="email" type="email" maxlength="160" autocomplete="email"></label>
+<label class="${FORM_LABEL}">Teléfono<input class="${FORM_INPUT}" name="phone" type="tel" maxlength="40" autocomplete="tel"></label>
+<label class="${FORM_LABEL} sm:col-span-2">Mensaje<textarea class="${FORM_INPUT} min-h-[130px]" name="message" required maxlength="2000"></textarea></label>
+<input class="hidden" name="website" tabindex="-1" autocomplete="off">
+<button class="${BUTTON_BASE} ${BUTTON_VARIANT.solid} sm:col-span-2" type="submit">${escapeHtml(buttonText)}</button>
+<output class="sm:col-span-2 text-sm text-[var(--muted)]" aria-live="polite"></output>
+</form>
+</div>`;
+}
+
 function widgetHtml(widget: WidgetV2, content: SiteContentV2, theme: ThemeTokensV2, leadEndpoint: string, editable = false): string {
   const value = valueFor(widget, content);
   const inlineEditable = editable && (widget.type === "heading" || widget.type === "text" || widget.type === "button");
   const attr = `data-widget-id="${escapeHtml(widget.id)}" data-widget-type="${widget.type}"${inlineEditable ? ' data-editable-text="1"' : ""}`;
+  const emptyClass = "grid min-h-[120px] place-items-center rounded-[var(--radius)] border border-dashed border-[var(--text)]/40 p-4 text-[var(--muted)] opacity-70";
   switch (widget.type) {
-    case "brand": {
-      const name = String(value || content.business.name);
-      const logo = safeUrl(content.business.logo);
-      return `<a ${attr} class="v2-brand v2-brand-${escapeHtml(widget.variant || "bar")}" href="#top">${logo ? `<img src="${escapeHtml(logo)}" alt="" loading="eager">` : ""}<strong>${escapeHtml(name)}</strong></a>`;
-    }
+    case "brand":
+      return brandHtml(attr, widget.variant || "bar", String(value || content.business.name), safeUrl(content.business.logo));
     case "nav": {
-      const items = Array.isArray(widget.data?.items) ? widget.data.items : [];
-      const links = items.map((item) => { const record = item && typeof item === "object" ? item as Record<string, unknown> : {}; const href = safeUrl(record.href) || "#contact"; return `<a href="${escapeHtml(href)}">${escapeHtml(record.label)}</a>`; }).join("");
-      return `<nav ${attr} class="v2-nav-${escapeHtml(widget.variant || "horizontal")}" aria-label="Navegación principal"><button class="v2-nav-toggle" type="button" aria-label="Abrir menú" aria-expanded="false"><span></span><span></span><span></span></button><div class="v2-nav-links">${links}</div></nav>`;
+      const items = Array.isArray(widget.data?.items) ? widget.data.items as Record<string, unknown>[] : [];
+      return navHtml(attr, items);
     }
     case "heading": {
       const level = widget.variant === "h1" ? "h1" : widget.variant === "h3" ? "h3" : "h2";
-      if (!String(value || "").trim()) return editable ? `<${level} ${attr} class="v2-empty-placeholder">Escribe un título</${level}>` : "";
-      return `<${level} ${attr}>${escapeHtml(value)}</${level}>`;
+      const cls = headingClasses(level, theme);
+      if (!String(value || "").trim()) return editable ? `<${level} ${attr} class="${emptyClass}">Escribe un título</${level}>` : "";
+      return `<${level} ${attr} class="${cls}">${escapeHtml(value)}</${level}>`;
     }
-    case "text": return String(value || "").trim() ? `<p ${attr}>${escapeHtml(value)}</p>` : editable ? `<p ${attr} class="v2-empty-placeholder">Escribe un texto</p>` : "";
+    case "text":
+      return String(value || "").trim() ? `<p ${attr} class="${BODY_P}">${escapeHtml(value)}</p>` : editable ? `<p ${attr} class="${emptyClass}">Escribe un texto</p>` : "";
     case "image": {
       const source = safeUrl(value);
-      if (!source) return editable ? `<div ${attr} class="v2-media-placeholder">Agrega una imagen</div>` : "";
       const variant = widget.variant || "cover";
-      return `<img ${attr} class="v2-image v2-image-${escapeHtml(variant)}${variant === "background" ? " v2-media-background" : ""}" src="${escapeHtml(source)}" alt="${escapeHtml(widget.data?.alt || content.business.name)}" loading="lazy">`;
+      if (variant === "background") {
+        if (!source) return editable ? `<div ${attr} class="${emptyClass} absolute inset-0">Agrega una imagen</div>` : "";
+        return `<img ${attr} src="${escapeHtml(source)}" alt="${escapeHtml(widget.data?.alt as string || content.business.name)}" loading="eager" class="v2-media-bg absolute inset-0 -z-10 h-full w-full object-cover">`;
+      }
+      if (!source) return editable ? `<div ${attr} class="${emptyClass}">Agrega una imagen</div>` : "";
+      return `<img ${attr} class="${IMAGE_VARIANT[variant] ?? IMAGE_VARIANT.cover}" src="${escapeHtml(source)}" alt="${escapeHtml(widget.data?.alt as string || content.business.name)}" loading="lazy">`;
     }
     case "video": {
       const source = safeUrl(value);
-      if (!source) return editable ? `<div ${attr} class="v2-media-placeholder">Agrega un video</div>` : "";
-      const youtube = source.match(/(?:youtu\.be\/|youtube\.com\/watch\?v=)([\w-]{6,20})/i)?.[1];
       const background = widget.variant === "background";
-      if (youtube) return `<iframe ${attr} class="v2-video${background ? " v2-media-background" : ""}" src="https://www.youtube-nocookie.com/embed/${escapeHtml(youtube)}${background ? "?autoplay=1&mute=1&loop=1&controls=0" : ""}" title="Video" loading="lazy" allowfullscreen></iframe>`;
-      if (!/\.(?:mp4|webm)(?:$|[?#])/i.test(source)) return `<img ${attr} class="v2-image ${background ? "v2-media-background" : "v2-image-cover"}" src="${escapeHtml(source)}" alt="${escapeHtml(content.business.name)}" loading="lazy">`;
-      return `<video ${attr} class="v2-video${background ? " v2-media-background" : ""}" src="${escapeHtml(source)}" ${background ? "autoplay muted loop playsinline" : "controls"} preload="metadata"></video>`;
+      if (!source) return editable ? `<div ${attr} class="${emptyClass}${background ? " absolute inset-0" : ""}">Agrega un video</div>` : "";
+      const youtube = source.match(/(?:youtu\.be\/|youtube\.com\/watch\?v=)([\w-]{6,20})/i)?.[1];
+      const bgClass = background ? "v2-media-bg absolute inset-0 -z-10 h-full w-full" : "aspect-video w-full rounded-[var(--radius)] bg-[#09090b]";
+      if (youtube) return `<iframe ${attr} class="${bgClass} border-0" src="https://www.youtube-nocookie.com/embed/${escapeHtml(youtube)}${background ? "?autoplay=1&mute=1&loop=1&controls=0" : ""}" title="Video" loading="lazy" allowfullscreen></iframe>`;
+      if (!/\.(?:mp4|webm)(?:$|[?#])/i.test(source)) return `<img ${attr} class="${background ? "v2-media-bg absolute inset-0 -z-10 h-full w-full object-cover" : IMAGE_VARIANT.cover}" src="${escapeHtml(source)}" alt="${escapeHtml(content.business.name)}" loading="lazy">`;
+      return `<video ${attr} class="${bgClass} object-cover" src="${escapeHtml(source)}" ${background ? "autoplay muted loop playsinline" : "controls"} preload="metadata"></video>`;
     }
     case "button": {
       const linkSlot = widget.data?.linkSlot;
       const linked = typeof linkSlot === "string" ? resolveContentSlot(content, linkSlot as never) : widget.data?.link;
-      return `<a ${attr} class="v2-button v2-button-${escapeHtml(widget.variant || "solid")}" href="${escapeHtml(safeUrl(linked) || "#contact")}">${escapeHtml(value || "Contactar")}</a>`;
+      return buttonHtml(attr, widget.variant || "solid", safeUrl(linked) || "#contact", String(value || "Contactar"));
     }
-    case "business_info": return `<address ${attr} class="v2-business-info"><strong>${escapeHtml(content.business.name)}</strong>${content.business.phone ? `<a href="tel:${escapeHtml(content.business.phone)}">${escapeHtml(content.business.phone)}</a>` : ""}${content.business.email ? `<a href="mailto:${escapeHtml(content.business.email)}">${escapeHtml(content.business.email)}</a>` : ""}${content.business.location ? `<span>${escapeHtml(content.business.location)}</span>` : ""}</address>`;
+    case "business_info": {
+      const rows = [
+        content.business.phone ? `<a class="w-max no-underline hover:text-[var(--accent)]" href="tel:${escapeHtml(content.business.phone)}">${escapeHtml(content.business.phone)}</a>` : "",
+        content.business.email ? `<a class="w-max no-underline hover:text-[var(--accent)]" href="mailto:${escapeHtml(content.business.email)}">${escapeHtml(content.business.email)}</a>` : "",
+        content.business.location ? `<span>${escapeHtml(content.business.location)}</span>` : "",
+      ].join("");
+      return `<address ${attr} class="not-italic flex flex-col gap-2 text-[var(--text)]"><strong class="${HEADING_FONT}">${escapeHtml(content.business.name)}</strong>${rows}</address>`;
+    }
     case "list": {
-      const items = Array.isArray(value) ? value : [];
-      if (!items.length) return editable ? `<div ${attr} class="v2-empty-placeholder">Agrega elementos a esta lista</div>` : "";
-      return `<div ${attr} class="v2-list v2-list-${escapeHtml(widget.variant || "cards")}">${items.map((item, index) => { const record = item as Record<string, unknown>; return `<article><span class="v2-index">${String(index + 1).padStart(2, "0")}</span>${record.image ? `<img src="${escapeHtml(safeUrl(record.image))}" alt="" loading="lazy">` : ""}<h3>${escapeHtml(record.title)}</h3><p>${escapeHtml(record.description)}</p>${record.meta ? `<small>${escapeHtml(record.meta)}</small>` : ""}</article>`; }).join("")}</div>`;
+      const items = Array.isArray(value) ? value as Record<string, unknown>[] : [];
+      if (!items.length) return editable ? `<div ${attr} class="${emptyClass}">Agrega elementos a esta lista</div>` : "";
+      const variant = widget.variant || "cards";
+      return `<div ${attr} class="${LIST_WRAP[variant] ?? LIST_WRAP.cards}">${items.map((item, i) => listItemHtml(variant, item, i)).join("")}</div>`;
     }
     case "gallery": {
-      const items = Array.isArray(value) ? value : [];
-      if (!items.some((item) => safeUrl((item as Record<string, unknown>)?.url))) return editable ? `<div ${attr} class="v2-media-placeholder">Agrega imágenes a la galería</div>` : "";
-      const variant = widget.variant || "grid";
-      // Las variantes bento/caption muestran la descripción de cada foto como leyenda numerada.
-      let position = 0;
-      return `<div ${attr} class="v2-gallery v2-gallery-${escapeHtml(variant)}">${items.map((item) => { const record = item as Record<string, unknown>; const source = safeUrl(record.url); if (!source) return ""; position += 1; const alt = String(record.alt ?? "").trim(); const showCaption = (variant === "bento" || variant.includes("caption") || variant.includes("aa")) && alt; const caption = showCaption ? `<figcaption><span>${escapeHtml(alt)}</span><span class="v2-gallery-index">${String(position).padStart(2, "0")}</span></figcaption>` : ""; return `<figure><img src="${escapeHtml(source)}" alt="${escapeHtml(record.alt)}" loading="lazy">${caption}</figure>`; }).join("")}</div>`;
+      const items = Array.isArray(value) ? value as Record<string, unknown>[] : [];
+      const html = galleryHtml(widget.variant || "grid", items, attr);
+      if (!html) return editable ? `<div ${attr} class="${emptyClass}">Agrega imágenes a la galería</div>` : "";
+      return html;
     }
     case "testimonials": {
-      const reviews = Array.isArray(value) ? value : [];
-      if (!reviews.length) return editable ? `<div ${attr} class="v2-empty-placeholder">Agrega reseñas</div>` : "";
-      return `<div ${attr} class="v2-testimonials v2-testimonials-${escapeHtml(widget.variant || "cards")}">${reviews.map((item) => { const review = item as Record<string, unknown>; return `<figure><div class="v2-stars" aria-label="${escapeHtml(review.rating || 5)} de 5 estrellas">★★★★★</div><blockquote>“${escapeHtml(review.quote)}”</blockquote><figcaption><strong>${escapeHtml(review.name)}</strong>${review.role ? `<span>${escapeHtml(review.role)}</span>` : ""}</figcaption></figure>`; }).join("")}</div>`;
+      const reviews = Array.isArray(value) ? value as Record<string, unknown>[] : [];
+      const html = testimonialsHtml(widget.variant || "cards", reviews, attr);
+      if (!html) return editable ? `<div ${attr} class="${emptyClass}">Agrega reseñas</div>` : "";
+      return html;
     }
     case "accordion": {
-      const faqs = Array.isArray(value) ? value : [];
-      if (!faqs.length) return editable ? `<div ${attr} class="v2-empty-placeholder">Agrega preguntas frecuentes</div>` : "";
-      return `<div ${attr} class="v2-accordion v2-accordion-${escapeHtml(widget.variant || "lines")}">${faqs.map((item) => { const faq = item as Record<string, unknown>; return `<details><summary>${escapeHtml(faq.question)}</summary><p>${escapeHtml(faq.answer)}</p></details>`; }).join("")}</div>`;
+      const faqs = Array.isArray(value) ? value as Record<string, unknown>[] : [];
+      const html = accordionHtml(widget.variant || "lines", faqs, attr);
+      if (!html) return editable ? `<div ${attr} class="${emptyClass}">Agrega preguntas frecuentes</div>` : "";
+      return html;
     }
     case "form": {
       const titleSlot = typeof widget.data?.titleSlot === "string" ? widget.data.titleSlot : "";
       const bodySlot = typeof widget.data?.bodySlot === "string" ? widget.data.bodySlot : "";
       const buttonSlot = typeof widget.data?.buttonSlot === "string" ? widget.data.buttonSlot : "contact.ctaText";
       const anchorId = String(widget.data?.anchorId || "contact").replace(/[^a-zA-Z0-9_-]/g, "") || "contact";
-      const title = titleSlot ? resolveContentSlot(content, titleSlot as never) : "";
-      const body = bodySlot ? resolveContentSlot(content, bodySlot as never) : "";
-      const buttonText = resolveContentSlot(content, buttonSlot as never) || "Enviar mensaje";
-      return `<div ${attr} id="${escapeHtml(anchorId)}" class="v2-form-wrap">${title ? `<h2>${escapeHtml(title)}</h2>` : ""}${body ? `<p>${escapeHtml(body)}</p>` : ""}<form data-cluster-form data-endpoint="${escapeHtml(leadEndpoint)}"><label>Nombre<input name="name" required maxlength="120" autocomplete="name"></label><label>Email<input name="email" type="email" maxlength="160" autocomplete="email"></label><label>Teléfono<input name="phone" type="tel" maxlength="40" autocomplete="tel"></label><label class="v2-wide">Mensaje<textarea name="message" required maxlength="2000"></textarea></label><input class="v2-trap" name="website" tabindex="-1" autocomplete="off"><button class="v2-button" type="submit">${escapeHtml(buttonText)}</button><output aria-live="polite"></output></form></div>`;
+      const title = titleSlot ? String(resolveContentSlot(content, titleSlot as never) || "") : "";
+      const body = bodySlot ? String(resolveContentSlot(content, bodySlot as never) || "") : "";
+      const buttonText = String(resolveContentSlot(content, buttonSlot as never) || "Enviar mensaje");
+      return formHtml(attr, widget.variant || "card", anchorId, title, body, buttonText, leadEndpoint);
     }
     case "social": {
       const links = value && typeof value === "object" ? Object.entries(value as Record<string, unknown>) : [];
-      if (!links.some(([, href]) => safeUrl(href))) return editable ? `<nav ${attr} class="v2-empty-placeholder">Agrega tus redes sociales</nav>` : "";
-      return `<nav ${attr} class="v2-social" aria-label="Redes sociales">${links.map(([label, href]) => { const safe = safeUrl(href); return safe ? `<a href="${escapeHtml(safe)}" target="_blank" rel="noreferrer">${escapeHtml(label)}</a>` : ""; }).join("")}</nav>`;
+      if (!links.some(([, href]) => safeUrl(href))) return editable ? `<nav ${attr} class="${emptyClass}">Agrega tus redes sociales</nav>` : "";
+      return `<nav ${attr} class="flex flex-wrap gap-4" aria-label="Redes sociales">${links.map(([label, href]) => { const safe = safeUrl(href); return safe ? `<a href="${escapeHtml(safe)}" target="_blank" rel="noreferrer" class="text-sm underline-offset-4 hover:underline">${escapeHtml(label)}</a>` : ""; }).join("")}</nav>`;
     }
     case "map": {
       const location = String(value || content.business.location);
-      if (!location.trim()) return editable ? `<div ${attr} class="v2-empty-placeholder">Agrega la ubicación</div>` : "";
+      if (!location.trim()) return editable ? `<div ${attr} class="${emptyClass}">Agrega la ubicación</div>` : "";
       const query = encodeURIComponent(location);
-      return `<div ${attr} class="v2-map"><iframe title="Mapa de ${escapeHtml(content.business.name)}" src="https://maps.google.com/maps?q=${query}&output=embed" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe><a href="https://www.google.com/maps/search/?api=1&query=${query}" target="_blank" rel="noreferrer"><span>Ubicación</span><strong>${escapeHtml(location)}</strong><small>Abrir en Google Maps ↗</small></a></div>`;
+      return `<div ${attr} class="grid overflow-hidden rounded-[var(--radius)] bg-[var(--text)]/[0.05]"><iframe class="min-h-[280px] w-full border-0" title="Mapa de ${escapeHtml(content.business.name)}" src="https://maps.google.com/maps?q=${query}&output=embed" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe><a class="flex flex-col gap-1 p-5 no-underline hover:bg-[var(--text)]/[0.03]" href="https://www.google.com/maps/search/?api=1&query=${query}" target="_blank" rel="noreferrer"><span class="text-sm text-[var(--muted)]">Ubicación</span><strong class="text-[var(--text)]">${escapeHtml(location)}</strong><small class="text-[var(--muted)]">Abrir en Google Maps ↗</small></a></div>`;
     }
     case "hero_pixel": {
-      // Portada a pantalla completa con fondo de puntos animados. Los campos
-      // vacíos caen al contenido principal (hero.*) para que la IA lo llene.
       const title = String(widget.data?.title || "").trim() || content.hero.title || content.business.name || "Tu negocio";
       const words = title.split(/\s+/);
       const word1 = String(widget.data?.word1 || "").trim() || words[0] || "";
@@ -201,35 +487,73 @@ function widgetHtml(widget: WidgetV2, content: SiteContentV2, theme: ThemeTokens
       const secondaryLink = safeUrl(widget.data?.secondaryLink) || "#contact";
       const marqueeLabel = String(widget.data?.marqueeLabel ?? "").trim() || "Con la confianza de";
       const marqueeItems = (Array.isArray(widget.data?.marqueeItems) ? widget.data.marqueeItems : []).map((item) => String(item ?? "").trim()).filter(Boolean).slice(0, 12);
-      const marqueeGroup = `<div class="v2-pxh-group">${marqueeItems.map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</div>`;
-      const marquee = marqueeItems.length ? `<div class="v2-pxh-trust"><span class="v2-pxh-trust-label">${escapeHtml(marqueeLabel)}</span><div class="v2-pxh-marquee"><div class="v2-pxh-track">${marqueeGroup}<div class="v2-pxh-group" aria-hidden="true">${marqueeItems.map((item) => `<span>${escapeHtml(item)}</span>`).join("")}</div></div></div></div>` : "";
-      // 4 partes de gris del tema + 1 de acento, como el diseño original.
+      const marqueeGroup = `<div class="flex items-center gap-12">${marqueeItems.map((item) => `<span class="whitespace-nowrap ${HEADING_FONT} text-base font-bold opacity-60">${escapeHtml(item)}</span>`).join("")}</div>`;
+      const marquee = marqueeItems.length ? `<div class="mt-auto flex flex-col gap-4"><span class="text-[.72rem] font-semibold uppercase tracking-[0.12em] opacity-65">${escapeHtml(marqueeLabel)}</span><div class="v2-scroll-fade mx-auto w-[min(64rem,100%)] overflow-hidden"><div class="v2-pxh-track flex w-max gap-12 py-2">${marqueeGroup}<div class="flex items-center gap-12" aria-hidden="true">${marqueeItems.map((item) => `<span class="whitespace-nowrap ${HEADING_FONT} text-base font-bold opacity-60">${escapeHtml(item)}</span>`).join("")}</div></div></div></div>` : "";
       const colors = [theme.muted, theme.muted, theme.muted, theme.muted, theme.accent].join(",");
-      return `<div ${attr} class="v2-pxh"><canvas class="v2-pxh-canvas" data-pixel-hero data-colors="${escapeHtml(colors)}" aria-hidden="true"></canvas><div class="v2-pxh-fade" aria-hidden="true"></div><div class="v2-pxh-content"><h1 class="v2-pxh-title">${word1 ? `<em>${escapeHtml(word1)}</em>` : ""}${word2 ? `<strong>${escapeHtml(word2)}</strong>` : ""}</h1>${description ? `<p class="v2-pxh-description">${escapeHtml(description)}</p>` : ""}<div class="v2-pxh-actions"><a class="v2-button" href="${escapeHtml(ctaLink)}">${escapeHtml(ctaText)}</a>${secondaryText ? `<a class="v2-button v2-button-outline" href="${escapeHtml(secondaryLink)}">${escapeHtml(secondaryText)}</a>` : ""}</div></div>${marquee}</div>`;
+      return `<div ${attr} class="relative isolate flex min-h-[min(94dvh,880px)] w-screen -mx-[50vw] left-1/2 flex-col justify-center gap-8 overflow-hidden bg-[var(--secondary)] px-5 py-16 text-center text-[var(--footer-text)] sm:px-8"><canvas class="absolute inset-0 -z-20 h-full w-full" data-pixel-hero data-colors="${escapeHtml(colors)}" aria-hidden="true"></canvas><div class="absolute inset-0 -z-10" style="background:radial-gradient(circle at center,transparent 0%,var(--secondary) 100%);opacity:.8" aria-hidden="true"></div><div class="mx-auto my-auto flex flex-col items-center gap-6"><h1 class="v2-pxh-title flex max-w-none flex-wrap justify-center gap-x-3 text-[clamp(2.8rem,8vw,7rem)] leading-none">${word1 ? `<em class="font-serif italic font-medium">${escapeHtml(word1)}</em>` : ""}${word2 ? `<strong class="${HEADING_FONT} font-black tracking-[-0.045em]">${escapeHtml(word2)}</strong>` : ""}</h1>${description ? `<p class="mx-auto max-w-[42rem] text-[clamp(1rem,1.6vw,1.25rem)] font-light opacity-85">${escapeHtml(description)}</p>` : ""}<div class="flex flex-wrap justify-center gap-3">${buttonHtml("", "solid", ctaLink, ctaText)}${secondaryText ? buttonHtml("", "outline", secondaryLink, secondaryText) : ""}</div></div>${marquee}</div>`;
     }
-    case "divider": return `<hr ${attr}>`;
-    case "spacer": return `<div ${attr} aria-hidden class="v2-spacer v2-spacer-${escapeHtml(String(widget.data?.size || "md"))}"></div>`;
+    case "divider":
+      return `<hr ${attr} class="border-[var(--text)]/12">`;
+    case "spacer": {
+      const size = String(widget.data?.size || "md");
+      const height = size === "sm" ? "h-4" : size === "lg" ? "h-20" : "h-10";
+      return `<div ${attr} aria-hidden class="${height}"></div>`;
+    }
     case "embed": {
       const code = typeof widget.data?.html === "string" ? widget.data.html.slice(0, 8000) : "";
-      if (!code.trim()) return editable ? `<div ${attr} class="v2-media-placeholder">Agrega tu código insertado</div>` : "";
+      if (!code.trim()) return editable ? `<div ${attr} class="${emptyClass}">Agrega tu código insertado</div>` : "";
       const height = Math.max(60, Math.min(1200, Number(widget.data?.height) || 300));
       // Sandbox sin allow-same-origin: el código pegado no puede leer cookies ni tocar el resto del sitio.
-      return `<iframe ${attr} class="v2-embed" style="height:${height}px" sandbox="allow-scripts allow-popups" loading="lazy" title="Contenido insertado" srcdoc="${escapeHtml(code)}"></iframe>`;
+      return `<iframe ${attr} class="w-full rounded-[var(--radius)] border-0 bg-white" style="height:${height}px" sandbox="allow-scripts allow-popups" loading="lazy" title="Contenido insertado" srcdoc="${escapeHtml(code)}"></iframe>`;
     }
   }
 }
 
+const SPAN_CLASS: Record<number, string> = { 1: "1", 2: "2", 3: "3", 4: "4", 5: "5", 6: "6", 7: "7", 8: "8", 9: "9", 10: "10", 11: "11", 12: "12" };
+function columnSpanClasses(span: CanvasColumnV2["span"]) {
+  return `col-span-12 md:col-span-${SPAN_CLASS[span.tablet]} lg:col-span-${SPAN_CLASS[span.desktop]}`;
+}
+
+function columnHasBackgroundMedia(column: CanvasColumnV2) {
+  return column.widgets.some((widget) => (widget.type === "image" || widget.type === "video") && widget.variant === "background");
+}
+
+function columnHtml(column: CanvasColumnV2, content: SiteContentV2, theme: ThemeTokensV2, leadEndpoint: string, editable: boolean, sectionRegion: CanvasSectionV2["region"]) {
+  const widgets = column.widgets.map((widget) => widgetHtml(widget, content, theme, leadEndpoint, editable)).join("");
+  if (!widgets && !editable) return "";
+  const span = columnSpanClasses(column.span);
+  const hasBg = columnHasBackgroundMedia(column);
+  const isHeaderColumn = sectionRegion === "header";
+  const layoutClasses = hasBg
+    ? "relative isolate flex min-h-[clamp(560px,78dvh,820px)] flex-col justify-center overflow-hidden px-6 py-16 text-white sm:px-10 sm:py-20"
+    : isHeaderColumn
+      ? "flex min-w-0 flex-col justify-center gap-2"
+      : "flex min-w-0 flex-col gap-5";
+  const scrim = hasBg ? `<div class="pointer-events-none absolute inset-0 -z-10 bg-black/55"></div>` : "";
+  return `<div class="${span} ${layoutClasses}" data-column-id="${escapeHtml(column.id)}">${scrim}${widgets}</div>`;
+}
+
 function sectionHtml(section: CanvasSectionV2, content: SiteContentV2, theme: ThemeTokensV2, leadEndpoint: string, editable = false) {
   const rows = section.rows.map((row) => {
-    const columns = row.columns.map((column) => {
-      const widgets = column.widgets.map((widget) => widgetHtml(widget, content, theme, leadEndpoint, editable)).join("");
-      return widgets || editable ? `<div class="v2-column" data-column-id="${escapeHtml(column.id)}" style="--span-d:${column.span.desktop};--span-t:${column.span.tablet};--span-m:${column.span.mobile}">${widgets}</div>` : "";
-    }).join("");
-    return columns || editable ? `<div class="v2-row" data-row-id="${escapeHtml(row.id)}">${columns}</div>` : "";
+    const columns = row.columns.map((column) => columnHtml(column, content, theme, leadEndpoint, editable, section.region)).join("");
+    if (!columns && !editable) return "";
+    const isHeaderRow = section.region === "header";
+    const rowClass = isHeaderRow
+      ? "grid grid-cols-12 items-center gap-4"
+      : "grid grid-cols-12 items-center gap-6 sm:gap-8 lg:gap-10";
+    return `<div class="${rowClass}" data-row-id="${escapeHtml(row.id)}">${columns}</div>`;
   }).join("");
   if (!rows && !editable) return "";
   const key = section.key.replace(/[^a-zA-Z0-9_-]/g, "");
-  return `<section id="${escapeHtml(section.key)}" class="v2-section v2-region-${section.region} v2-key-${key}" data-section-id="${escapeHtml(section.id)}"><div class="v2-section-inner">${rows}</div></section>`;
+
+  const isHeader = section.region === "header";
+  const brandWidget = isHeader ? section.rows.flatMap((r) => r.columns).flatMap((c) => c.widgets).find((w) => w.type === "brand") : undefined;
+  const chrome = isHeader ? headerChromeClasses(brandWidget?.variant || "bar") : "";
+  const padding = isHeader ? "px-5 py-3 sm:px-8" : "px-5 py-16 sm:px-8 sm:py-20 lg:py-28";
+  const containerWidth = isHeader ? "max-w-wide" : "max-w-wide";
+  const innerClass = `mx-auto w-full ${containerWidth}`;
+
+  return `<section id="${escapeHtml(section.key)}" class="v2-section relative ${padding} ${chrome} v2-key-${key}" data-section-id="${escapeHtml(section.id)}"><div class="${innerClass}">${rows}</div></section>`;
 }
 
 function dynamicCss(sections: CanvasSectionV2[]) {
@@ -244,130 +568,22 @@ function baseCss(theme: ThemeTokensV2) {
   const radius = RADIUS[theme.radius];
   const buttonText = readableText(theme.accent);
   const footerText = readableText(theme.secondary);
-  return `:root{--primary:${theme.primary};--secondary:${theme.secondary};--accent:${theme.accent};--button-text:${buttonText};--footer-text:${footerText};--bg:${theme.background};--text:${theme.text};--muted:${theme.muted};--on-primary:${readableText(theme.primary)};--on-secondary:${footerText};--on-accent:${buttonText};--on-background:${theme.text};--on-text:${readableText(theme.text)};--on-muted:${readableText(theme.muted)};--radius:${radius};--heading:${theme.headingFont};--body:${theme.bodyFont};--heading-case:${theme.headingCase === "uppercase" ? "uppercase" : "none"}}
-*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--text);font:16px/1.65 var(--body);overflow-x:hidden}img,video,iframe{display:block;max-width:100%}a{color:inherit}.v2-site{display:flex;min-height:100dvh;flex-direction:column;background:var(--bg)}
-.v2-section{padding:clamp(3rem,6vw,6rem) max(5vw,1.25rem)}.v2-section-inner{width:min(1200px,100%);margin:auto}.v2-row{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:clamp(1.25rem,3vw,2.5rem);align-items:center}.v2-row+.v2-row{margin-top:clamp(2rem,4vw,4rem)}.v2-column{grid-column:span var(--span-d);display:flex;min-width:0;flex-direction:column;gap:1.25rem}.v2-column>p{max-width:68ch}
-h1,h2,h3,p{margin:0}h1,h2,h3{font-family:var(--heading);line-height:1.06;text-wrap:balance;text-transform:var(--heading-case)}h1{max-width:18ch;font-size:clamp(2.6rem,6vw,5.5rem);letter-spacing:${theme.headingCase === "uppercase" ? "0" : "-.045em"}}h2{max-width:24ch;font-size:clamp(2rem,4vw,3.75rem);letter-spacing:${theme.headingCase === "uppercase" ? "0" : "-.03em"}}h3{font-size:clamp(1.1rem,2vw,1.35rem)}
-.v2-region-header{position:relative;z-index:20;padding-block:1rem;border-bottom:1px solid color-mix(in srgb,var(--text) 12%,transparent)}.v2-region-header .v2-section-inner{width:min(1320px,100%)}.v2-region-footer{margin-top:auto;background:var(--secondary)!important;color:var(--footer-text)!important}.v2-region-footer .v2-row{align-items:start}.v2-region-footer a{color:inherit}
-.v2-brand{display:flex;align-items:center;gap:.75rem;text-decoration:none;font-family:var(--heading)}.v2-brand img{width:42px;height:42px;object-fit:contain}.v2-region-header nav{display:flex;justify-content:flex-end}.v2-nav-links{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:1.25rem}.v2-region-header .v2-nav-links{white-space:nowrap}.v2-region-header nav a{text-decoration:none;font-size:.9rem}
-.v2-nav-toggle{display:none;width:44px;height:44px;flex-direction:column;justify-content:center;gap:5px;padding:11px;background:none;border:0;color:inherit;cursor:pointer}.v2-nav-toggle span{display:block;height:2px;width:100%;background:currentColor;border-radius:2px;transition:transform .25s ease,opacity .25s ease}
-nav.v2-nav-open .v2-nav-toggle span:nth-child(1){transform:translateY(7px) rotate(45deg)}nav.v2-nav-open .v2-nav-toggle span:nth-child(2){opacity:0}nav.v2-nav-open .v2-nav-toggle span:nth-child(3){transform:translateY(-7px) rotate(-45deg)}
-.v2-region-header:has(.v2-nav-pill){border-bottom:0;background:transparent!important}
-.v2-column:has(>.v2-nav-pill){flex-direction:row;align-items:center;gap:.45rem;width:max-content;max-width:100%;margin-inline:auto;padding:.4rem .45rem;background:var(--secondary);color:var(--footer-text);border-radius:999px;box-shadow:0 10px 30px #00000014}
-.v2-brand-pill{background:var(--accent);border-radius:999px;padding:.4rem .95rem}.v2-brand-pill strong{color:var(--button-text);font-size:.95rem}.v2-brand-pill img{width:24px;height:24px}
-.v2-nav-pill{justify-content:center}.v2-nav-pill .v2-nav-links{gap:.35rem;align-items:center}
-.v2-nav-pill .v2-nav-links a{display:inline-flex;align-items:center;min-height:38px;padding:.25rem 1.05rem;border:1px solid color-mix(in srgb,var(--footer-text) 38%,transparent);border-radius:999px;color:var(--footer-text)}
-.v2-nav-pill .v2-nav-links a:hover{background:color-mix(in srgb,var(--footer-text) 14%,transparent)}
-.v2-button{display:inline-flex;width:max-content;min-height:46px;align-items:center;justify-content:center;border:0;border-radius:var(--radius);background:var(--accent);color:var(--button-text);padding:.8rem 1.35rem;font-weight:750;line-height:1.1;text-decoration:none;white-space:nowrap;cursor:pointer;transition:transform .2s ease,filter .2s ease}.v2-button:hover{filter:brightness(.94)}.v2-button:active{transform:translateY(1px)}.v2-button:focus-visible{outline:3px solid color-mix(in srgb,var(--accent) 55%,white);outline-offset:3px}.v2-button-outline{background:transparent;color:currentColor;border:1px solid currentColor}
-.v2-image{width:100%;min-height:280px;aspect-ratio:4/3;object-fit:cover;border-radius:var(--radius)}.v2-image-portrait{aspect-ratio:4/5}.v2-image-wide{aspect-ratio:16/8}.v2-image-monochrome{filter:grayscale(1)}
-.v2-image-tilt{width:calc(100% - 3rem);max-height:min(56vh,440px);margin:1.9rem 1.5rem 1.25rem;aspect-ratio:4/3;transform:rotate(-4deg);border-radius:1.4rem;box-shadow:22px -22px 0 -4px color-mix(in srgb,currentColor 16%,var(--bg)),0 24px 50px #00000029}.v2-video{width:100%;aspect-ratio:16/9;border:0;background:#09090b;border-radius:var(--radius)}.v2-key-hero:has(.v2-media-background){padding:0}.v2-key-hero:has(.v2-media-background) .v2-section-inner{width:100%;max-width:none}.v2-key-hero .v2-column:has(>.v2-media-background){position:relative;isolation:isolate;min-height:clamp(560px,78dvh,820px);justify-content:center;align-items:flex-start;overflow:hidden;padding:clamp(3rem,8vw,7rem) max(6vw,1.5rem);color:#fff}.v2-key-hero .v2-column:has(>.v2-media-background)::after{content:"";position:absolute;inset:0;z-index:-1;background:rgb(0 0 0/.56);pointer-events:none}.v2-key-hero .v2-media-background{position:absolute;inset:0;z-index:-2;width:100%;height:100%;min-height:100%;aspect-ratio:auto;object-fit:cover;border:0;border-radius:0;pointer-events:none}.v2-key-hero .v2-column:has(>.v2-media-background)>h1,.v2-key-hero .v2-column:has(>.v2-media-background)>p{max-width:min(720px,90%)}.v2-media-placeholder,.v2-empty-placeholder{display:grid;min-height:120px;place-items:center;border:1px dashed currentColor;border-radius:var(--radius);padding:1rem;opacity:.58}
-.v2-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(220px,100%),1fr));gap:1rem}.v2-list article,.v2-testimonials figure{min-width:0;margin:0;padding:clamp(1.25rem,2.5vw,2rem);border:1px solid color-mix(in srgb,currentColor 14%,transparent);border-radius:var(--radius);background:color-mix(in srgb,currentColor 6%,transparent)}.v2-list article h3{margin:.55rem 0}.v2-list article p,.v2-list article small{color:color-mix(in srgb,currentColor 72%,transparent)}.v2-list article img{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:calc(var(--radius)/2);margin-bottom:1rem}.v2-list-minimal{display:block}.v2-list-minimal article{border:0;border-bottom:1px solid color-mix(in srgb,currentColor 18%,transparent);border-radius:0;background:none}.v2-list-minimal article:last-child{border-bottom:0}.v2-list-minimal article img{display:none}.v2-list-editorial article:nth-child(even){transform:translateY(1.5rem)}.v2-list-bento{grid-template-columns:repeat(12,minmax(0,1fr))}.v2-list-bento article{grid-column:span 5}.v2-list-bento article:nth-child(3n+1){grid-column:span 7}.v2-list-metrics{grid-template-columns:repeat(auto-fit,minmax(min(13rem,100%),1fr))}.v2-list-metrics article{text-align:center}.v2-list-metrics h3{font-size:clamp(1.35rem,1.8vw,1.95rem);line-height:1.12;overflow-wrap:break-word}.v2-list-metrics .v2-index{color:currentColor;opacity:.62}.v2-index{font:700 .75rem monospace;color:var(--primary)}
-.v2-gallery{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:1rem}.v2-gallery figure{grid-column:span 4;margin:0;overflow:hidden;border-radius:var(--radius)}.v2-gallery img{width:100%;height:clamp(220px,24vw,340px);object-fit:cover}.v2-gallery-mosaic figure:first-child{grid-column:span 8;grid-row:span 2}.v2-gallery-mosaic figure:first-child img{height:100%;min-height:576px}.v2-gallery-filmstrip{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;-ms-overflow-style:none;cursor:grab;-webkit-mask-image:linear-gradient(to right,transparent,#000 4%,#000 96%,transparent);mask-image:linear-gradient(to right,transparent,#000 4%,#000 96%,transparent)}.v2-gallery-filmstrip::-webkit-scrollbar{display:none}.v2-gallery-filmstrip figure{min-width:min(70%,780px);scroll-snap-align:start}.v2-gallery-filmstrip.v2-dragging{cursor:grabbing;scroll-snap-type:none}.v2-gallery-filmstrip.v2-dragging img{pointer-events:none}
-.v2-gallery-bento{grid-auto-flow:dense;gap:1.1rem}.v2-gallery-bento figure{position:relative;grid-column:span 5}.v2-gallery-bento figure:nth-child(4n+1),.v2-gallery-bento figure:nth-child(4n){grid-column:span 7}.v2-gallery-bento img{height:clamp(260px,26vw,380px);transition:transform .6s cubic-bezier(.22,1,.36,1)}@media(hover:hover){.v2-gallery-bento figure:hover img{transform:scale(1.045)}}
-.v2-gallery-bento figcaption{position:absolute;inset:auto 0 0 0;display:flex;align-items:baseline;justify-content:space-between;gap:1rem;padding:2.4rem 1.2rem .95rem;background:linear-gradient(transparent,rgba(0,0,0,.66));color:#fff;font-family:var(--heading);font-size:1.1rem;font-weight:600;text-transform:var(--heading-case)}.v2-gallery-index{font:600 .7rem/1 var(--body);letter-spacing:.16em;opacity:.72}
-.v2-testimonials{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:1rem}.v2-testimonials blockquote{display:-webkit-box;overflow:hidden;margin:1rem 0;font-size:1.05rem;-webkit-box-orient:vertical;-webkit-line-clamp:3}.v2-testimonials figcaption{display:flex;flex-direction:column}.v2-testimonials-quotes figure{border:0;background:none}.v2-stars{color:var(--accent);letter-spacing:.08em}
-.v2-accordion{max-width:900px}.v2-accordion details{border-bottom:1px solid color-mix(in srgb,currentColor 18%,transparent);padding:1rem 0}.v2-accordion summary{cursor:pointer;font-weight:700}.v2-accordion details p{margin-top:.75rem;color:color-mix(in srgb,currentColor 74%,transparent)}
-.v2-accordion-cards{width:100%;max-width:900px;margin-inline:auto}.v2-accordion-cards details{border:0;margin-bottom:.85rem;padding:1.05rem 1.35rem;background:color-mix(in srgb,currentColor 9%,transparent);border-radius:calc(var(--radius));transition:background .2s ease}.v2-accordion-cards details[open]{background:color-mix(in srgb,currentColor 14%,transparent)}.v2-accordion-cards details:last-child{margin-bottom:0}.v2-business-info{display:flex;flex-direction:column;gap:.5rem;font-style:normal}
-.v2-form-wrap form{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1.5rem;padding:clamp(1.25rem,3vw,2rem);border:1px solid color-mix(in srgb,var(--text) 22%,transparent);border-radius:var(--radius);background:color-mix(in srgb,var(--bg) 94%,var(--primary));color:var(--text)}.v2-form-wrap label{display:grid;gap:.4rem;font-size:.875rem;font-weight:650}.v2-form-wrap input,.v2-form-wrap textarea{width:100%;min-height:46px;padding:.75rem;border:1px solid color-mix(in srgb,currentColor 40%,transparent);border-radius:calc(var(--radius)/2);background:color-mix(in srgb,var(--bg) 97%,var(--text));color:var(--text);font:inherit}.v2-form-wrap input:focus,.v2-form-wrap textarea:focus{outline:3px solid color-mix(in srgb,var(--accent) 45%,transparent);border-color:var(--accent)}.v2-form-wrap textarea{min-height:130px}.v2-wide,.v2-form-wrap output,.v2-form-wrap button{grid-column:1/-1}.v2-trap{display:none}
-.v2-social{display:flex;flex-wrap:wrap;gap:.75rem}.v2-social a{text-underline-offset:.25em}.v2-map{display:grid;overflow:hidden;min-height:360px;border-radius:var(--radius);background:color-mix(in srgb,var(--primary) 15%,var(--bg));text-decoration:none}.v2-map iframe{width:100%;min-height:280px;border:0;filter:saturate(.9) contrast(1.02)}.v2-map a{display:flex;flex-direction:column;gap:.25rem;padding:1rem 1.25rem;color:inherit;text-decoration:none}.v2-map strong{font-size:1.15rem}.v2-spacer-sm{height:1rem}.v2-spacer-md{height:2.5rem}.v2-spacer-lg{height:5rem}.v2-embed{width:100%;border:0;border-radius:var(--radius);background:#fff}
-/* HVAC Premium: faithful service-business composition built from normal V2 widgets. */
-.v2-site:has(.v2-brand-hvac){--hvac-blue:#3b82f6;background:#fff;color:#111;font-size:16px;line-height:1.35}
-.v2-site:has(.v2-brand-hvac) .v2-section-inner{width:min(1240px,100%)}
-.v2-site:has(.v2-brand-hvac) .v2-region-header{position:sticky;top:0;z-index:50;padding:.9rem max(1.25rem,2vw)!important;background:#fff;border-bottom:1px solid #ececec}
-.v2-site:has(.v2-brand-hvac) .v2-region-header .v2-section-inner{width:min(1260px,100%)}
-.v2-site:has(.v2-brand-hvac) .v2-region-header .v2-row{gap:1rem;align-items:center}
-.v2-site:has(.v2-brand-hvac) .v2-region-header .v2-column{gap:0;justify-content:center}
-.v2-site:has(.v2-brand-hvac) .v2-region-header .v2-column:last-child{align-items:flex-end}
-.v2-brand-hvac{gap:.45rem;font-size:1.25rem;letter-spacing:-.04em}.v2-brand-hvac::before{content:"≋";display:grid;width:24px;height:24px;place-items:center;border-radius:50%;background:var(--hvac-blue);color:#fff;font-size:1.5rem;font-weight:900;line-height:1;transform:rotate(-12deg)}
-.v2-site:has(.v2-brand-hvac) .v2-nav-hvac{justify-content:center}.v2-site:has(.v2-brand-hvac) .v2-nav-hvac .v2-nav-links{gap:1.75rem}.v2-site:has(.v2-brand-hvac) .v2-nav-hvac a{font-size:1rem}
-.v2-site:has(.v2-brand-hvac) .v2-button{min-height:44px;border-radius:8px;background:var(--hvac-blue);padding:.8rem 1.35rem;font-weight:700}
-.v2-site:has(.v2-brand-hvac) .v2-key-hero{padding:12px 20px 0!important}
-.v2-site:has(.v2-brand-hvac) .v2-key-hero .v2-section-inner{width:100%;max-width:none}
-.v2-site:has(.v2-brand-hvac) .v2-key-hero .v2-column:has(>.v2-media-background){min-height:min(calc(100dvh - 102px),860px);padding:clamp(3rem,7vw,6rem) clamp(2rem,17.5vw,21rem);border-radius:11px;justify-content:flex-start;gap:1rem}
-.v2-site:has(.v2-brand-hvac) .v2-key-hero .v2-column:has(>.v2-media-background)::after{background:rgb(0 0 0/.58)}
-.v2-site:has(.v2-brand-hvac) .v2-key-hero .v2-media-background{border-radius:11px}
-.v2-site:has(.v2-brand-hvac) .v2-key-hero h1{max-width:18ch;font-size:clamp(3rem,4.1vw,4.65rem);font-weight:400;line-height:1.04;letter-spacing:-.045em}
-.v2-site:has(.v2-brand-hvac) .v2-key-hero .v2-column>p{max-width:42rem}.v2-site:has(.v2-brand-hvac) .v2-key-hero .v2-column>p:first-of-type{font-size:.95rem;font-weight:700}.v2-site:has(.v2-brand-hvac) .v2-key-hero .v2-column>p:nth-of-type(2){max-width:34rem;font-size:1.05rem;font-weight:600;line-height:1.25}
-.v2-list-hvac-hero-trust{display:flex;max-width:32rem;flex-direction:column;gap:.55rem}.v2-list-hvac-hero-trust article{display:block;padding:0;border:0;background:none}.v2-list-hvac-hero-trust article:nth-child(n+4){display:none}.v2-list-hvac-hero-trust .v2-index,.v2-list-hvac-hero-trust p,.v2-list-hvac-hero-trust img{display:none}.v2-list-hvac-hero-trust h3{margin:0;font-size:1rem;font-weight:600}.v2-list-hvac-hero-trust h3::before{content:"✓";margin-right:.55rem;color:var(--hvac-blue);font-weight:900}
-.v2-site:has(.v2-brand-hvac) .v2-key-hero>.v2-section-inner>.v2-row>.v2-column>.v2-button{position:absolute;left:clamp(2rem,17.5vw,21rem);bottom:4.9rem}
-.v2-site:has(.v2-brand-hvac) .v2-key-hero .v2-business-info{position:absolute;left:calc(clamp(2rem,17.5vw,21rem) + 11.2rem);bottom:4.9rem;min-height:44px;justify-content:center;padding:.55rem 1.2rem;border:1px solid #ffffff55;border-radius:8px;background:#ffffff22;backdrop-filter:blur(8px)}
-.v2-site:has(.v2-brand-hvac) .v2-key-hero .v2-business-info strong,.v2-site:has(.v2-brand-hvac) .v2-key-hero .v2-business-info a[href^="mailto"],.v2-site:has(.v2-brand-hvac) .v2-key-hero .v2-business-info span{display:none}.v2-site:has(.v2-brand-hvac) .v2-key-hero .v2-business-info a{font-weight:700;text-decoration:none}
-.v2-testimonials-hvac-rating{position:absolute;right:clamp(2rem,17vw,20rem);bottom:4.9rem;display:block}.v2-testimonials-hvac-rating figure{min-width:250px;padding:1.1rem 1.35rem;border:1px solid #ffffff22;border-radius:8px;background:#111827cc;backdrop-filter:blur(10px)}.v2-testimonials-hvac-rating figure:not(:first-child),.v2-testimonials-hvac-rating blockquote{display:none}.v2-testimonials-hvac-rating figure::before{content:"G";float:left;display:grid;width:42px;height:42px;margin-right:.8rem;place-items:center;border-radius:50%;background:#fff;color:var(--hvac-blue);font-size:1.35rem;font-weight:900}.v2-testimonials-hvac-rating .v2-stars{font-size:.9rem}.v2-testimonials-hvac-rating figcaption strong::after{content:" · 4.9 out of 5"}.v2-testimonials-hvac-rating figcaption span::before{content:"From 250+ Reviews";font-size:.85rem}.v2-testimonials-hvac-rating figcaption span{font-size:0}
-.v2-site:has(.v2-brand-hvac) .v2-region-main:not(.v2-key-hero){padding:clamp(5rem,8vw,8rem) max(1.25rem,5vw)!important}.v2-site:has(.v2-brand-hvac) .v2-region-main h2{font-size:clamp(2.4rem,3.6vw,3.75rem);font-weight:400;line-height:1.08;letter-spacing:-.045em}.v2-site:has(.v2-brand-hvac) .v2-region-main .v2-column>p:first-child:not(:only-child){font-size:.78rem;font-weight:600;color:#3f3f46}.v2-site:has(.v2-brand-hvac) .v2-region-main .v2-column>p:first-child:not(:only-child)::before{content:"⌘";margin-right:.45rem;color:var(--hvac-blue)}
-.v2-list-hvac-stats{grid-template-columns:repeat(4,1fr);gap:0;padding:2.75rem 2rem;border:1px solid #dedede;border-radius:9px;background:repeating-linear-gradient(135deg,#fff,#fff 5px,#f5f5f5 5px,#f5f5f5 7px)}.v2-list-hvac-stats article{padding:0 1.75rem;border:0;background:none}.v2-list-hvac-stats .v2-index,.v2-list-hvac-stats img{display:none}.v2-list-hvac-stats h3{margin:0;font-size:clamp(2.25rem,3.5vw,3.5rem);font-weight:400;letter-spacing:-.05em}.v2-list-hvac-stats p{font-size:1rem;color:#444}
-.v2-list-hvac-services{display:block}.v2-list-hvac-services article{display:grid;min-height:240px;grid-template-columns:1.2fr 1.2fr .9fr;grid-template-areas:"title copy image";align-items:start;gap:2rem;padding:2.6rem 0;border:0;border-bottom:1px solid #ddd;border-radius:0;background:none}.v2-list-hvac-services .v2-index{display:none}.v2-list-hvac-services h3{grid-area:title;margin:0;font-size:1.8rem;font-weight:400;letter-spacing:-.035em}.v2-list-hvac-services p{grid-area:copy;margin:0;font-size:1rem;color:#333}.v2-list-hvac-services img{grid-area:image;width:100%;height:190px;margin:0;border-radius:8px;object-fit:cover}
-.v2-key-services>.v2-section-inner>.v2-row>.v2-column>.v2-button{margin-top:1.5rem}
-.v2-list-hvac-features{grid-template-columns:repeat(3,1fr);gap:1rem}.v2-list-hvac-features article{min-height:180px;padding:1.6rem;border:1px solid #ddd;border-radius:8px;background:#fff}.v2-list-hvac-features .v2-index{display:grid;width:40px;height:40px;place-items:center;border:1px solid #ddd;border-radius:5px;color:#111}.v2-list-hvac-features h3{font-size:1.35rem;font-weight:400}.v2-list-hvac-features p{color:#444}
-.v2-key-reviews{text-align:center}.v2-testimonials-hvac-wall{grid-template-columns:repeat(3,1fr);text-align:left}.v2-testimonials-hvac-wall figure{min-height:250px;border:1px solid #ddd;border-radius:8px;background:#fff}.v2-testimonials-hvac-wall blockquote{display:block;overflow:visible;font-size:1.05rem;-webkit-line-clamp:unset}.v2-testimonials-hvac-wall figcaption{padding-top:1rem;border-top:1px solid #e5e5e5}.v2-key-reviews>.v2-section-inner>.v2-row>.v2-column>.v2-button{margin:2rem auto 0}
-.v2-key-hvac-financing{margin:3rem max(1.25rem,5vw);padding:6rem 2rem!important;border-radius:10px;text-align:center}.v2-key-hvac-financing .v2-column{align-items:center}.v2-key-hvac-financing h2{max-width:23ch}.v2-key-hvac-financing .v2-button{margin-top:1rem}
-.v2-key-hvac-service-areas .v2-map{min-height:390px;justify-content:flex-end;border:1px solid #ddd;background:repeating-linear-gradient(135deg,#fff,#fff 5px,#f4f4f4 5px,#f4f4f4 7px)}.v2-key-hvac-service-areas .v2-map::before{content:"Service coverage";display:grid;min-height:250px;margin-bottom:1rem;place-items:center;background:#f0f5fb;color:var(--hvac-blue);font-size:1.25rem}.v2-key-hvac-service-areas .v2-business-info{gap:.7rem}.v2-key-hvac-service-areas .v2-button{margin-top:1rem}
-.v2-gallery-hvac-works{grid-template-columns:1fr 1fr;gap:1.5rem}.v2-gallery-hvac-works figure{grid-column:auto;border-radius:8px}.v2-gallery-hvac-works figure:nth-child(n+3){display:none}.v2-gallery-hvac-works img{height:360px}
-.v2-list-hvac-process{grid-template-columns:repeat(4,1fr);gap:1rem}.v2-list-hvac-process article{min-height:220px;padding:1.5rem;border:1px solid #ddd;border-radius:8px;background:#fff}.v2-list-hvac-process .v2-index{display:grid;width:48px;height:48px;place-items:center;border:1px solid #ddd;border-radius:6px;color:#111;font-size:1rem}.v2-list-hvac-process h3{font-size:1.3rem;font-weight:400}.v2-list-hvac-process p{color:#555}
-.v2-accordion-hvac{width:100%;max-width:none}.v2-accordion-hvac details{margin-bottom:.6rem;padding:1rem 1.2rem;border:1px solid #ddd;border-radius:7px}.v2-accordion-hvac summary{display:flex;justify-content:space-between;font-weight:400;list-style:none}.v2-accordion-hvac summary::after{content:"+";font-size:1.25rem}.v2-accordion-hvac details[open] summary::after{content:"−"}
-.v2-site:has(.v2-brand-hvac) .v2-key-contact{width:min(930px,calc(100% - 2.5rem));margin:1rem auto 7rem;padding:5rem 2rem!important;border-radius:9px;background:#30343b!important;color:#fff;text-align:center}.v2-site:has(.v2-brand-hvac) .v2-key-contact .v2-column{align-items:center}.v2-site:has(.v2-brand-hvac) .v2-key-contact h2{font-size:2.3rem}.v2-site:has(.v2-brand-hvac) .v2-key-contact p{max-width:39rem}.v2-site:has(.v2-brand-hvac) .v2-key-contact .v2-business-info strong,.v2-site:has(.v2-brand-hvac) .v2-key-contact .v2-business-info a[href^="mailto"],.v2-site:has(.v2-brand-hvac) .v2-key-contact .v2-business-info span{display:none}.v2-site:has(.v2-brand-hvac) .v2-key-contact .v2-business-info a{color:#fff;text-decoration:none}
-.v2-site:has(.v2-brand-hvac) .v2-region-footer{padding:5rem max(1.25rem,5vw)!important;background:#fff!important;color:#111!important;border-top:1px solid #eee}.v2-site:has(.v2-brand-hvac) .v2-region-footer .v2-row:first-child{padding-bottom:2.5rem;border-bottom:1px solid #ddd}.v2-site:has(.v2-brand-hvac) .v2-region-footer .v2-nav-links{flex-direction:column;gap:.5rem}.v2-site:has(.v2-brand-hvac) .v2-region-footer nav{justify-content:flex-start}.v2-list-hvac-footer-services{display:block}.v2-list-hvac-footer-services article{padding:.2rem 0;border:0;background:none}.v2-list-hvac-footer-services .v2-index,.v2-list-hvac-footer-services p,.v2-list-hvac-footer-services img{display:none}.v2-list-hvac-footer-services h3{margin:0;font-size:1rem;font-weight:400}.v2-brand-hvac-footer{margin-top:3rem;opacity:.2}.v2-brand-hvac-footer strong{font-size:clamp(4rem,10vw,9rem);font-weight:400;letter-spacing:-.06em}.v2-brand-hvac-footer::before{content:"≋";color:var(--hvac-blue);font-size:8rem}
-@media(max-width:1024px){.v2-site:has(.v2-brand-hvac) .v2-key-hero .v2-column:has(>.v2-media-background){padding-inline:3rem}.v2-site:has(.v2-brand-hvac) .v2-key-hero>.v2-section-inner>.v2-row>.v2-column>.v2-button{left:3rem}.v2-site:has(.v2-brand-hvac) .v2-key-hero .v2-business-info{left:14.2rem}.v2-testimonials-hvac-rating{right:3rem}.v2-list-hvac-features,.v2-testimonials-hvac-wall{grid-template-columns:repeat(2,1fr)}.v2-list-hvac-services article{grid-template-columns:1fr 1fr;grid-template-areas:"title image" "copy image"}.v2-list-hvac-stats{grid-template-columns:repeat(2,1fr);gap:2rem}.v2-list-hvac-process{grid-template-columns:repeat(2,1fr)}}
-@media(max-width:640px){.v2-site:has(.v2-brand-hvac) .v2-region-header .v2-column:last-child{display:none}.v2-site:has(.v2-brand-hvac) .v2-key-hero{padding:0!important}.v2-site:has(.v2-brand-hvac) .v2-key-hero .v2-column:has(>.v2-media-background){min-height:720px;padding:4rem 1.25rem 10rem;border-radius:0}.v2-site:has(.v2-brand-hvac) .v2-key-hero .v2-media-background{border-radius:0}.v2-site:has(.v2-brand-hvac) .v2-key-hero h1{font-size:2.8rem}.v2-site:has(.v2-brand-hvac) .v2-key-hero>.v2-section-inner>.v2-row>.v2-column>.v2-button{left:1.25rem;bottom:6.5rem}.v2-site:has(.v2-brand-hvac) .v2-key-hero .v2-business-info{left:1.25rem;bottom:2.75rem}.v2-testimonials-hvac-rating{display:none}.v2-list-hvac-stats,.v2-list-hvac-features,.v2-testimonials-hvac-wall,.v2-gallery-hvac-works,.v2-list-hvac-process{grid-template-columns:1fr}.v2-list-hvac-services article{grid-template-columns:1fr;grid-template-areas:"image" "title" "copy"}.v2-list-hvac-services img{height:220px}.v2-key-hvac-financing{margin:0}.v2-brand-hvac-footer strong{font-size:3.5rem}.v2-brand-hvac-footer::before{font-size:4rem}}
-/* AA Painting & Remodeling: local contractor palette and dense visual grids. */
-.v2-site:has(.v2-brand-aa){--aa-navy:#18298c;--aa-blue:#30478c;--aa-red:#d90404;--aa-burgundy:#730202;--aa-paper:#f2f2f2;background:var(--aa-paper);color:#0d1f1b;font-size:16px;line-height:1.5}
-.v2-site:has(.v2-brand-aa) .v2-section-inner{width:min(1180px,100%)}
-.v2-site:has(.v2-brand-aa) .v2-region-header{position:sticky;top:0;z-index:50;padding:.85rem max(1.25rem,4vw)!important;background:var(--aa-paper);border-top:9px solid var(--aa-burgundy);border-bottom:1px solid #cfd3dc}
-.v2-brand-aa img{width:54px;height:54px}.v2-brand-aa strong{font-size:1rem;font-weight:800;letter-spacing:.02em;color:var(--aa-navy)}
-.v2-site:has(.v2-brand-aa) .v2-button{background:var(--aa-red);color:#fff;border-color:var(--aa-red);box-shadow:0 12px 28px color-mix(in srgb,var(--aa-red) 22%,transparent)}
-.v2-site:has(.v2-brand-aa) .v2-button-outline{background:transparent;color:var(--aa-navy);border-color:var(--aa-navy);box-shadow:none}
-.v2-site:has(.v2-brand-aa) .v2-key-contact{padding:0!important;background:#fff!important;color:#111827}
-.v2-site:has(.v2-brand-aa) .v2-key-contact .v2-section-inner{width:100%;max-width:none}
-.v2-site:has(.v2-brand-aa) .v2-key-contact .v2-row{gap:0;align-items:stretch;min-height:680px}
-.v2-site:has(.v2-brand-aa) .v2-key-contact .v2-column:first-child{padding:clamp(3rem,6vw,5rem) clamp(1.5rem,7vw,8rem);justify-content:center;background:#fff}
-.v2-site:has(.v2-brand-aa) .v2-key-contact .v2-column:last-child{min-height:680px}
-.v2-site:has(.v2-brand-aa) .v2-key-contact h2{color:#8f898f;font-size:clamp(3rem,5vw,4.7rem);line-height:.95;letter-spacing:-.06em}
-.v2-site:has(.v2-brand-aa) .v2-key-contact h2::after{content:"";display:block;width:48px;height:2px;margin-top:2.2rem;background:#ddd}
-.v2-site:has(.v2-brand-aa) .v2-key-contact p{max-width:33rem;color:#263238;font-size:1.08rem;line-height:1.65}
-.v2-site:has(.v2-brand-aa) .v2-key-contact .v2-business-info{gap:1.1rem;margin-block:1.25rem;color:#263238;font-size:1.05rem}
-.v2-site:has(.v2-brand-aa) .v2-key-contact .v2-business-info strong{font-size:1.35rem;color:#111}
-.v2-site:has(.v2-brand-aa) .v2-key-contact .v2-business-info a{width:max-content;color:#111;text-decoration:none}
-.v2-site:has(.v2-brand-aa) .v2-key-contact .v2-business-info a:hover{text-decoration:underline}
-.v2-site:has(.v2-brand-aa) .v2-key-contact .v2-button{width:max-content;margin-top:1.2rem;border-radius:4px;background:#050505;border-color:#050505;box-shadow:none;letter-spacing:.07em;text-transform:uppercase}
-.v2-site:has(.v2-brand-aa) .v2-key-contact .v2-button-outline{background:transparent;color:var(--aa-red);border-color:var(--aa-red)}
-.v2-site:has(.v2-brand-aa) .v2-key-contact .v2-map{height:100%;min-height:680px;border-radius:0;background:#eef2f7}
-.v2-site:has(.v2-brand-aa) .v2-key-contact .v2-map iframe{height:100%;min-height:680px;filter:saturate(1.05) contrast(1)}
-.v2-site:has(.v2-brand-aa) .v2-key-contact .v2-map a{display:none}
-.v2-site:has(.v2-brand-aa) .v2-key-quote{background:var(--aa-paper)!important}
-.v2-site:has(.v2-brand-aa) .v2-key-quote .v2-section-inner{width:min(980px,100%)}
-.v2-site:has(.v2-brand-aa) .v2-key-quote h2{text-align:center}
-.v2-site:has(.v2-brand-aa) .v2-key-quote p{max-width:42rem;margin-inline:auto;text-align:center;color:#40514f}
-.v2-site:has(.v2-brand-aa) h1,.v2-site:has(.v2-brand-aa) h2{letter-spacing:-.035em;text-transform:none;color:var(--aa-navy)}
-.v2-site:has(.v2-brand-aa) .v2-key-hero{background:var(--aa-paper)!important;padding-block:clamp(4rem,7vw,7rem)!important}.v2-site:has(.v2-brand-aa) .v2-key-hero .v2-row{align-items:center}.v2-site:has(.v2-brand-aa) .v2-key-hero h1{max-width:13ch;font-size:clamp(3rem,6.5vw,6rem);line-height:.98}.v2-site:has(.v2-brand-aa) .v2-key-hero p{font-size:1.18rem;color:#334155}.v2-site:has(.v2-brand-aa) .v2-key-hero .v2-image{height:min(620px,70vh);border:10px solid #fff;border-radius:24px;box-shadow:0 28px 80px #18298c2e}
-.v2-list-aa-services{grid-template-columns:repeat(3,minmax(0,1fr));gap:1.25rem}.v2-list-aa-services article{min-height:390px;padding:1.25rem;border:1px solid #c8ced8;border-radius:18px;background:#fff}.v2-list-aa-services .v2-index{color:var(--aa-red);font-weight:900}.v2-list-aa-services img{height:170px;border-radius:12px}.v2-list-aa-services h3{margin:.7rem 0 .5rem;color:var(--aa-navy);font-size:1.3rem;line-height:1.05;text-transform:none}.v2-list-aa-services p{font-size:.95rem;color:#40514f}
-.v2-list-aa-benefits{grid-template-columns:repeat(3,minmax(0,1fr));gap:1.25rem}.v2-list-aa-benefits article{min-height:190px;padding:1.35rem;border:1px solid #c8ced8;border-radius:18px;background:#fff}.v2-list-aa-benefits .v2-index{color:var(--aa-red)}.v2-list-aa-benefits h3{font-size:1.15rem;color:var(--aa-navy)}.v2-list-aa-benefits p{font-size:.95rem;color:#40514f}
-.v2-gallery-aa-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:1.15rem}.v2-gallery-aa-grid figure{position:relative;grid-column:auto;border:1px solid #c8ced8;border-radius:18px;background:#fff}.v2-gallery-aa-grid img{height:260px;border-radius:17px 17px 0 0}.v2-gallery-aa-grid figcaption{display:flex;min-height:74px;align-items:center;justify-content:space-between;gap:1rem;padding:.95rem 1rem;background:#fff;color:#243b37;font-weight:700}.v2-gallery-aa-grid figcaption span:first-child{display:-webkit-box;overflow:hidden;-webkit-line-clamp:2;-webkit-box-orient:vertical}.v2-gallery-aa-grid .v2-gallery-index{color:var(--aa-red);font-weight:900}
-.v2-accordion-aa{width:100%;max-width:980px;margin-inline:auto}.v2-accordion-aa details{margin-bottom:.85rem;border:1px solid color-mix(in srgb,var(--aa-blue) 35%,transparent);border-radius:18px;background:#fff;box-shadow:0 14px 34px #18298c12}.v2-accordion-aa summary{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:1.15rem 1.35rem;color:var(--aa-navy);list-style:none;font-size:1rem;font-weight:800}.v2-accordion-aa summary::after{content:"+";display:grid;width:28px;height:28px;place-items:center;border-radius:50%;background:var(--aa-red);color:#fff}.v2-accordion-aa details[open] summary::after{content:"−"}.v2-accordion-aa details p{padding:0 1.35rem 1.25rem;color:#40514f}
-.v2-site:has(.v2-brand-aa) .v2-key-gallery{background:#fff!important}.v2-site:has(.v2-brand-aa) .v2-key-faq{background:var(--aa-burgundy)!important;color:#fff}.v2-site:has(.v2-brand-aa) .v2-key-faq h2,.v2-site:has(.v2-brand-aa) .v2-key-faq p{color:#fff}.v2-site:has(.v2-brand-aa) .v2-region-footer{background:var(--aa-navy)!important;color:#fff!important}
-@media(max-width:1024px){.v2-list-aa-services,.v2-list-aa-benefits,.v2-gallery-aa-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:640px){.v2-list-aa-services,.v2-list-aa-benefits,.v2-gallery-aa-grid{grid-template-columns:1fr}.v2-list-aa-services article{min-height:0}.v2-site:has(.v2-brand-aa) .v2-key-hero h1{font-size:2.8rem}.v2-site:has(.v2-brand-aa) .v2-key-hero .v2-image{height:360px}.v2-site:has(.v2-brand-aa) .v2-key-contact .v2-row{min-height:0}.v2-site:has(.v2-brand-aa) .v2-key-contact .v2-column:first-child{padding:3rem 1.25rem}.v2-site:has(.v2-brand-aa) .v2-key-contact .v2-column:last-child,.v2-site:has(.v2-brand-aa) .v2-key-contact .v2-map,.v2-site:has(.v2-brand-aa) .v2-key-contact .v2-map iframe{min-height:380px}.v2-site:has(.v2-brand-aa) .v2-key-contact h2{font-size:3rem}}
-.v2-pxh{position:relative;isolation:isolate;overflow:hidden;display:flex;width:100vw;min-height:min(94dvh,880px);flex-direction:column;justify-content:center;gap:clamp(2rem,5vh,3.5rem);margin-inline:calc(50% - 50vw);padding:clamp(3.5rem,9vh,6rem) max(5vw,1.25rem);background:var(--secondary);color:var(--footer-text);text-align:center}
-.v2-section:has(>.v2-section-inner .v2-pxh){padding:0}.v2-section:has(>.v2-section-inner .v2-pxh) .v2-section-inner{width:100%}
-.v2-pxh-content{margin-block:auto}.v2-pxh-trust{margin-top:auto}
-.v2-pxh-canvas{position:absolute;inset:0;z-index:-2;width:100%;height:100%}.v2-pxh-fade{position:absolute;inset:0;z-index:-1;background:radial-gradient(circle at center,transparent 0%,var(--secondary) 100%);opacity:.8;pointer-events:none}
-.v2-pxh-content{display:flex;flex-direction:column;align-items:center;gap:1.5rem}
-.v2-pxh-title{display:flex;max-width:none;flex-wrap:wrap;justify-content:center;column-gap:.3em;font-size:clamp(2.8rem,8vw,7rem);line-height:1;letter-spacing:normal;filter:drop-shadow(0 15px 35px #0006) drop-shadow(0 5px 10px #0003)}
-.v2-pxh-title em{font-family:Georgia,'Times New Roman',serif;font-style:italic;font-weight:500}.v2-pxh-title strong{font-family:var(--heading);font-weight:900;letter-spacing:-.045em}
-@supports(-webkit-background-clip:text){.v2-pxh-title{color:transparent;background:linear-gradient(135deg,var(--footer-text) 0%,color-mix(in srgb,var(--footer-text) 60%,transparent) 25%,color-mix(in srgb,var(--footer-text) 38%,transparent) 45%,color-mix(in srgb,var(--footer-text) 92%,transparent) 55%,color-mix(in srgb,var(--footer-text) 50%,transparent) 75%,var(--footer-text) 100%);background-size:200% auto;-webkit-background-clip:text;background-clip:text;-webkit-text-stroke:1.5px color-mix(in srgb,var(--footer-text) 32%,transparent);animation:v2-pxh-shimmer 8s linear infinite}}
-.v2-pxh-description{max-width:42rem;margin-inline:auto;font-size:clamp(1rem,1.6vw,1.25rem);font-weight:300;opacity:.85}
-.v2-pxh-actions{display:flex;flex-wrap:wrap;justify-content:center;gap:.75rem}.v2-pxh-actions .v2-button-outline{border-color:color-mix(in srgb,var(--footer-text) 45%,transparent)}
-.v2-pxh-trust{display:flex;flex-direction:column;gap:1rem}.v2-pxh-trust-label{font-size:.72rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;opacity:.65}
-.v2-pxh-marquee{width:min(64rem,100%);margin-inline:auto;overflow:hidden;-webkit-mask-image:linear-gradient(to right,transparent,#000 15%,#000 85%,transparent);mask-image:linear-gradient(to right,transparent,#000 15%,#000 85%,transparent)}
-.v2-pxh-track{display:flex;width:max-content;gap:3rem;padding-block:.5rem;animation:v2-pxh-marquee 25s linear infinite}.v2-pxh-group{display:flex;align-items:center;gap:3rem}.v2-pxh-group span{font-family:var(--heading);font-size:1.05rem;font-weight:700;white-space:nowrap;opacity:.6}
-@keyframes v2-pxh-shimmer{0%{background-position:200% center}100%{background-position:0% center}}@keyframes v2-pxh-marquee{to{transform:translateX(calc(-50% - 1.5rem))}}
-@media(prefers-reduced-motion:reduce){.v2-pxh-title{animation:none}.v2-pxh-track{animation:none}}
-@media(max-width:1024px){.v2-column{grid-column:span var(--span-t)}.v2-section{padding-block:clamp(3rem,7vw,5rem)}.v2-region-header .v2-nav-links{gap:.8rem}.v2-list-bento article,.v2-list-bento article:nth-child(3n+1){grid-column:span 6}}
-@media(max-width:640px){.v2-row{gap:1.25rem}.v2-column{grid-column:span var(--span-m)}.v2-section{padding:3rem 1.1rem}.v2-region-header{padding-block:.75rem}.v2-region-header .v2-row{display:flex;align-items:center;justify-content:space-between}.v2-region-header .v2-nav-toggle{display:flex}.v2-region-header .v2-nav-links{display:none}
-.v2-region-header nav.v2-nav-open .v2-nav-links{position:absolute;left:0;right:0;top:100%;z-index:40;display:flex;flex-direction:column;align-items:stretch;gap:0;padding:.4rem 1.1rem 1rem;background:var(--bg);color:var(--text);border-bottom:1px solid color-mix(in srgb,var(--text) 14%,transparent);box-shadow:0 24px 48px #00000026;white-space:normal}
-.v2-region-header nav.v2-nav-open .v2-nav-links a{padding:.9rem .15rem;font-size:1rem;border-bottom:1px solid color-mix(in srgb,var(--text) 8%,transparent)}.v2-region-header nav.v2-nav-open .v2-nav-links a:last-child{border-bottom:0}h1{font-size:clamp(2.35rem,13vw,4rem)}h2{font-size:clamp(1.9rem,10vw,3rem)}.v2-list-bento article,.v2-list-bento article:nth-child(3n+1){grid-column:1/-1}.v2-gallery figure{grid-column:span 6}.v2-gallery-bento figure,.v2-gallery-bento figure:nth-child(4n+1),.v2-gallery-bento figure:nth-child(4n){grid-column:1/-1}.v2-gallery-mosaic figure:first-child{grid-column:1/-1}.v2-gallery-mosaic figure:first-child img{min-height:360px}.v2-gallery-filmstrip figure{min-width:88%}.v2-form-wrap form{grid-template-columns:1fr}.v2-form-wrap label,.v2-form-wrap button,.v2-form-wrap output{grid-column:1}.v2-button{max-width:100%;white-space:normal}}
-@media(prefers-reduced-motion:no-preference){.v2-motion-subtle .v2-region-main{animation:v2-reveal .5s ease both}.v2-motion-stagger .v2-region-main{animation:v2-reveal .6s cubic-bezier(.16,1,.3,1) both}.v2-motion-stagger .v2-region-main:nth-of-type(2){animation-delay:.06s}.v2-motion-stagger .v2-region-main:nth-of-type(3){animation-delay:.12s}.v2-motion-stagger .v2-region-main:nth-of-type(4){animation-delay:.18s}.v2-motion-cinematic .v2-region-main{animation:v2-cinema .8s cubic-bezier(.2,.8,.2,1) both}@keyframes v2-reveal{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}@keyframes v2-cinema{from{opacity:0;transform:scale(.985)}to{opacity:1;transform:none}}}`;
+  const themeVars = `:root{--primary:${theme.primary};--secondary:${theme.secondary};--accent:${theme.accent};--button-text:${buttonText};--footer-text:${footerText};--bg:${theme.background};--text:${theme.text};--muted:${theme.muted};--on-primary:${readableText(theme.primary)};--on-secondary:${footerText};--on-accent:${buttonText};--on-background:${theme.text};--on-text:${readableText(theme.text)};--on-muted:${readableText(theme.muted)};--radius:${radius};--heading:${theme.headingFont};--body:${theme.bodyFont}}
+html{scroll-behavior:smooth}
+body{margin:0;overflow-x:hidden;background:var(--bg)}
+.v2-region-footer{margin-top:auto;background:var(--secondary)!important;color:var(--footer-text)!important}
+.v2-region-footer a{color:inherit}
+[data-widget-type="nav"].v2-nav-open .v2-nav-links{position:absolute;left:0;right:0;top:100%;z-index:40;display:flex!important;flex-direction:column;align-items:stretch;gap:0;padding:.4rem 1.1rem 1rem;background:var(--bg);color:var(--text);border-bottom:1px solid color-mix(in srgb,var(--text) 14%,transparent);box-shadow:0 24px 48px #00000026}
+[data-widget-type="nav"].v2-nav-open .v2-nav-links a{padding:.9rem .15rem;font-size:1rem;border-bottom:1px solid color-mix(in srgb,var(--text) 8%,transparent)}
+[data-widget-type="nav"].v2-nav-open .v2-nav-links a:last-child{border-bottom:0}`;
+  return `${themeVars}\n${V2_TAILWIND_CSS}`;
 }
 
-const mobileSafetyCss = `@media(max-width:640px){.v2-section{padding-left:1.1rem!important;padding-right:1.1rem!important}.v2-column,.v2-form-wrap,.v2-form-wrap label{min-width:0}h1,h2,h3,p,a,span{overflow-wrap:anywhere}.v2-button{max-width:100%;white-space:normal}}`;
+// Recorte de seguridad: si un valor arbitrario del usuario (padding XL, ancho
+// fijo, etc.) igual empuja contenido fuera del viewport en móvil, esto evita
+// el scroll horizontal como última red — Tailwind ya previene la mayoría de
+// los casos, esto es un backstop, no el mecanismo principal.
+const mobileSafetyCss = `@media(max-width:640px){h1,h2,h3,p,a,span{overflow-wrap:break-word}}`;
 
 // Recursos que solo se inyectan cuando el sitio se renderiza dentro del editor (iframe del builder).
 const editorCss = `[data-widget-id],[data-column-id],[data-section-id]{cursor:pointer}
@@ -375,7 +591,6 @@ const editorCss = `[data-widget-id],[data-column-id],[data-section-id]{cursor:po
 .v2-ed-selected{outline:2px solid #7c3aed!important;outline-offset:2px;position:relative}
 .v2-ed-selected[data-v2-label]::before{content:attr(data-v2-label);position:absolute;top:-1.45rem;left:-2px;z-index:999;background:#7c3aed;color:#fff;font:600 .65rem/1 system-ui,sans-serif;padding:.28rem .5rem;border-radius:.25rem .25rem 0 0;white-space:nowrap;pointer-events:none}
 [data-editable-text="1"][contenteditable="true"]{cursor:text;outline:2px solid #7c3aed!important;outline-offset:3px;caret-color:#7c3aed}
-.v2-column:not(:has([data-widget-id])){min-height:56px;outline:1px dashed #d4d4d8;outline-offset:-4px;border-radius:6px}
 .v2-ed-drop-line{position:absolute;height:4px;background:#7c3aed;border-radius:2px;z-index:9999;pointer-events:none;display:none}
 .v2-ed-drop-target{outline:2px dashed #7c3aed!important;outline-offset:2px}`;
 
@@ -515,7 +730,7 @@ export function renderSiteV2(input: RenderSiteV2Input): RenderedSiteV2 {
     ...(Object.values(content.social).filter((url) => safeUrl(url)).length ? { sameAs: Object.values(content.social).map(safeUrl).filter(Boolean) } : {}),
   } : null;
   const structuredDataHtml = structuredData ? `<script type="application/ld+json">${JSON.stringify(structuredData).replace(/</g, "\\u003c")}</script>` : "";
-  const body = `<div id="top" class="v2-site v2-motion-${theme.motion}">${sections.map((section) => sectionHtml(section, content, theme, input.leadEndpoint, input.editable)).join("")}${input.showBranding ? `<div style="padding:14px;text-align:center;font-size:12px;color:var(--muted)">Creado con Cluster</div>` : ""}</div>${structuredDataHtml}`;
+  const body = `<div id="top" class="flex min-h-dvh flex-col bg-[var(--bg)] text-[var(--text)]" style="font-family:var(--body)">${sections.map((section) => sectionHtml(section, content, theme, input.leadEndpoint, input.editable)).join("")}${input.showBranding ? `<div class="p-4 text-center text-xs text-[var(--muted)]">Creado con Cluster</div>` : ""}</div>${structuredDataHtml}`;
   const css = `${baseCss(theme)}${dynamicCss(sections)}${mobileSafetyCss}${input.editable ? editorCss : ""}`;
   const hasPixelHero = sections.some((section) => section.rows.some((row) => row.columns.some((column) => column.widgets.some((widget) => widget.type === "hero_pixel"))));
   const script = `${formScript()}${navScript()}${galleryScript()}${hasPixelHero ? pixelHeroScript() : ""}${input.editable ? editorScript() : ""}`;
