@@ -41,7 +41,14 @@ yarn-error.log*
 /prisma/*.db
 
 .vercel
-test-results/*.log
+
+# QA / local run artifacts — never commit
+/test-results/
+/artifacts/
+*.log
+.codex-dev-*.log
+.codex-dev-*.out.log
+.codex-dev-*.err.log
 
 # verified local database exports
 /.tmp/

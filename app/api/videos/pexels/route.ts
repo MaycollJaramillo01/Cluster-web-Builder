@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import { consumeRateLimit } from "@/lib/rate-limit";
+
 export const runtime = "nodejs";
 
 type PexelsVideoFile = {
@@ -18,6 +20,13 @@ type PexelsVideo = {
 };
 
 export async function GET(request: NextRequest) {
+  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
+    || request.headers.get("x-real-ip")
+    || "local";
+  if (!(await consumeRateLimit("pexels-video", ip, 60, 60 * 60 * 1000))) {
+    return NextResponse.json({ error: "Demasiadas solicitudes de video. Intenta más tarde." }, { status: 429 });
+  }
+
   const query = request.nextUrl.searchParams.get("q")?.slice(0, 80) || "small business";
   const seed = request.nextUrl.searchParams.get("seed") || query;
   const apiKey = process.env.PEXELS_API_KEY;
