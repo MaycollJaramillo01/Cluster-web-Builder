@@ -11,6 +11,40 @@ export type SiteActor = {
   guestTokenHash: string | null;
 };
 
+/** Loose site row returned by assertSiteAccess (select/include vary by caller). */
+export type AccessedSite = {
+  id: string;
+  businessName?: string;
+  businessType?: string;
+  phone?: string | null;
+  email?: string | null;
+  location?: string | null;
+  domain?: string | null;
+  language?: string;
+  status?: string;
+  primaryColor?: string;
+  secondaryColor?: string;
+  accentColor?: string;
+  builderVersion?: number;
+  templateId?: string | null;
+  contentJson?: unknown;
+  designJson?: unknown;
+  replacesSiteId?: string | null;
+  visualStyle?: string | null;
+  goal?: string | null;
+  updatedAt?: Date | string;
+  sections?: Array<{
+    id: string;
+    type: string;
+    title: string | null;
+    content: unknown;
+    order: number;
+    isVisible: boolean;
+    settingsJson: unknown;
+  }>;
+  [key: string]: unknown;
+};
+
 export class SiteAccessError extends Error {
   status: 401 | 404;
 
@@ -37,7 +71,7 @@ type AssertOptions = {
   select?: Record<string, unknown>;
 };
 
-export async function assertSiteAccess(options: AssertOptions) {
+export async function assertSiteAccess(options: AssertOptions): Promise<{ site: AccessedSite; actor: SiteActor }> {
   const actor = await getSiteActor(options.request);
   const requireUser = options.requireUser ?? false;
   const allowGuest = options.allowGuest ?? !requireUser;
@@ -56,7 +90,7 @@ export async function assertSiteAccess(options: AssertOptions) {
   } as never);
 
   if (!site) throw new SiteAccessError(404, "Proyecto no encontrado.");
-  return { site: site as Record<string, any>, actor };
+  return { site: site as AccessedSite, actor };
 }
 
 export function siteAccessErrorResponse(error: unknown) {

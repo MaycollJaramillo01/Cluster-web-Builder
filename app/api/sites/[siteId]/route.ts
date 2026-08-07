@@ -78,6 +78,8 @@ export async function GET(
       include: { sections: { orderBy: { order: "asc" } } },
     });
 
+    const sections = site.sections ?? [];
+
     return NextResponse.json({
       site: {
         id: site.id,
@@ -97,12 +99,23 @@ export async function GET(
         content: site.contentJson,
         design: site.designJson,
         replacesSiteId: site.replacesSiteId,
-        updatedAt: site.updatedAt.toISOString(),
+        updatedAt: site.updatedAt instanceof Date
+          ? site.updatedAt.toISOString()
+          : String(site.updatedAt ?? ""),
       },
       sections: site.builderVersion === 2
-        ? (site.sections ?? []).map((section) => section.content)
-        : (site.sections ?? []).map(toRenderSection),
-      launchReadiness: getSiteLaunchReadiness(site),
+        ? sections.map((section) => section.content)
+        : sections.map(toRenderSection),
+      launchReadiness: getSiteLaunchReadiness({
+        builderVersion: site.builderVersion,
+        status: site.status,
+        contentJson: site.contentJson,
+        phone: site.phone,
+        email: site.email,
+        logoUrl: typeof site.logoUrl === "string" ? site.logoUrl : null,
+        coverUrl: typeof site.coverUrl === "string" ? site.coverUrl : null,
+        sections,
+      }),
     });
   } catch (error) {
     return siteAccessErrorResponse(error) ?? NextResponse.json({ error: "Sitio no encontrado." }, { status: 404 });
