@@ -38,6 +38,7 @@ type EditorSiteV2 = {
   status: string;
   publicSlug: string;
   publicUrl: string;
+  updatedAt: string;
 };
 
 type Selection = { kind: "section" | "row" | "column" | "widget"; id: string } | null;
@@ -174,6 +175,7 @@ export function SiteEditorV2({ initialSite }: { initialSite: EditorSiteV2 }) {
   const [downloading, setDownloading] = useState(false);
   const [status, setStatus] = useState(initialSite.status);
   const [publicUrl, setPublicUrl] = useState(initialSite.publicUrl);
+  const [updatedAt, setUpdatedAt] = useState(initialSite.updatedAt);
   const [message, setMessage] = useState("");
   const [menu, setMenu] = useState<ContextMenuState>(null);
   const [clipboard, setClipboard] = useState<V2Clipboard | null>(null);
@@ -341,12 +343,21 @@ export function SiteEditorV2({ initialSite }: { initialSite: EditorSiteV2 }) {
         method: "PUT", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           builderVersion: 2, templateId, content, design, sections,
+          expectedUpdatedAt: updatedAt,
           site: { businessName: content.business.name, phone: content.business.phone || null, email: content.business.email || null, location: content.business.location || null },
         }),
       });
       const data = await response.json().catch(() => ({}));
+      if (response.status === 409 && data.code === "STALE_WRITE") {
+        setMessage(data.error || "El sitio cambió en otra pestaña. Recarga antes de guardar.");
+        return false;
+      }
       if (!response.ok) throw new Error(data.error || "No se pudo guardar.");
-      setSections(data.sections); setDirty(false); localStorage.removeItem(draftKey); setMessage("Cambios guardados.");
+      setSections(data.sections);
+      if (typeof data.updatedAt === "string") setUpdatedAt(data.updatedAt);
+      setDirty(false);
+      localStorage.removeItem(draftKey);
+      setMessage("Cambios guardados.");
       return true;
     } catch (reason) { setMessage(reason instanceof Error ? reason.message : "No se pudo guardar."); return false; }
     finally { setSaving(false); }

@@ -2,8 +2,7 @@ import { del } from "@vercel/blob";
 import { handleUpload, type HandleUploadBody } from "@vercel/blob/client";
 import { NextRequest, NextResponse } from "next/server";
 
-import { getUserBySessionToken, GUEST_COOKIE, hashGuestToken, SESSION_COOKIE } from "@/lib/auth";
-import { prisma } from "@/lib/db";
+import { assertSiteAccess } from "@/lib/site/access";
 import {
   getSiteMedia,
   IMAGE_MAX_BYTES,
@@ -22,22 +21,13 @@ const FREE_QUOTA = 100 * MB;
 const PRO_QUOTA = 2 * 1024 * MB;
 
 async function access(request: NextRequest, siteId: string) {
-  const user = await getUserBySessionToken(request.cookies.get(SESSION_COOKIE)?.value);
-  const guestTokenHash = hashGuestToken(request.cookies.get(GUEST_COOKIE)?.value);
-  if (!user && !guestTokenHash) return null;
-  const site = await prisma.site.findFirst({
-    where: {
-      id: siteId,
-      ...(user?.role === "ADMIN" ? {} : { OR: [
-        ...(user ? [{ userId: user.id }] : []),
-        ...(guestTokenHash ? [{ userId: null, guestTokenHash, guestExpiresAt: { gt: new Date() } }] : []),
-      ] }),
-    },
-    select: { id: true },
-  });
-  if (!site) return null;
-  const quota = user && (user.role === "ADMIN" || user.planStatus === "ACTIVE") ? PRO_QUOTA : FREE_QUOTA;
-  return { quota };
+  try {
+    const { actor } = await assertSiteAccess({ siteId, request, select: { id: true } });
+    const quota = actor.user && (actor.user.role === "ADMIN" || actor.user.planStatus === "ACTIVE") ? PRO_QUOTA : FREE_QUOTA;
+    return { quota };
+  } catch {
+    return null;
+  }
 }
 
 async function usage(siteId: string) {

@@ -9,8 +9,14 @@ import { applyPageStructure } from "@/lib/site/structure";
 import { trackProductEvent } from "@/lib/product-events";
 import { migrateLegacySiteDocument } from "@/lib/site/v2-migrate";
 import { materializeDataUrlsForSite, stripDataUrls } from "@/lib/site/media";
+import type { CanvasSectionV2, SiteContentV2 } from "@/lib/site/v2-schema";
 
 type GuestAccess = { tokenHash: string; expiresAt: Date } | null;
+
+type PendingV2Document = {
+  content: SiteContentV2;
+  sections: CanvasSectionV2[];
+};
 
 export async function persistGeneratedSite({
   input,
@@ -60,7 +66,13 @@ export async function persistGeneratedSite({
     order: section.order,
   })));
 
+  const strippedContent = stripDataUrls(v2.content) as SiteContentV2;
+  const strippedSections = stripDataUrls(v2.sections) as CanvasSectionV2[];
+
   await prisma.site.deleteMany({ where: { userId: null, guestExpiresAt: { lt: new Date() } } });
+
+  // Fast path: create the project immediately so the SSE `saved` event can fire
+  // before Blob materialization (logo/cover) races the 60s serverless wall.
   const site = await prisma.site.create({
     data: {
       userId,
@@ -72,7 +84,7 @@ export async function persistGeneratedSite({
       visualStyle: plan.selectedDesignStyle,
       builderVersion: 2,
       templateId: v2.templateId,
-      contentJson: stripDataUrls(v2.content) as object,
+      contentJson: strippedContent as object,
       designJson: v2.design as object,
       location: input.location === "Zona por definir" ? null : input.location || null,
       phone: input.phone || null,
@@ -87,24 +99,11 @@ export async function persistGeneratedSite({
       logoUrl: null,
       coverUrl: null,
       blueprintJson: blueprint as object,
-    },
-  });
-
-  const content = await materializeDataUrlsForSite(site.id, v2.content, "content");
-  const canvasSections = await materializeDataUrlsForSite(site.id, v2.sections, "section");
-  const coverUrl = content.hero.media || content.about.media || content.media[0]?.url || null;
-
-  await prisma.site.update({
-    where: { id: site.id },
-    data: {
-      contentJson: content as object,
-      logoUrl: content.business.logo || null,
-      coverUrl,
       sections: {
-        create: canvasSections.map((section) => ({
+        create: strippedSections.map((section, order) => ({
           type: "canvas",
           title: section.name,
-          order: section.order,
+          order,
           isVisible: true,
           content: section as object,
           settingsJson: {},
@@ -112,6 +111,41 @@ export async function persistGeneratedSite({
       },
     },
   });
+
   await trackProductEvent("site_generated", { userId, siteId: site.id, metadata: { style: plan.selectedDesignStyle } });
-  return site;
+
+  const pending: PendingV2Document = { content: v2.content, sections: v2.sections };
+  return {
+    site,
+    finalizeMedia: () => materializeGeneratedSiteMedia(site.id, pending),
+  };
+}
+
+export async function materializeGeneratedSiteMedia(siteId: string, document: PendingV2Document) {
+  const content = await materializeDataUrlsForSite(siteId, document.content, "content");
+  const canvasSections = await materializeDataUrlsForSite(siteId, document.sections, "section");
+  const coverUrl = content.hero.media || content.about.media || content.media[0]?.url || null;
+
+  await prisma.$transaction([
+    prisma.site.update({
+      where: { id: siteId },
+      data: {
+        contentJson: content as object,
+        logoUrl: content.business.logo || null,
+        coverUrl,
+      },
+    }),
+    prisma.siteSection.deleteMany({ where: { siteId } }),
+    prisma.siteSection.createMany({
+      data: canvasSections.map((section, order) => ({
+        type: "canvas",
+        title: section.name,
+        order,
+        isVisible: true,
+        content: section as object,
+        settingsJson: {},
+        siteId,
+      })),
+    }),
+  ]);
 }

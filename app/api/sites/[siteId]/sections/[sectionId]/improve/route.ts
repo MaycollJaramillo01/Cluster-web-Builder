@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
-import { getUserBySessionToken, GUEST_COOKIE, hashGuestToken, SESSION_COOKIE } from "@/lib/auth";
-import { prisma } from "@/lib/db";
+import { assertSiteAccess, siteAccessErrorResponse } from "@/lib/site/access";
 import { openrouterChatStream, parseChatStream } from "@/lib/openrouter";
 import { consumeRateLimit } from "@/lib/rate-limit";
 import { getStyleCopyVoice, type LandingDesignStyle } from "@/lib/site/landing-design-brief";
@@ -20,24 +19,26 @@ export async function POST(
   { params }: { params: Promise<{ siteId: string; sectionId: string }> }
 ) {
   const { siteId, sectionId } = await params;
-  const user = await getUserBySessionToken(request.cookies.get(SESSION_COOKIE)?.value);
-  const guestTokenHash = hashGuestToken(request.cookies.get(GUEST_COOKIE)?.value);
-  if (!user && !guestTokenHash) return NextResponse.json({ error: "Proyecto no encontrado." }, { status: 404 });
   const parsed = requestSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "Campo inválido." }, { status: 400 });
 
-  const site = await prisma.site.findFirst({
-    where: {
-      id: siteId,
-      ...(user?.role === "ADMIN" ? {} : { OR: [
-        ...(user ? [{ userId: user.id }] : []),
-        ...(guestTokenHash ? [{ userId: null, guestTokenHash, guestExpiresAt: { gt: new Date() } }] : []),
-      ] }),
-    },
-    include: { sections: { where: { id: sectionId }, take: 1 } },
-  });
-  const section = site?.sections[0];
-  if (!site || !section) return NextResponse.json({ error: "Bloque no encontrado." }, { status: 404 });
+  let site;
+  try {
+    ({ site } = await assertSiteAccess({
+      siteId,
+      request,
+      include: { sections: { where: { id: sectionId }, take: 1 } },
+    }));
+  } catch (error) {
+    return siteAccessErrorResponse(error) ?? NextResponse.json({ error: "Proyecto no encontrado." }, { status: 404 });
+  }
+
+  const section = ((site.sections ?? [])[0] ?? null) as {
+    title?: string;
+    type?: string;
+    content?: Record<string, unknown> | null;
+  } | null;
+  if (!section) return NextResponse.json({ error: "Bloque no encontrado." }, { status: 404 });
   if (!(await consumeRateLimit("block-ai", siteId, 30, 60 * 60 * 1000))) {
     return NextResponse.json({ error: "Alcanzaste el límite temporal de mejoras con IA." }, { status: 429 });
   }
