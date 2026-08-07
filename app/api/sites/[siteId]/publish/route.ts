@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 
-import { getUserBySessionToken, SESSION_COOKIE } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { assertSiteAccess, SiteAccessError, siteAccessErrorResponse } from "@/lib/site/access";
 import { hasProAccess, proRequiredResponse } from "@/lib/entitlements";
 import { trackProductEvent } from "@/lib/product-events";
 import { getSiteLaunchReadiness } from "@/lib/site/launch-readiness";
@@ -15,23 +15,21 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ siteId: string }> }
 ) {
-  const user = await getUserBySessionToken(request.cookies.get(SESSION_COOKIE)?.value);
-  if (!user) {
-    return NextResponse.json(
-      { error: "Inicia sesión para publicar el sitio.", authRequired: true },
-      { status: 401 }
-    );
-  }
   const { siteId } = await params;
 
   try {
-    const existing = await prisma.site.findFirst({
-      where: { id: siteId, ...(user.role === "ADMIN" ? {} : { userId: user.id }) },
-      include: { sections: { orderBy: { order: "asc" } }, replacesSite: { include: { sections: { orderBy: { order: "asc" } } } } },
+    const { site: existing, actor } = await assertSiteAccess({
+      siteId,
+      request,
+      requireUser: true,
+      include: {
+        sections: { orderBy: { order: "asc" } },
+        replacesSite: { include: { sections: { orderBy: { order: "asc" } } } },
+      },
     });
-    if (!existing) throw new Error("not-found");
+    const user = actor.user!;
     if (!hasProAccess(user)) return NextResponse.json(proRequiredResponse, { status: 402 });
-    const readiness = getSiteLaunchReadiness(existing);
+    const readiness = getSiteLaunchReadiness(existing as Parameters<typeof getSiteLaunchReadiness>[0]);
     if (!readiness.canPublish) {
       return NextResponse.json({
         error: `Antes de publicar completa: ${readiness.missingForPublish.join(", ")}.`,
@@ -40,9 +38,20 @@ export async function POST(
       }, { status: 409 });
     }
     let publishedId = existing.id;
-    let publishedSlug = existing.publicSlug;
-    if (existing.builderVersion === 2 && existing.replacesSite) {
-      const source = existing.replacesSite;
+    let publishedSlug = String(existing.publicSlug ?? "");
+    const replacesSite = (existing as { replacesSite?: typeof existing & { sections: Array<Record<string, unknown>>; publicSlug: string; customDomain?: string | null } }).replacesSite;
+    const sections = (existing.sections ?? []) as Array<{
+      id: string;
+      type: string;
+      title: string | null;
+      content: unknown;
+      order: number;
+      isVisible: boolean;
+      settingsJson: unknown;
+    }>;
+
+    if (existing.builderVersion === 2 && replacesSite) {
+      const source = replacesSite;
       const snapshot = JSON.parse(JSON.stringify({ site: source, sections: source.sections }));
       await prisma.$transaction(async (tx) => {
         await tx.siteRevision.create({ data: { siteId: source.id, reason: "publish-v2-replacement", snapshotJson: snapshot } });
@@ -53,7 +62,7 @@ export async function POST(
           templateId: existing.templateId,
           contentJson: existing.contentJson ?? undefined,
           designJson: existing.designJson ?? undefined,
-          blueprintJson: existing.blueprintJson ?? undefined,
+          blueprintJson: (existing as { blueprintJson?: unknown }).blueprintJson ?? undefined,
           visualStyle: existing.visualStyle,
           businessName: existing.businessName,
           businessType: existing.businessType,
@@ -62,15 +71,15 @@ export async function POST(
           phone: existing.phone,
           email: existing.email,
           language: existing.language,
-          logoUrl: existing.logoUrl,
-          coverUrl: existing.coverUrl,
+          logoUrl: typeof existing.logoUrl === "string" ? existing.logoUrl : null,
+          coverUrl: typeof existing.coverUrl === "string" ? existing.coverUrl : null,
           primaryColor: existing.primaryColor,
           secondaryColor: existing.secondaryColor,
           accentColor: existing.accentColor,
           status: "PUBLISHED",
           publishedAt: new Date(),
         } });
-        await tx.siteSection.createMany({ data: existing.sections.map((section) => ({
+        await tx.siteSection.createMany({ data: sections.map((section) => ({
           id: section.id, siteId: source.id, type: section.type, title: section.title, content: section.content as object,
           order: section.order, isVisible: section.isVisible, settingsJson: section.settingsJson as object,
         })) });
@@ -83,14 +92,21 @@ export async function POST(
     await trackProductEvent("site_published", { userId: user.id, siteId: publishedId });
     revalidatePath("/");
     revalidatePath(`/s/${publishedSlug}`);
-    if (existing.customDomain) revalidatePath(`/d/${existing.customDomain}`);
-    if (existing.replacesSite?.customDomain) revalidatePath(`/d/${existing.replacesSite.customDomain}`);
+    const customDomain = typeof existing.customDomain === "string" ? existing.customDomain : null;
+    if (customDomain) revalidatePath(`/d/${customDomain}`);
+    if (replacesSite?.customDomain) revalidatePath(`/d/${replacesSite.customDomain}`);
 
     return NextResponse.json({ ok: true, site: { id: publishedId, status: "PUBLISHED", publicUrl: publicSiteUrl(publishedSlug) } });
-  } catch {
-    return NextResponse.json(
+  } catch (error) {
+    if (error instanceof SiteAccessError && error.status === 401) {
+      return NextResponse.json(
+        { error: "Inicia sesión para publicar el sitio.", authRequired: true },
+        { status: 401 },
+      );
+    }
+    return siteAccessErrorResponse(error) ?? NextResponse.json(
       { error: "No se encontró el sitio que quieres publicar." },
-      { status: 404 }
+      { status: 404 },
     );
   }
 }

@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
-import { getUserBySessionToken, SESSION_COOKIE } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { assertSiteAccess, siteAccessErrorResponse } from "@/lib/site/access";
 import { normalizeSectionSettings } from "@/lib/site/section-layout";
-
 import { sanitizeLink } from "@/lib/site/links";
 import { toRenderSection } from "@/lib/site/section";
 
@@ -28,35 +27,39 @@ const createSectionSchema = z.object({
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ siteId: string }> }) {
   const { siteId } = await params;
-  const user = await getUserBySessionToken(request.cookies.get(SESSION_COOKIE)?.value);
-  if (!user) return NextResponse.json({ error: "Inicia sesión." }, { status: 401 });
   const parsed = createSectionSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: parsed.error.errors[0]?.message || "Bloque inválido." }, { status: 400 });
 
-  const site = await prisma.site.findFirst({
-    where: { id: siteId, ...(user.role === "ADMIN" ? {} : { userId: user.id }) },
-    select: { id: true, _count: { select: { sections: true } } },
-  });
-  if (!site) return NextResponse.json({ error: "Proyecto no encontrado." }, { status: 404 });
-  if (site._count.sections >= 40) return NextResponse.json({ error: "El sitio alcanzó el máximo de 40 bloques." }, { status: 400 });
+  try {
+    const { site } = await assertSiteAccess({
+      siteId,
+      request,
+      requireUser: true,
+      select: { id: true, _count: { select: { sections: true } } },
+    });
+    const sectionCount = Number((site as { _count?: { sections?: number } })._count?.sections ?? 0);
+    if (sectionCount >= 40) return NextResponse.json({ error: "El sitio alcanzó el máximo de 40 bloques." }, { status: 400 });
 
-  const data = parsed.data;
-  const section = await prisma.siteSection.create({ data: {
-    siteId,
-    type: data.type,
-    title: data.title,
-    order: data.order,
-    isVisible: data.isVisible,
-    content: {
-      subtitle: data.subtitle,
-      body: data.body,
-      ctaText: data.ctaText,
-      ctaLink: data.ctaLink,
-      imagePrompt: data.imagePrompt,
-      mediaUrl: data.mediaUrl,
-      altText: data.altText,
-    },
-    settingsJson: normalizeSectionSettings(data.settings),
-  } });
-  return NextResponse.json({ ok: true, section: toRenderSection(section) }, { status: 201 });
+    const data = parsed.data;
+    const section = await prisma.siteSection.create({ data: {
+      siteId,
+      type: data.type,
+      title: data.title,
+      order: data.order,
+      isVisible: data.isVisible,
+      content: {
+        subtitle: data.subtitle,
+        body: data.body,
+        ctaText: data.ctaText,
+        ctaLink: data.ctaLink,
+        imagePrompt: data.imagePrompt,
+        mediaUrl: data.mediaUrl,
+        altText: data.altText,
+      },
+      settingsJson: normalizeSectionSettings(data.settings),
+    } });
+    return NextResponse.json({ ok: true, section: toRenderSection(section) }, { status: 201 });
+  } catch (error) {
+    return siteAccessErrorResponse(error) ?? NextResponse.json({ error: "Proyecto no encontrado." }, { status: 404 });
+  }
 }
