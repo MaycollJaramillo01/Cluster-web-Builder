@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { after, NextRequest, NextResponse } from "next/server";
 import { ZodError } from "zod";
 
 import {
@@ -105,10 +105,26 @@ function createGenerationStream({ input, plan, userId, guestAccess }: {
 
         while (stageIndex < stages.length) advanceStage();
         send("status", { message: "Guardando proyecto..." });
-        const site = await persistGeneratedSite({ input, normalizedSite, plan, userId, guestAccess });
+        const { site, finalizeMedia } = await persistGeneratedSite({
+          input,
+          normalizedSite,
+          plan,
+          userId,
+          guestAccess,
+        });
         send("status", { message: "Preparando vista previa..." });
         send("saved", { siteId: site.id });
         send("done", { ok: true });
+
+        // Upload logo/cover after the client already has a navigable site id.
+        after(() => {
+          void finalizeMedia().catch((error) => {
+            console.error("site_media_finalize_failed", {
+              siteId: site.id,
+              message: error instanceof Error ? error.message : String(error),
+            });
+          });
+        });
       } catch (error) {
         send("error", { message: humanizeGenerationError(error) });
         send("done", { ok: false });

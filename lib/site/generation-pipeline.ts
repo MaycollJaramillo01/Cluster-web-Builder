@@ -94,7 +94,8 @@ export async function generateNormalizedSite({
 }): Promise<NormalizedSite> {
   try {
     const abort = new AbortController();
-    const timeout = setTimeout(() => abort.abort(), 55_000);
+    // Leave headroom under Vercel maxDuration=60 for normalize + fast persist.
+    const timeout = setTimeout(() => abort.abort(), 42_000);
     try {
       const response = await openrouterChatStream(
         [
@@ -158,6 +159,9 @@ export function localGeneratorMessage(error: unknown): string {
   if (error instanceof OpenRouterError) {
     return "La IA no respondió; generando el sitio con el motor local...";
   }
+  if (error instanceof Error && error.message.toLowerCase().includes("abort")) {
+    return "La IA tardó demasiado; generando el sitio con el motor local...";
+  }
   return "La respuesta de IA no fue usable; generando el sitio con el motor local...";
 }
 
@@ -167,6 +171,9 @@ export function humanizeGenerationError(error: unknown): string {
   if (error instanceof Error) {
     if (error.message.includes("JSON")) return error.message;
     const message = error.message.toLowerCase();
+    if (message.includes("abort") || message.includes("timeout")) {
+      return "La generación agotó el tiempo. Intenta de nuevo.";
+    }
     if (message.includes("connect") || message.includes("database")) {
       return "No se pudo guardar el sitio en la base de datos. Verifica la conexión.";
     }

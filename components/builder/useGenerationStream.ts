@@ -36,6 +36,9 @@ export function useGenerationStream() {
   const [error, setError] = useState<string | null>(null);
   const startedRef = useRef(false);
 
+  const savedRef = useRef(false);
+  const errorRef = useRef(false);
+
   const handleEvent = useCallback((block: string) => {
     const parsed = parseGenerationEvent(block);
     if (!parsed) return;
@@ -52,6 +55,7 @@ export function useGenerationStream() {
       return;
     }
     if (event === "saved" && typeof payload.siteId === "string") {
+      savedRef.current = true;
       sessionStorage.removeItem(ONBOARDING_STORAGE_KEY);
       sessionStorage.removeItem("cluster_logo");
       sessionStorage.removeItem("cluster_cover");
@@ -59,6 +63,7 @@ export function useGenerationStream() {
       return;
     }
     if (event === "error") {
+      errorRef.current = true;
       setPhase("error");
       setError(typeof payload.message === "string" ? payload.message : "Error al generar el sitio.");
     }
@@ -69,6 +74,8 @@ export function useGenerationStream() {
     setStatuses([]);
     setPreview("");
     setPhase("streaming");
+    savedRef.current = false;
+    errorRef.current = false;
 
     const stored = sessionStorage.getItem(ONBOARDING_STORAGE_KEY);
     if (!stored) {
@@ -103,6 +110,12 @@ export function useGenerationStream() {
           handleEvent(buffer.slice(0, separator));
           buffer = buffer.slice(separator + 2);
         }
+      }
+      if (buffer.trim()) handleEvent(buffer);
+
+      if (!savedRef.current && !errorRef.current) {
+        setPhase("error");
+        setError("La generación se interrumpió antes de guardar. Intenta de nuevo.");
       }
     } catch (reason) {
       setPhase("error");
