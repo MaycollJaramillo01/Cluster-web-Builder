@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import { consumeRateLimit } from "@/lib/rate-limit";
+
 export const runtime = "nodejs";
 
 type PexelsPhoto = {
@@ -9,6 +11,13 @@ type PexelsPhoto = {
 };
 
 export async function GET(request: NextRequest) {
+  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
+    || request.headers.get("x-real-ip")
+    || "local";
+  if (!(await consumeRateLimit("pexels-image", ip, 120, 60 * 60 * 1000))) {
+    return NextResponse.json({ error: "Demasiadas solicitudes de imagen. Intenta más tarde." }, { status: 429 });
+  }
+
   const query = request.nextUrl.searchParams.get("q")?.slice(0, 80) || "business";
   const seed = request.nextUrl.searchParams.get("seed") || query;
   const width = dimension(request.nextUrl.searchParams.get("w"), 1200);

@@ -31,6 +31,7 @@ Copia `.env.example` a `.env` y configura:
 - `DATABASE_URL` y `DIRECT_URL`: conexiones pooled y directa de Neon.
 - `OPENROUTER_API_KEY` y `OPENROUTER_MODEL`: generación de contenido. Sin clave se usa el generador local.
 - `PEXELS_API_KEY`: imágenes stock.
+- `BLOB_READ_WRITE_TOKEN`: persistencia de media en Vercel Blob (sin esto las imágenes no se guardan).
 - `NEXT_PUBLIC_APP_URL`: URL pública de la aplicación.
 - `PUBLIC_ROOT_DOMAIN`: dominio raíz opcional para sitios publicados.
 - `STRIPE_SECRET_KEY`, `STRIPE_PRICE_ID` y `STRIPE_WEBHOOK_SECRET`: suscripción Pro.
