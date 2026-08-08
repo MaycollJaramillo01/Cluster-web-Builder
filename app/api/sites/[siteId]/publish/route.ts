@@ -18,18 +18,20 @@ export async function POST(
   const { siteId } = await params;
 
   try {
-    const { site: existing, actor } = await assertSiteAccess({
-      siteId,
-      request,
-      requireUser: true,
+    const { actor } = await assertSiteAccess({ siteId, request, requireUser: true, select: { id: true } });
+    const user = actor.user!;
+
+    const existing = await prisma.site.findFirst({
+      where: { id: siteId },
       include: {
         sections: { orderBy: { order: "asc" } },
         replacesSite: { include: { sections: { orderBy: { order: "asc" } } } },
       },
     });
-    const user = actor.user!;
+    if (!existing) throw new Error("not-found");
     if (!hasProAccess(user)) return NextResponse.json(proRequiredResponse, { status: 402 });
-    const readiness = getSiteLaunchReadiness(existing as Parameters<typeof getSiteLaunchReadiness>[0]);
+
+    const readiness = getSiteLaunchReadiness(existing);
     if (!readiness.canPublish) {
       return NextResponse.json({
         error: `Antes de publicar completa: ${readiness.missingForPublish.join(", ")}.`,
@@ -37,21 +39,11 @@ export async function POST(
         readiness,
       }, { status: 409 });
     }
-    let publishedId = existing.id;
-    let publishedSlug = String(existing.publicSlug ?? "");
-    const replacesSite = (existing as { replacesSite?: typeof existing & { sections: Array<Record<string, unknown>>; publicSlug: string; customDomain?: string | null } }).replacesSite;
-    const sections = (existing.sections ?? []) as Array<{
-      id: string;
-      type: string;
-      title: string | null;
-      content: unknown;
-      order: number;
-      isVisible: boolean;
-      settingsJson: unknown;
-    }>;
 
-    if (existing.builderVersion === 2 && replacesSite) {
-      const source = replacesSite;
+    let publishedId = existing.id;
+    let publishedSlug = existing.publicSlug;
+    if (existing.builderVersion === 2 && existing.replacesSite) {
+      const source = existing.replacesSite;
       const snapshot = JSON.parse(JSON.stringify({ site: source, sections: source.sections }));
       await prisma.$transaction(async (tx) => {
         await tx.siteRevision.create({ data: { siteId: source.id, reason: "publish-v2-replacement", snapshotJson: snapshot } });
@@ -62,7 +54,7 @@ export async function POST(
           templateId: existing.templateId,
           contentJson: existing.contentJson ?? undefined,
           designJson: existing.designJson ?? undefined,
-          blueprintJson: (existing as { blueprintJson?: unknown }).blueprintJson ?? undefined,
+          blueprintJson: existing.blueprintJson ?? undefined,
           visualStyle: existing.visualStyle,
           businessName: existing.businessName,
           businessType: existing.businessType,
@@ -71,15 +63,15 @@ export async function POST(
           phone: existing.phone,
           email: existing.email,
           language: existing.language,
-          logoUrl: typeof existing.logoUrl === "string" ? existing.logoUrl : null,
-          coverUrl: typeof existing.coverUrl === "string" ? existing.coverUrl : null,
+          logoUrl: existing.logoUrl,
+          coverUrl: existing.coverUrl,
           primaryColor: existing.primaryColor,
           secondaryColor: existing.secondaryColor,
           accentColor: existing.accentColor,
           status: "PUBLISHED",
           publishedAt: new Date(),
         } });
-        await tx.siteSection.createMany({ data: sections.map((section) => ({
+        await tx.siteSection.createMany({ data: existing.sections.map((section) => ({
           id: section.id, siteId: source.id, type: section.type, title: section.title, content: section.content as object,
           order: section.order, isVisible: section.isVisible, settingsJson: section.settingsJson as object,
         })) });
@@ -89,14 +81,17 @@ export async function POST(
     } else {
       await prisma.site.update({ where: { id: siteId }, data: { status: "PUBLISHED", publishedAt: new Date() } });
     }
+
     await trackProductEvent("site_published", { userId: user.id, siteId: publishedId });
     revalidatePath("/");
     revalidatePath(`/s/${publishedSlug}`);
-    const customDomain = typeof existing.customDomain === "string" ? existing.customDomain : null;
-    if (customDomain) revalidatePath(`/d/${customDomain}`);
-    if (replacesSite?.customDomain) revalidatePath(`/d/${replacesSite.customDomain}`);
+    if (existing.customDomain) revalidatePath(`/d/${existing.customDomain}`);
+    if (existing.replacesSite?.customDomain) revalidatePath(`/d/${existing.replacesSite.customDomain}`);
 
-    return NextResponse.json({ ok: true, site: { id: publishedId, status: "PUBLISHED", publicUrl: publicSiteUrl(publishedSlug) } });
+    return NextResponse.json({
+      ok: true,
+      site: { id: publishedId, status: "PUBLISHED", publicUrl: publicSiteUrl(publishedSlug) },
+    });
   } catch (error) {
     if (error instanceof SiteAccessError && error.status === 401) {
       return NextResponse.json(

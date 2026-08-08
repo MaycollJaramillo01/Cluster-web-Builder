@@ -31,14 +31,13 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   if (!parsed.success) return NextResponse.json({ error: parsed.error.errors[0]?.message || "Bloque inválido." }, { status: 400 });
 
   try {
-    const { site } = await assertSiteAccess({
-      siteId,
-      request,
-      requireUser: true,
+    await assertSiteAccess({ siteId, request, requireUser: true, select: { id: true } });
+    const site = await prisma.site.findFirst({
+      where: { id: siteId },
       select: { id: true, _count: { select: { sections: true } } },
     });
-    const sectionCount = Number((site as { _count?: { sections?: number } })._count?.sections ?? 0);
-    if (sectionCount >= 40) return NextResponse.json({ error: "El sitio alcanzó el máximo de 40 bloques." }, { status: 400 });
+    if (!site) return NextResponse.json({ error: "Proyecto no encontrado." }, { status: 404 });
+    if (site._count.sections >= 40) return NextResponse.json({ error: "El sitio alcanzó el máximo de 40 bloques." }, { status: 400 });
 
     const data = parsed.data;
     const section = await prisma.siteSection.create({ data: {

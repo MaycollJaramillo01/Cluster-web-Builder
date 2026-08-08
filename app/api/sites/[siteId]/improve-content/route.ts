@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
+import { prisma } from "@/lib/db";
 import { assertSiteAccess, siteAccessErrorResponse } from "@/lib/site/access";
 import { openrouterChatStream, parseChatStream } from "@/lib/openrouter";
 import { consumeRateLimit } from "@/lib/rate-limit";
@@ -14,13 +15,12 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   if (!parsed.success) return NextResponse.json({ error: "Campo de contenido inválido." }, { status: 400 });
 
   try {
-    const { site } = await assertSiteAccess({
-      siteId,
-      request,
-      requireUser: true,
-      select: { id: true, builderVersion: true, contentJson: true },
+    await assertSiteAccess({ siteId, request, requireUser: true, select: { id: true } });
+    const site = await prisma.site.findFirst({
+      where: { id: siteId, builderVersion: 2 },
+      select: { id: true, contentJson: true },
     });
-    if (site.builderVersion !== 2) return NextResponse.json({ error: "Proyecto no encontrado." }, { status: 404 });
+    if (!site) return NextResponse.json({ error: "Proyecto no encontrado." }, { status: 404 });
     if (!(await consumeRateLimit("block-ai-v2", siteId, 30, 60 * 60 * 1000))) {
       return NextResponse.json({ error: "Alcanzaste el límite temporal de mejoras." }, { status: 429 });
     }

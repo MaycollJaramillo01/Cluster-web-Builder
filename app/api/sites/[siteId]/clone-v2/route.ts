@@ -8,39 +8,37 @@ import { migrateLegacySiteDocument } from "@/lib/site/v2-migrate";
 export async function POST(request: NextRequest, { params }: { params: Promise<{ siteId: string }> }) {
   const { siteId } = await params;
   try {
-    const { site: source } = await assertSiteAccess({
-      siteId,
-      request,
-      requireUser: true,
+    await assertSiteAccess({ siteId, request, requireUser: true, select: { id: true } });
+
+    const source = await prisma.site.findFirst({
+      where: { id: siteId },
       include: {
         sections: { orderBy: { order: "asc" } },
         replacementDraft: { select: { id: true } },
       },
     });
-
+    if (!source) return NextResponse.json({ error: "Proyecto no encontrado." }, { status: 404 });
     if (source.builderVersion === 2) return NextResponse.json({ siteId: source.id, alreadyV2: true });
-    const replacementDraft = (source as { replacementDraft?: { id: string } | null }).replacementDraft;
-    if (replacementDraft) return NextResponse.json({ siteId: replacementDraft.id, alreadyExists: true });
+    if (source.replacementDraft) return NextResponse.json({ siteId: source.replacementDraft.id, alreadyExists: true });
 
-    const sections = source.sections ?? [];
-    const migrated = migrateLegacySiteDocument(source as Parameters<typeof migrateLegacySiteDocument>[0], sections as Parameters<typeof migrateLegacySiteDocument>[1]);
+    const migrated = migrateLegacySiteDocument(source, source.sections);
     const draft = await prisma.site.create({ data: {
-      userId: typeof source.userId === "string" ? source.userId : null,
-      businessName: String(source.businessName ?? "Negocio"),
-      businessType: String(source.businessType ?? "Servicios"),
-      goal: String(source.goal ?? "contacts"),
-      location: source.location ?? null,
-      phone: source.phone ?? null,
-      email: source.email ?? null,
-      language: String(source.language ?? "es"),
-      publicSlug: `${String(source.publicSlug ?? siteId)}-v2-${randomUUID().slice(0, 6)}`,
+      userId: source.userId,
+      businessName: source.businessName,
+      businessType: source.businessType,
+      goal: source.goal,
+      location: source.location,
+      phone: source.phone,
+      email: source.email,
+      language: source.language,
+      publicSlug: `${source.publicSlug}-v2-${randomUUID().slice(0, 6)}`,
       status: "GENERATED",
-      logoUrl: typeof source.logoUrl === "string" ? source.logoUrl : null,
-      coverUrl: typeof source.coverUrl === "string" ? source.coverUrl : null,
+      logoUrl: source.logoUrl,
+      coverUrl: source.coverUrl,
       primaryColor: migrated.design.primary,
       secondaryColor: migrated.design.secondary,
       accentColor: migrated.design.accent,
-      blueprintJson: (source.blueprintJson as object | undefined) ?? undefined,
+      blueprintJson: source.blueprintJson ?? undefined,
       builderVersion: 2,
       templateId: migrated.templateId,
       contentJson: migrated.content as object,

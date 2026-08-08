@@ -49,7 +49,7 @@ export default async function SiteEditorPage({
     templateId,
     content: normalizeSiteContentV2(site.contentJson),
     design: normalizeThemeV2(site.designJson),
-    sections: normalizeCanvasSectionsV2(site.sections.map((section) => section.content)),
+    sections: normalizeCanvasSectionsV2(site.sections.map((section: { content: unknown }) => section.content)),
     status: site.status,
     publicSlug: site.publicSlug,
     publicUrl: site.domainVerifiedAt && site.customDomain ? `https://${site.customDomain}` : publicSiteUrl(site.publicSlug),

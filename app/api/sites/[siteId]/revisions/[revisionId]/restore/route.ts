@@ -7,13 +7,13 @@ import { normalizeCanvasSectionsV2, normalizeSiteContentV2, normalizeThemeV2, V2
 export async function POST(request: NextRequest, { params }: { params: Promise<{ siteId: string; revisionId: string }> }) {
   const { siteId, revisionId } = await params;
   try {
-    const { site } = await assertSiteAccess({
-      siteId,
-      request,
-      requireUser: true,
+    await assertSiteAccess({ siteId, request, requireUser: true, select: { id: true } });
+
+    const site = await prisma.site.findFirst({
+      where: { id: siteId, builderVersion: 2 },
       include: { sections: { orderBy: { order: "asc" } } },
     });
-    if (site.builderVersion !== 2) return NextResponse.json({ error: "Proyecto no encontrado." }, { status: 404 });
+    if (!site) return NextResponse.json({ error: "Proyecto no encontrado." }, { status: 404 });
 
     const revision = await prisma.siteRevision.findFirst({ where: { id: revisionId, siteId } });
     if (!revision) return NextResponse.json({ error: "Revisión no encontrada." }, { status: 404 });
@@ -27,7 +27,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
     const currentSnapshot = JSON.parse(JSON.stringify({
       site: { templateId: site.templateId, contentJson: site.contentJson, designJson: site.designJson },
-      sections: (site.sections ?? []).map((section) => section.content),
+      sections: site.sections.map((section) => section.content),
     }));
     const undoRevision = await prisma.$transaction(async (tx) => {
       const created = await tx.siteRevision.create({ data: { siteId, reason: "restore", snapshotJson: currentSnapshot } });
