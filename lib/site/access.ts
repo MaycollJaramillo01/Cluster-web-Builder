@@ -32,6 +32,12 @@ export type AccessedSite = {
   replacesSiteId?: string | null;
   visualStyle?: string | null;
   goal?: string | null;
+  publicSlug?: string | null;
+  customDomain?: string | null;
+  domainVerifiedAt?: Date | string | null;
+  userId?: string | null;
+  logoUrl?: string | null;
+  coverUrl?: string | null;
   updatedAt?: Date | string;
   sections?: Array<{
     id: string;

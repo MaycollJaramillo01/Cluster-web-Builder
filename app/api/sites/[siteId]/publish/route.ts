@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 
-import { getUserBySessionToken, SESSION_COOKIE } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { assertSiteAccess, SiteAccessError, siteAccessErrorResponse } from "@/lib/site/access";
 import { hasProAccess, proRequiredResponse } from "@/lib/entitlements";
 import { trackProductEvent } from "@/lib/product-events";
 import { getSiteLaunchReadiness } from "@/lib/site/launch-readiness";
@@ -15,22 +15,22 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ siteId: string }> }
 ) {
-  const user = await getUserBySessionToken(request.cookies.get(SESSION_COOKIE)?.value);
-  if (!user) {
-    return NextResponse.json(
-      { error: "Inicia sesión para publicar el sitio.", authRequired: true },
-      { status: 401 }
-    );
-  }
   const { siteId } = await params;
 
   try {
+    const { actor } = await assertSiteAccess({ siteId, request, requireUser: true, select: { id: true } });
+    const user = actor.user!;
+
     const existing = await prisma.site.findFirst({
-      where: { id: siteId, ...(user.role === "ADMIN" ? {} : { userId: user.id }) },
-      include: { sections: { orderBy: { order: "asc" } }, replacesSite: { include: { sections: { orderBy: { order: "asc" } } } } },
+      where: { id: siteId },
+      include: {
+        sections: { orderBy: { order: "asc" } },
+        replacesSite: { include: { sections: { orderBy: { order: "asc" } } } },
+      },
     });
     if (!existing) throw new Error("not-found");
     if (!hasProAccess(user)) return NextResponse.json(proRequiredResponse, { status: 402 });
+
     const readiness = getSiteLaunchReadiness(existing);
     if (!readiness.canPublish) {
       return NextResponse.json({
@@ -39,6 +39,7 @@ export async function POST(
         readiness,
       }, { status: 409 });
     }
+
     let publishedId = existing.id;
     let publishedSlug = existing.publicSlug;
     if (existing.builderVersion === 2 && existing.replacesSite) {
@@ -80,17 +81,27 @@ export async function POST(
     } else {
       await prisma.site.update({ where: { id: siteId }, data: { status: "PUBLISHED", publishedAt: new Date() } });
     }
+
     await trackProductEvent("site_published", { userId: user.id, siteId: publishedId });
     revalidatePath("/");
     revalidatePath(`/s/${publishedSlug}`);
     if (existing.customDomain) revalidatePath(`/d/${existing.customDomain}`);
     if (existing.replacesSite?.customDomain) revalidatePath(`/d/${existing.replacesSite.customDomain}`);
 
-    return NextResponse.json({ ok: true, site: { id: publishedId, status: "PUBLISHED", publicUrl: publicSiteUrl(publishedSlug) } });
-  } catch {
-    return NextResponse.json(
+    return NextResponse.json({
+      ok: true,
+      site: { id: publishedId, status: "PUBLISHED", publicUrl: publicSiteUrl(publishedSlug) },
+    });
+  } catch (error) {
+    if (error instanceof SiteAccessError && error.status === 401) {
+      return NextResponse.json(
+        { error: "Inicia sesión para publicar el sitio.", authRequired: true },
+        { status: 401 },
+      );
+    }
+    return siteAccessErrorResponse(error) ?? NextResponse.json(
       { error: "No se encontró el sitio que quieres publicar." },
-      { status: 404 }
+      { status: 404 },
     );
   }
 }

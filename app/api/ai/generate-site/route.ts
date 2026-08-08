@@ -114,17 +114,25 @@ function createGenerationStream({ input, plan, userId, guestAccess }: {
         });
         send("status", { message: "Preparando vista previa..." });
         send("saved", { siteId: site.id });
-        send("done", { ok: true });
 
-        // Upload logo/cover after the client already has a navigable site id.
-        after(() => {
-          void finalizeMedia().catch((error) => {
-            console.error("site_media_finalize_failed", {
-              siteId: site.id,
-              message: error instanceof Error ? error.message : String(error),
+        // Best-effort media finalize before closing the stream; if Blob is slow,
+        // finish in after() so the site id is still usable immediately.
+        const raced = await Promise.race([
+          finalizeMedia().then(() => "ok" as const),
+          new Promise<"timeout">((resolve) => setTimeout(() => resolve("timeout"), 10_000)),
+        ]);
+        if (raced === "timeout") {
+          after(() => {
+            void finalizeMedia().catch((error) => {
+              console.error("site_media_finalize_failed", {
+                siteId: site.id,
+                message: error instanceof Error ? error.message : String(error),
+              });
             });
           });
-        });
+        }
+
+        send("done", { ok: true });
       } catch (error) {
         send("error", { message: humanizeGenerationError(error) });
         send("done", { ok: false });
