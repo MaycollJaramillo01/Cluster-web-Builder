@@ -172,7 +172,7 @@ export function SiteBlockRenderer({
   };
 
   return (
-    <div id="top" data-design-style={preset.id} data-site-template={preset.id.toLowerCase()} data-design-motion={preset.motionStyle} style={rootStyle}>
+    <div id="top" data-design-motion={preset.motionStyle} style={rootStyle}>
       <SiteNav
         businessName={site.businessName}
         logoUrl={site.logoUrl}
@@ -183,7 +183,7 @@ export function SiteBlockRenderer({
         ctaHref={hero?.ctaLink || "#contact"}
       />
 
-      {renderTemplateFlow(preset.family, pageSections.map(renderSection))}
+      <main className="site-flow">{pageSections.map(renderSection)}</main>
 
       {footer && (
         <>
@@ -197,14 +197,4 @@ export function SiteBlockRenderer({
       <SocialDock businessName={site.businessName} phone={site.phone} links={site.socialLinks} />
     </div>
   );
-}
-
-function renderTemplateFlow(template: string, sections: React.ReactNode[]) {
-  const [hero, ...rest] = sections;
-  if (template === "editorial") return <main className="site-flow site-flow-editorial">{hero}<div className="site-editorial-body">{rest}</div></main>;
-  if (template === "immersive") return <main className="site-flow site-flow-immersive">{sections}</main>;
-  if (template === "catalog") return <main className="site-flow site-flow-catalog">{hero}<div className="site-catalog-body">{rest}</div></main>;
-  if (template === "local") return <main className="site-flow site-flow-local">{sections}</main>;
-  if (template === "minimal") return <main className="site-flow site-flow-minimal">{sections}</main>;
-  return <main className="site-flow site-flow-service">{sections}</main>;
 }

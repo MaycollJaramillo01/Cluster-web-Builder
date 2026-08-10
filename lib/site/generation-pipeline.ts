@@ -5,14 +5,7 @@ import { OpenRouterError, openrouterChatStream, parseChatStream } from "@/lib/op
 import { buildSiteGenerationPrompt } from "@/lib/prompts/site-generator";
 import type { SectionType } from "@/lib/site/blueprint";
 import { auditBlueprintCopy, enforceBlueprintCopyQuality } from "@/lib/site/copy-quality";
-import { getDesignPreset } from "@/lib/site/design";
 import { buildFallbackSiteBlueprint } from "@/lib/site/fallback-site-blueprint";
-import {
-  buildLandingDesignBrief,
-  getStyleCopyVoice,
-  selectLandingTemplate,
-  type LandingDesignStyle,
-} from "@/lib/site/landing-design-brief";
 import { normalizeSiteBlueprint, type NormalizedSite } from "@/lib/site/normalize-site-blueprint";
 import {
   onboardingSchema,
@@ -28,7 +21,7 @@ export type GenerationRequest = {
 };
 
 export type GenerationPlan = {
-  selectedDesignStyle: LandingDesignStyle;
+  selectedDesignStyle: string;
   designBrief: string;
   sectionPlan: SectionType[];
   paletteId: string;
@@ -46,29 +39,28 @@ export function parseGenerationInput(body: unknown): GenerationRequest {
 
 export function buildGenerationPlan(input: OnboardingInput, originalRequest?: string): GenerationPlan {
   const designRequest = originalRequest ?? buildGuidedDesignRequest(input);
-  const selectedDesignStyle = selectLandingTemplate(input, designRequest);
-  const designBrief = buildLandingDesignBrief(selectedDesignStyle, designRequest);
-  const designPreset = getDesignPreset(selectedDesignStyle);
-  const sectionPlan = [...designPreset.sectionPlan] as SectionType[];
+  const selectedDesignStyle = input.visualStyle;
+  const designBrief = buildVisualDirection(input, designRequest);
+  const sectionPlan = buildSectionPlan(input);
   const prompt = buildSiteGenerationPrompt(
     input,
     originalRequest,
     designBrief,
     sectionPlan,
-    getStyleCopyVoice(selectedDesignStyle),
+    "Claro, específico y orientado a convertir visitas en contactos, sin frases genéricas.",
   );
 
   return {
     selectedDesignStyle,
     designBrief,
     sectionPlan,
-    paletteId: designPreset.paletteId,
+    paletteId: input.visualStyle,
     systemPrompt: prompt.system,
     userPrompt: prompt.user,
   };
 }
 
-export function generationStatusStages(style: LandingDesignStyle) {
+export function generationStatusStages(style: string) {
   return [
     "Analizando negocio...",
     "Definiendo estructura del sitio...",
@@ -76,6 +68,29 @@ export function generationStatusStages(style: LandingDesignStyle) {
     "Generando copy comercial...",
     "Preparando SEO local...",
     "Construyendo secciones...",
+  ];
+}
+
+function buildVisualDirection(input: OnboardingInput, request: string): string {
+  return [
+    `Dirección visual solicitada: ${input.visualStyle.replaceAll("_", " ")}.`,
+    `Contexto: ${request}.`,
+    "Construye una interfaz original desde bloques editables; no imites ni selecciones una plantilla prearmada.",
+  ].join(" ");
+}
+
+function buildSectionPlan(input: OnboardingInput): SectionType[] {
+  const hasLocation = input.location.trim().length > 0;
+  return [
+    "hero",
+    "services",
+    "about_us",
+    "benefits",
+    ...(hasLocation ? ["location" as const] : []),
+    "faq",
+    "contact",
+    "cta",
+    "footer",
   ];
 }
 

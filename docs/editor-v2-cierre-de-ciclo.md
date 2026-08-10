@@ -14,7 +14,7 @@ Componentes y archivos base:
   drag and drop, undo/redo y clic derecho vía `postMessage`.
 - `lib/site/v2-schema.ts` — esquema Zod: `WidgetV2`, `CanvasSectionV2`, `ThemeTokensV2`,
   `StyleTokensV2`, `ResponsiveStyleV2`.
-- `lib/site/v2-templates.ts` — `SECTION_LIBRARY_V2`, plantillas completas y temas.
+- `lib/site/v2-section-library.ts` — bloques de sección independientes para el lienzo.
 
 Lo que ya funciona: agregar/editar/eliminar/duplicar/mover bloques, secciones y columnas;
 selección bidireccional lienzo-panel; publicar; historial global con Ctrl+Z / Ctrl+Y.

@@ -33,10 +33,6 @@ try {
   assert((await fetch(`${baseUrl}/api/sites/${siteA.id}`, { headers: cookieB })).status === 404, "otro usuario puede leer el sitio");
   assert((await fetch(`${baseUrl}/api/sites/${siteA.id}`, { headers: cookieAdmin })).status === 200, "el administrador no puede abrir sitios de clientes");
   assert((await fetch(`${baseUrl}/api/sites/${siteA.id}`, { method: "PATCH", headers: { ...cookieAdmin, "Content-Type": "application/json" }, body: JSON.stringify({ location: "QA administrado" }) })).status === 200, "el administrador no puede editar sitios de clientes");
-  const adminBlockResponse = await fetch(`${baseUrl}/api/sites/${siteA.id}/sections`, { method: "POST", headers: { ...cookieAdmin, "Content-Type": "application/json" }, body: JSON.stringify({ type: "text", title: "Bloque administrativo", order: 1 }) });
-  const adminBlock = await adminBlockResponse.json();
-  assert(adminBlockResponse.status === 201 && adminBlock.section?.id, "el administrador no puede agregar bloques a sitios de clientes");
-  assert((await fetch(`${baseUrl}/api/sites/${siteA.id}/sections/${adminBlock.section.id}`, { method: "DELETE", headers: cookieAdmin })).status === 200, "el administrador no puede eliminar bloques de sitios de clientes");
   assert((await fetch(`${baseUrl}/api/sites/${siteA.id}`)).status === 404, "la API revela proyectos sin autorización");
   assert((await fetch(`${baseUrl}/api/sites/${siteA.id}`, { method: "PATCH", headers: { ...cookieB, "Content-Type": "application/json" }, body: JSON.stringify({ businessName: "Intrusión" }) })).status === 404, "otro usuario puede editar el sitio");
 

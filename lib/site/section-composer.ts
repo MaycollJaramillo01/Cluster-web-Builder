@@ -1,4 +1,4 @@
-import { SECTION_LIBRARY_V2 } from "@/lib/site/v2-templates";
+import { SECTION_LIBRARY_V2 } from "@/lib/site/v2-section-library";
 import {
   normalizeCanvasSectionsV2,
   normalizeSiteContentV2,

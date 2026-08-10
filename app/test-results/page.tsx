@@ -13,18 +13,16 @@ export const metadata: Metadata = {
 const run = {
   date: "29 de junio de 2026, 10:25 a. m.",
   environment: "Local · Next.js 16.2.9 · puerto aislado",
-  passed: 10,
-  total: 10,
+  passed: 8,
+  total: 8,
 };
 
 const tests = [
-  { name: "Sistema de diseño", command: "check:design", detail: "6 composiciones estructurales, selección semántica, animación y redes." },
   { name: "Calidad de código", command: "lint", detail: "ESLint y validación TypeScript sin errores." },
   { name: "Build de producción", command: "build", detail: "Compilación, tipos y generación de 25 páginas completadas." },
   { name: "Interfaz responsive", command: "test:ui", detail: "3 rutas × 4 viewports; sin desbordamiento horizontal." },
   { name: "Modos de creación", command: "test:home-modes", detail: "Flujos guiado y avanzado, validación móvil y payload verificados." },
   { name: "Sitio de marketing", command: "test:marketing", detail: "Home, navegación y 10 páginas públicas correctas." },
-  { name: "Selector de templates", command: "test:m4", detail: "Previews 3/6, selección invitada, proyecto único y paleta preservada." },
   { name: "Prompt corto de pesca", command: "test:fast-prompt", detail: "Actividad reconocida y composición Immersive generada en 1.35 s." },
   { name: "Formularios y usuarios", command: "test:multi-user", detail: "Publicación, leads, ZIP y aislamiento multiusuario correctos." },
   { name: "Plataforma y dominios", command: "test:m3", detail: "Límites, dominio, proxy, plan y marca blanca verificados." },
@@ -44,7 +42,7 @@ export default function TestResultsPage() {
               Los cambios pasaron todas las pruebas.
             </h1>
             <p className="mt-5 max-w-2xl text-base leading-7 text-[#b8afc2] sm:text-lg">
-              Este reporte reúne la última ejecución real del generador, las plantillas, los formularios y la plataforma multiusuario.
+              Este reporte reúne la última ejecución real del generador, el editor por bloques, los formularios y la plataforma multiusuario.
             </p>
           </div>
 

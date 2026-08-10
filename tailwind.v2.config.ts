@@ -1,11 +1,11 @@
 import type { Config } from "tailwindcss";
 
-// Config dedicada al motor de sitios V2 (lib/site/v2-render.ts, lib/site/v2-templates.ts).
+// Config dedicada al motor de sitios V2 y su biblioteca de bloques.
 // No comparte contenido con tailwind.config.ts (que estiliza la app constructora):
 // esta hoja se compila una vez en build y se incrusta como string en cada sitio
 // generado, así que solo debe contener las clases que el motor V2 realmente usa.
 const config: Config = {
-  content: ["./lib/site/v2-render.ts", "./lib/site/v2-templates.ts"],
+  content: ["./lib/site/v2-render.ts", "./lib/site/v2-section-library.ts"],
   corePlugins: {
     preflight: true,
   },

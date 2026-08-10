@@ -87,7 +87,6 @@ model Site {
   goal         String?
   visualStyle  String?
   builderVersion Int      @default(1)
-  templateId     String?
   contentJson    Json?
   designJson     Json?
   replacesSiteId String?  @unique

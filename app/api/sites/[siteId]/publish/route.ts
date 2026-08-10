@@ -51,7 +51,6 @@ export async function POST(
         await tx.site.delete({ where: { id: existing.id } });
         await tx.site.update({ where: { id: source.id }, data: {
           builderVersion: 2,
-          templateId: existing.templateId,
           contentJson: existing.contentJson ?? undefined,
           designJson: existing.designJson ?? undefined,
           blueprintJson: existing.blueprintJson ?? undefined,

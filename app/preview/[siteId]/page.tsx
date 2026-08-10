@@ -8,9 +8,7 @@ import { toRenderSection } from "@/lib/site/section";
 import { themeFromSite } from "@/lib/site/theme";
 import { SitePreview } from "@/components/builder/SitePreview";
 import { SitePreviewV2 } from "@/components/builder/SitePreviewV2";
-import { isDesignStyle } from "@/lib/site/template-selection";
 import { socialLinksFromBlueprint } from "@/lib/site/social-links";
-import { orderSectionsForTemplate } from "@/lib/site/template-layout";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -54,7 +52,7 @@ export default async function PreviewPage({
   searchParams,
 }: {
   params: Promise<{ siteId: string }>;
-  searchParams: Promise<{ style?: string; compact?: string }>;
+  searchParams: Promise<{ compact?: string }>;
 }) {
   const { siteId } = await params;
   const user = await getCurrentUser();
@@ -88,10 +86,7 @@ export default async function PreviewPage({
   }
 
   const theme = themeFromSite(site);
-  const requestedStyle = query.style;
-  const visualStyle = requestedStyle && isDesignStyle(requestedStyle) ? requestedStyle : site.visualStyle;
-  const orderedSections = orderSectionsForTemplate(site.sections, visualStyle);
-  const sections = query.compact === "1" ? compactSections(orderedSections) : orderedSections;
+  const sections = query.compact === "1" ? compactSections(site.sections) : site.sections;
   return (
     <main>
       <SitePreview
@@ -105,7 +100,7 @@ export default async function PreviewPage({
         coverUrl={site.coverUrl}
         socialLinks={socialLinksFromBlueprint(site.blueprintJson)}
         theme={theme}
-        visualStyle={visualStyle}
+        visualStyle={site.visualStyle}
         sections={sections.map(toRenderSection)}
       />
     </main>

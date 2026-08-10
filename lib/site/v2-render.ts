@@ -128,8 +128,8 @@ function widgetSelector(widget: WidgetV2) { return `[data-widget-id="${widget.id
 // Sistema de diseño ESTÁTICO — Tailwind. Cada widget/variante compone clases
 // reales (compiladas por scripts/build-v2-tailwind.mjs). Colores y radio de
 // esquina siguen el tema vía var(--token) con sintaxis de valor arbitrario
-// de Tailwind (bg-[var(--accent)]) para que cada plantilla conserve su
-// paleta sin que el CSS deje de ser Tailwind.
+// de Tailwind (bg-[var(--accent)]) para conservar la paleta del sitio sin
+// que el CSS deje de ser Tailwind.
 // ---------------------------------------------------------------------------
 
 const HEADING_FONT = "font-[var(--heading)]";

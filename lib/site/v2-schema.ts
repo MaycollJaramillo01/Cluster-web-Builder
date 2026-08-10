@@ -4,9 +4,6 @@ import { sanitizeLink } from "@/lib/site/links";
 
 export const BUILDER_V2 = 2;
 
-export const V2_TEMPLATE_IDS = ["conversion", "editorial", "catalog", "local", "immersive", "minimal", "studio", "saas", "gastro", "wellness", "essential", "assurance", "nordic", "metro", "deco", "impact", "hvac-premium", "terminal", "horizonte", "astre", "realty", "clinic", "counsel", "academy", "venue", "vigor", "drive", "cause", "frame", "craft"] as const;
-export type V2TemplateId = (typeof V2_TEMPLATE_IDS)[number];
-
 export const V2_WIDGET_TYPES = [
   "brand", "nav", "heading", "text", "image", "video", "button",
   "business_info", "list", "gallery", "testimonials", "accordion",
@@ -101,16 +98,6 @@ export type CanvasSectionV2 = {
   region: "header" | "main" | "footer";
   rows: CanvasRowV2[];
   style?: ResponsiveStyleV2;
-};
-
-export type TemplateDefinitionV2 = {
-  version: 2;
-  id: V2TemplateId;
-  name: string;
-  description: string;
-  thumbnail: string;
-  theme: ThemeTokensV2;
-  sections: Omit<CanvasSectionV2, "id">[];
 };
 
 const hex = z.string().regex(/^#[0-9a-fA-F]{6}$/);

@@ -177,8 +177,7 @@ try {
       where: { id: site.id },
       data: {
         builderVersion: 2,
-        templateId: "custom-aa-sections",
-        visualStyle: "custom-aa-sections",
+        visualStyle: "modern_clean",
         primaryColor: "#18298C",
         secondaryColor: "#30478C",
         accentColor: "#D90404",
@@ -186,7 +185,6 @@ try {
         coverUrl: heroMedia,
         contentJson: content,
         designJson: {
-          templateId: "custom-aa-sections",
           theme: {
             primary: "#18298C",
             secondary: "#30478C",

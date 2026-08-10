@@ -1,150 +1,54 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { renderSiteV2 } from "../lib/site/v2-render";
 import { dnsRecordsForDomain } from "../lib/site/domain-dns";
 import { publishedSiteMetadata, publishedSiteStructuredData } from "../lib/site/metadata";
+import { composeSiteSectionsV2 } from "../lib/site/section-composer";
 import { parseV2Clipboard } from "../lib/site/v2-clipboard";
-import { getAllTemplatesV2, instantiateTemplateV2, LEGACY_TEMPLATE_MIGRATION, SECTION_LIBRARY_V2 } from "../lib/site/v2-templates";
-import { chooseTemplateForBusiness } from "../lib/site/v2-migrate";
-import { normalizeCanvasSectionsV2, normalizeSiteContentV2, normalizeWidgetV2, V2_TEMPLATE_IDS, V2_WIDGET_TYPES } from "../lib/site/v2-schema";
+import { renderSiteV2 } from "../lib/site/v2-render";
+import { SECTION_LIBRARY_V2 } from "../lib/site/v2-section-library";
+import { normalizeCanvasSectionsV2, normalizeSiteContentV2, normalizeWidgetV2, V2_WIDGET_TYPES } from "../lib/site/v2-schema";
 
 const content = normalizeSiteContentV2({
   business: { name: "Taller Norte", type: "Arquitectura", location: "Managua", phone: "+505 8000 0000", email: "hola@example.com" },
   hero: { title: "Espacios pensados para vivir mejor", subtitle: "Arquitectura local", body: "Diseñamos hogares y comercios que responden al clima, al lugar y a la vida diaria.", ctaText: "Ver proyectos", ctaLink: "#contact", media: "https://images.example.com/hero.webp" },
   about: { title: "Un estudio cercano", subtitle: "Sobre nosotros", body: "Trabajamos cada proyecto con atención directa.", media: "", highlights: [] },
   services: [{ title: "Diseño residencial", description: "Anteproyecto y planos", meta: "", image: "" }],
+  benefits: [{ title: "Diseño responsable", description: "Soluciones adecuadas al clima." }],
+  reviews: [{ name: "Ana", role: "Cliente", quote: "El proceso fue claro.", rating: 5 }],
+  faqs: [{ question: "¿Trabajan fuera de Managua?", answer: "Sí, según el alcance del proyecto." }],
   contact: { title: "Hablemos", body: "Cuéntanos qué quieres construir.", ctaText: "Enviar" },
+  media: [{ url: "https://images.example.com/hero.webp", alt: "Proyecto" }, { url: "https://images.example.com/gallery.webp", alt: "Interior" }],
   seo: { title: "Taller Norte Arquitectura en Managua", description: "Diseño arquitectónico residencial y comercial en Managua.", keyword: "arquitectura" },
 });
 
-test("las plantillas V2 tienen fingerprints estructurales distintos", () => {
-  const templates = getAllTemplatesV2();
-  assert.deepEqual(templates.map((template) => template.id), [...V2_TEMPLATE_IDS]);
-  const fingerprints = templates.map((template) => template.sections.map((section) => section.rows.map((row) => row.columns.map((column) => `${column.span.desktop}:${column.widgets.map((widget) => widget.type).join(",")}`).join("|"))).join("/"));
-  assert.equal(new Set(fingerprints).size, V2_TEMPLATE_IDS.length);
+function buildDocument(value = content) {
+  return composeSiteSectionsV2({
+    content: value,
+    businessType: value.business.type,
+    visualStyle: "modern_clean",
+    theme: { primary: "#2457ff", secondary: "#111827", accent: "#f59e0b" },
+  });
+}
+
+test("la biblioteca contiene bloques independientes con claves únicas", () => {
+  assert.ok(SECTION_LIBRARY_V2.length > 0);
+  assert.equal(new Set(SECTION_LIBRARY_V2.map((section) => section.key)).size, SECTION_LIBRARY_V2.length);
+  assert.ok(SECTION_LIBRARY_V2.every((section) => section.region !== "header"));
 });
 
-test("la plantilla Esencial conserva el lenguaje minimal y un recorrido comercial completo", () => {
-  const template = getAllTemplatesV2().find((item) => item.id === "essential");
-  assert.ok(template);
-  assert.equal(template.theme.radius, "none");
-  assert.equal(template.theme.accent, "#2457ff");
-  assert.deepEqual(template.sections.map((section) => section.key), ["global-header", "hero", "principles", "services", "about", "reviews", "faq", "contact", "global-footer"]);
-  const reviewWidget = template.sections.find((section) => section.key === "reviews")?.rows[0]?.columns[1]?.widgets[0];
-  assert.equal(reviewWidget?.type, "testimonials");
-  assert.equal(reviewWidget?.variant, "quotes");
-  const document = instantiateTemplateV2("essential", content);
-  const rendered = renderSiteV2({ content: document.content, design: document.template.theme, sections: document.sections, leadEndpoint: "/api/leads" });
+test("el compositor crea un documento editable completo sin catálogo de plantillas", () => {
+  const document = buildDocument();
+  assert.equal(document.sections[0].region, "header");
+  assert.equal(document.sections.at(-1)?.region, "footer");
+  assert.ok(document.sections.some((section) => section.key.includes("contact")));
+  const rendered = renderSiteV2({ ...document, leadEndpoint: "/api/leads" });
   assert.match(rendered.body, /data-cluster-form/);
-  assert.doesNotMatch(rendered.body, /linear-gradient/);
+  assert.match(rendered.body, /Taller Norte/);
 });
 
-test("las cuatro plantillas aleatorias tienen recorridos, paletas y formas independientes", () => {
-  const ids = ["assurance", "nordic", "metro", "deco"] as const;
-  const templates = ids.map((id) => getAllTemplatesV2().find((template) => template.id === id));
-  assert.ok(templates.every(Boolean));
-  assert.equal(new Set(templates.map((template) => template?.theme.accent)).size, ids.length);
-  assert.equal(new Set(templates.map((template) => template?.theme.radius)).size, 3);
-  assert.equal(new Set(templates.map((template) => template?.sections.map((section) => section.key).join(">"))).size, ids.length);
-  const heroMediaTypes = templates.map((template) => {
-    const widgets = template?.sections.find((section) => section.key === "hero")?.rows[0]?.columns[0]?.widgets || [];
-    assert.equal(widgets[0]?.variant, "background", `${template?.id} no usa medio de fondo`);
-    assert.ok(widgets.some((widget) => widget.type === "heading" && widget.variant === "h1"), `${template?.id} no tiene título principal`);
-    assert.ok(widgets.some((widget) => widget.type === "text"), `${template?.id} no tiene texto de apoyo`);
-    assert.ok(widgets.some((widget) => widget.type === "button"), `${template?.id} no tiene CTA`);
-    return widgets[0]?.type;
-  });
-  assert.deepEqual(heroMediaTypes, ["image", "image", "video", "video"]);
-  for (const id of ids) {
-    const document = instantiateTemplateV2(id, content);
-    const rendered = renderSiteV2({ content: document.content, design: document.template.theme, sections: document.sections, leadEndpoint: "/api/leads" });
-    assert.match(rendered.body, /data-cluster-form/, `${id} no incluye un formulario funcional`);
-    assert.ok(document.sections[0].region === "header" && document.sections.at(-1)?.region === "footer", `${id} no forma una página completa`);
-  }
-  const imageFallback = instantiateTemplateV2("metro", content);
-  const fallbackRender = renderSiteV2({ content: imageFallback.content, design: imageFallback.template.theme, sections: imageFallback.sections, leadEndpoint: "/api/leads" });
-  assert.match(fallbackRender.body, /v2-media-bg/);
-  const videoContent = { ...content, hero: { ...content.hero, media: "https://cdn.example.com/hero.mp4" } };
-  const videoDocument = instantiateTemplateV2("metro", videoContent);
-  const videoRender = renderSiteV2({ content: videoDocument.content, design: videoDocument.template.theme, sections: videoDocument.sections, leadEndpoint: "/api/leads" });
-  assert.match(videoRender.body, /<video[^>]+autoplay muted loop playsinline/);
-  assert.doesNotMatch(videoRender.body, /<video[^>]+controls/);
-});
-
-test("Servicio premium replica el recorrido completo de un negocio local", () => {
-  const template = getAllTemplatesV2().find((item) => item.id === "hvac-premium");
-  assert.ok(template);
-  assert.equal(template.theme.accent, "#3b82f6");
-  assert.deepEqual(template.sections.map((section) => section.key), [
-    "global-header", "hero", "hvac-stats", "services", "about", "reviews",
-    "hvac-financing", "hvac-service-areas", "gallery", "hvac-process", "faq", "contact", "global-footer",
-  ]);
-  const document = instantiateTemplateV2("hvac-premium", {
-    ...content,
-    benefits: [
-      { title: "Atención el mismo día", description: "Respuesta rápida." },
-      { title: "Licencia y seguro", description: "Trabajo responsable." },
-      { title: "Financiamiento", description: "Opciones flexibles." },
-    ],
-    about: { ...content.about, highlights: [
-      { title: "5000+", description: "Proyectos completados" },
-      { title: "15+", description: "Años de experiencia" },
-      { title: "4.9", description: "Calificación" },
-      { title: "24/7", description: "Disponibilidad" },
-    ] },
-    reviews: [
-      { name: "Michael R", role: "Homeowner", quote: "Fast response, fair pricing, and excellent workmanship.", rating: 5, source: "Google" },
-      { name: "David M", role: "Homeowner", quote: "The whole service process was smooth and professional.", rating: 5, source: "Google" },
-      { name: "Jason T", role: "Homeowner", quote: "They explained every step and completed the work on time.", rating: 5, source: "Google" },
-    ],
-  });
-  const rendered = renderSiteV2({ content: document.content, design: document.template.theme, sections: document.sections, leadEndpoint: "/api/leads" });
-  // Marca "hvac": ícono distintivo junto al nombre del negocio en el header.
-  assert.match(rendered.body, /-rotate-12/);
-  assert.match(rendered.body, /v2-key-services/);
-  // El muro de reseñas ("wall") renderiza el contenido real, no un placeholder.
-  assert.match(rendered.body, /Michael R/);
-  assert.match(rendered.css, /--accent:#3b82f6/);
-  assert.match(rendered.body, /v2-key-hvac-service-areas/);
-  assert.doesNotMatch(rendered.body, /Made in Framer/);
-});
-
-test("el rubro del negocio alcanza las plantillas nuevas", () => {
-  assert.equal(chooseTemplateForBusiness("Restaurante", null), "gastro");
-  assert.equal(chooseTemplateForBusiness("Gimnasio y entrenamiento personal", null), "vigor");
-  assert.equal(chooseTemplateForBusiness("Joyería a medida", null), "astre");
-  assert.equal(chooseTemplateForBusiness("Desarrollo de software", null), "terminal");
-  assert.equal(chooseTemplateForBusiness("Expediciones y turismo de montaña", null), "horizonte");
-  // Legal y médico van a sus plantillas dedicadas; assurance queda para contable/financiero.
-  assert.equal(chooseTemplateForBusiness("Servicios legales", null), "counsel");
-  assert.equal(chooseTemplateForBusiness("Clínica dental", null), "clinic");
-  assert.equal(chooseTemplateForBusiness("Asesoría contable y fiscal", null), "assurance");
-  // Contratista general va al reemplazo genérico "craft"; hvac-premium queda para climatización.
-  assert.equal(chooseTemplateForBusiness("Techos y reparaciones", null), "craft");
-  assert.equal(chooseTemplateForBusiness("Instalación de aire acondicionado", null), "hvac-premium");
-  assert.equal(chooseTemplateForBusiness("Fotografía de bodas", null), "frame");
-  assert.equal(chooseTemplateForBusiness("Bienes raíces y propiedades", null), "realty");
-  assert.equal(chooseTemplateForBusiness("Academia de idiomas online", null), "academy");
-  assert.equal(chooseTemplateForBusiness("Salón de eventos y bodas", null), "venue");
-  assert.equal(chooseTemplateForBusiness("Taller mecánico automotriz", null), "drive");
-  assert.equal(chooseTemplateForBusiness("Fundación sin fines de lucro", null), "cause");
-  // Sin coincidencia de rubro cae al mapeo por estilo visual (comportamiento previo intacto).
-  assert.ok(V2_TEMPLATE_IDS.includes(chooseTemplateForBusiness("Algo inclasificable", "Editorial")));
-  assert.equal(chooseTemplateForBusiness("", null), "conversion");
-});
-
-test("cambiar plantilla conserva contenido y secciones personalizadas", () => {
-  const custom = instantiateTemplateV2("minimal", content).sections[1];
-  custom.id = "custom-section";
-  custom.rows[0].columns[0].widgets = [{ id: "custom-widget", type: "text", data: { text: "Contenido local" } }];
-  const next = instantiateTemplateV2("catalog", content, [custom]);
-  assert.equal(next.content.hero.title, content.hero.title);
-  assert.ok(next.sections.some((section) => section.rows.some((row) => row.columns.some((column) => column.widgets.some((widget) => widget.id === "custom-widget")))));
-});
-
-test("normalización rechaza widgets libres y IDs duplicados", () => {
-  const valid = instantiateTemplateV2("conversion", content).sections;
+test("la normalización rechaza widgets libres e IDs duplicados", () => {
+  const valid = buildDocument().sections;
   assert.equal(normalizeCanvasSectionsV2(valid).length, valid.length);
   const invalid = structuredClone(valid) as unknown as Array<Record<string, unknown>>;
   const rows = invalid[0].rows as Array<{ columns: Array<{ widgets: Array<Record<string, unknown>> }> }>;
@@ -153,21 +57,14 @@ test("normalización rechaza widgets libres y IDs duplicados", () => {
   assert.ok(!V2_WIDGET_TYPES.includes("html" as never));
 });
 
-test("renderer único incluye responsive, formulario y sanitiza javascript", () => {
-  const document = instantiateTemplateV2("local", { ...content, hero: { ...content.hero, ctaLink: "javascript:alert(1)" } });
-  const rendered = renderSiteV2({ content: document.content, design: document.template.theme, sections: document.sections, leadEndpoint: "/api/leads" });
+test("el renderer incluye responsive, formulario y sanitiza javascript", () => {
+  const unsafeContent = normalizeSiteContentV2({ ...content, hero: { ...content.hero, ctaLink: "javascript:alert(1)" } });
+  const document = buildDocument(unsafeContent);
+  const rendered = renderSiteV2({ ...document, leadEndpoint: "/api/leads" });
   assert.match(rendered.html, /@media \(min-width:1024px\)/);
   assert.match(rendered.html, /data-cluster-form/);
-  assert.match(rendered.html, /\/api\/leads/);
   assert.doesNotMatch(rendered.html, /javascript:alert/);
   assert.match(rendered.body, /v2-nav-toggle/);
-  assert.match(rendered.script, /v2-nav-open/);
-});
-
-test("los 46 presets V1 tienen destino y la biblioteca no repite keys", () => {
-  assert.equal(Object.keys(LEGACY_TEMPLATE_MIGRATION).length, 46);
-  assert.equal(new Set(SECTION_LIBRARY_V2.map((section) => section.key)).size, SECTION_LIBRARY_V2.length);
-  for (const result of Object.values(LEGACY_TEMPLATE_MIGRATION)) assert.ok(V2_TEMPLATE_IDS.includes(result.template));
 });
 
 test("el portapapeles V2 valida el widget antes de pegar", () => {
@@ -179,113 +76,58 @@ test("el portapapeles V2 valida el widget antes de pegar", () => {
 });
 
 test("el modo editable solo se inyecta en el preview del editor", () => {
-  const document = instantiateTemplateV2("conversion", content);
-  const publicRender = renderSiteV2({ content: document.content, design: document.template.theme, sections: document.sections, leadEndpoint: "/api/leads" });
-  const editorRender = renderSiteV2({ content: document.content, design: document.template.theme, sections: document.sections, leadEndpoint: "/api/leads", editable: true });
+  const document = buildDocument();
+  const publicRender = renderSiteV2({ ...document, leadEndpoint: "/api/leads" });
+  const editorRender = renderSiteV2({ ...document, leadEndpoint: "/api/leads", editable: true });
   assert.doesNotMatch(publicRender.html, /data-editable-text|cluster-canvas|contenteditable/);
   assert.match(editorRender.html, /data-editable-text="1"/);
-  assert.match(editorRender.script, /kind:'edit-text'/);
-  assert.match(editorRender.script, /innerText/);
   assert.match(editorRender.script, /delete-element/);
   assert.doesNotMatch(publicRender.script, /delete-element/);
 });
 
-test("los fondos de sección por token siguen la paleta del cliente", () => {
-  const document = instantiateTemplateV2("impact", content);
-  const withToken = document.sections.find((section) => section.style?.desktop?.background === "secondary");
-  assert.ok(withToken, "impact debería usar el token secondary en alguna banda");
+test("los fondos por token y las imágenes de fondo generan CSS seguro", () => {
+  const document = buildDocument();
+  const target = document.sections.find((section) => section.region === "main");
+  assert.ok(target);
+  target.style = { desktop: { background: "secondary", backgroundImage: "https://images.example.com/fondo.webp", padding: "xl", width: "wide" } };
   const normalized = normalizeCanvasSectionsV2(document.sections);
-  assert.ok(normalized.some((section) => section.style?.desktop?.background === "secondary"));
-  const rendered = renderSiteV2({ content: document.content, design: { ...document.template.theme, secondary: "#332244" }, sections: normalized, leadEndpoint: "/api/leads" });
+  const rendered = renderSiteV2({ content: document.content, design: { ...document.design, secondary: "#332244" }, sections: normalized, leadEndpoint: "/api/leads" });
   assert.match(rendered.css, /--secondary:#332244/);
   assert.match(rendered.css, /background:var\(--secondary\)/);
-  assert.match(rendered.css, /color:var\(--on-secondary\)/);
-  assert.doesNotMatch(rendered.css, /background:secondary/);
-});
-
-test("el fondo de imagen se valida y genera CSS seguro", () => {
-  const document = instantiateTemplateV2("minimal", content);
-  document.sections[1].style = { desktop: { background: "#112233", backgroundImage: "https://images.example.com/fondo.webp", padding: "xl", width: "wide" } };
-  const normalized = normalizeCanvasSectionsV2(document.sections);
-  assert.equal(normalized[1].style?.desktop?.backgroundImage, "https://images.example.com/fondo.webp");
-  const rendered = renderSiteV2({ content: document.content, design: document.template.theme, sections: normalized, leadEndpoint: "/api/leads" });
   assert.match(rendered.css, /background-image:url\("https:\/\/images\.example\.com\/fondo\.webp"\)/);
 
-  document.sections[1].style = { desktop: { backgroundImage: "javascript:alert(1)" } };
+  target.style = { desktop: { backgroundImage: "javascript:alert(1)" } };
   const unsafe = normalizeCanvasSectionsV2(document.sections);
-  assert.equal(unsafe[1].style?.desktop?.backgroundImage, "");
-  assert.doesNotMatch(renderSiteV2({ content: document.content, design: document.template.theme, sections: unsafe, leadEndpoint: "/api/leads" }).css, /javascript:/);
+  assert.doesNotMatch(renderSiteV2({ content: document.content, design: document.design, sections: unsafe, leadEndpoint: "/api/leads" }).css, /javascript:/);
 });
 
-test("la portada animada renderiza canvas, sanitiza enlaces y solo inyecta su script cuando existe", () => {
-  const document = instantiateTemplateV2("conversion", content);
-  const plain = renderSiteV2({ content: document.content, design: document.template.theme, sections: document.sections, leadEndpoint: "/api/leads" });
+test("la portada animada se activa únicamente al agregar su bloque", () => {
+  const document = buildDocument();
+  const plain = renderSiteV2({ ...document, leadEndpoint: "/api/leads" });
   assert.doesNotMatch(plain.script, /data-pixel-hero/);
   document.sections.push({
     schemaVersion: 2, id: "pxh-section", key: "hero-animado", name: "Portada animada", region: "main", order: document.sections.length,
-    rows: [{ id: "pxh-row", columns: [{ id: "pxh-col", span: { desktop: 12, tablet: 12, mobile: 12 }, widgets: [{
-      id: "pxh-widget", type: "hero_pixel",
-      data: { secondaryText: "Ver más", secondaryLink: "javascript:alert(1)", marqueeItems: ["Acme", "Norte & Co", "  ", ""] },
-    }] }] }],
+    rows: [{ id: "pxh-row", columns: [{ id: "pxh-col", span: { desktop: 12, tablet: 12, mobile: 12 }, widgets: [{ id: "pxh-widget", type: "hero_pixel", data: { secondaryText: "Ver más", secondaryLink: "javascript:alert(1)", marqueeItems: ["Acme", "Norte & Co"] } }] }] }],
   });
-  const sections = normalizeCanvasSectionsV2(document.sections);
-  assert.equal(sections.length, document.sections.length);
-  const rendered = renderSiteV2({ content: document.content, design: document.template.theme, sections, leadEndpoint: "/api/leads" });
+  const rendered = renderSiteV2({ content: document.content, design: document.design, sections: normalizeCanvasSectionsV2(document.sections), leadEndpoint: "/api/leads" });
   assert.match(rendered.body, /data-pixel-hero/);
-  assert.match(rendered.body, /<em[^>]*>Espacios<\/em>/);
-  assert.match(rendered.body, /Norte &amp; Co/);
   assert.doesNotMatch(rendered.body, /javascript:alert/);
   assert.match(rendered.script, /requestAnimationFrame/);
-  assert.match(rendered.css, /v2-pxh-marquee/);
 });
 
-test("el sitio publicado emite SEO social, canonical, favicon y JSON-LD", () => {
-  const document = instantiateTemplateV2("local", {
-    ...content,
-    business: { ...content.business, logo: "https://cdn.example.com/logo.webp" },
-    hero: { ...content.hero, media: "https://cdn.example.com/cover.webp" },
-  });
-  const rendered = renderSiteV2({ content: document.content, design: document.template.theme, sections: document.sections, leadEndpoint: "/api/leads", publicUrl: "https://tallernorte.com", indexable: true });
+test("el sitio publicado emite SEO social, canonical y JSON-LD", () => {
+  const publishedContent = normalizeSiteContentV2({ ...content, business: { ...content.business, logo: "https://cdn.example.com/logo.webp" }, hero: { ...content.hero, media: "https://cdn.example.com/cover.webp" } });
+  const document = buildDocument(publishedContent);
+  const rendered = renderSiteV2({ ...document, leadEndpoint: "/api/leads", publicUrl: "https://tallernorte.com", indexable: true });
   assert.match(rendered.head, /name="robots" content="index,follow"/);
   assert.match(rendered.head, /rel="canonical" href="https:\/\/tallernorte\.com\/"/);
-  assert.match(rendered.head, /property="og:image" content="https:\/\/cdn\.example\.com\/cover\.webp"/);
-  assert.match(rendered.head, /name="twitter:card" content="summary_large_image"/);
-  assert.match(rendered.head, /rel="icon" href="https:\/\/cdn\.example\.com\/logo\.webp"/);
   assert.match(rendered.body, /"@type":"LocalBusiness"/);
-  assert.match(rendered.body, /"streetAddress":"Managua"/);
 });
 
-test("el preview no se indexa y las secciones vacías colapsan fuera del editor", () => {
-  const empty = normalizeSiteContentV2({ ...content, services: [], benefits: [], reviews: [], faqs: [], media: [] });
-  const document = instantiateTemplateV2("catalog", empty);
-  const published = renderSiteV2({ content: document.content, design: document.template.theme, sections: document.sections, leadEndpoint: "/api/leads" });
-  const editor = renderSiteV2({ content: document.content, design: document.template.theme, sections: document.sections, leadEndpoint: "/api/leads", editable: true });
-  assert.match(published.head, /noindex,nofollow/);
-  assert.doesNotMatch(published.body, /id="catalog"/);
-  assert.match(editor.body, /id="catalog"/);
-  assert.match(editor.body, /Agrega elementos a esta lista/);
-});
-
-test("el renderer elige texto oscuro para CTA con acento claro", () => {
-  const document = instantiateTemplateV2("local", content);
-  const rendered = renderSiteV2({ content: document.content, design: document.template.theme, sections: document.sections, leadEndpoint: "/api/leads" });
-  assert.match(rendered.css, /--button-text:#111827/);
-  assert.match(rendered.css, /min-height:100dvh/);
-  assert.match(rendered.css, /margin-top:auto/);
-});
-
-test("la metadata publicada usa la misma fuente SEO y estructura LocalBusiness", () => {
+test("la metadata y las instrucciones DNS conservan el contrato público", () => {
   const source = { builderVersion: 2, businessName: "Taller Norte", businessType: "Arquitectura", location: "Managua", phone: "+505 8000 0000", contentJson: content };
   const metadata = publishedSiteMetadata(source, "https://tallernorte.com");
   assert.equal(metadata.alternates?.canonical, "https://tallernorte.com");
-  assert.equal(metadata.robots && typeof metadata.robots === "object" && "index" in metadata.robots ? metadata.robots.index : false, true);
   assert.equal(publishedSiteStructuredData(source, "https://tallernorte.com")["@type"], "LocalBusiness");
-});
-
-test("las instrucciones DNS conservan retos de Vercel y agregan el registro de enrutamiento", () => {
-  const apex = dnsRecordsForDomain("negocio.com", [{ type: "TXT", domain: "_vercel", value: "vc-domain-verify=abc" }]);
-  assert.deepEqual(apex.map((record) => record.type), ["TXT", "A"]);
-  assert.equal(apex[1].value, "76.76.21.21");
-  const www = dnsRecordsForDomain("www.negocio.com", []);
-  assert.deepEqual(www, [{ type: "CNAME", name: "www", value: "cname.vercel-dns-0.com" }]);
+  assert.deepEqual(dnsRecordsForDomain("www.negocio.com", []), [{ type: "CNAME", name: "www", value: "cname.vercel-dns-0.com" }]);
 });

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowRight, Check, CheckCircle2, CircleHelp, Globe2, LayoutTemplate, MessageSquareText, PencilLine, Rocket, ShieldCheck } from "lucide-react";
+import { ArrowRight, Check, CheckCircle2, CircleHelp, Globe2, MessageSquareText, PencilLine, Rocket, ShieldCheck } from "lucide-react";
 
 import { MarketingChrome } from "@/components/marketing/MarketingChrome";
 import { PricingShowcasePage } from "@/components/marketing/PricingShowcasePage";
@@ -68,7 +68,7 @@ function Help() {
   ];
   const steps = [
     { number: "01", icon: MessageSquareText, title: "Cuéntanos qué necesitas", copy: "Escribe una idea breve o completa la guía con los datos reales de tu negocio." },
-    { number: "02", icon: LayoutTemplate, title: "Compara diseños reales", copy: "Cluster interpreta la actividad y te presenta hasta seis composiciones para elegir." },
+    { number: "02", icon: PencilLine, title: "Recibe una base editable", copy: "Cluster compone el sitio desde bloques y lo abre directamente en el editor visual." },
     { number: "03", icon: Rocket, title: "Edita y publica", copy: "Ajusta contenido, colores y secciones. Inicia sesión solo cuando quieras guardar, descargar o publicar." },
   ];
 

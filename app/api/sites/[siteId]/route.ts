@@ -3,16 +3,13 @@ import { z } from "zod";
 
 import { prisma } from "@/lib/db";
 import { assertSiteAccess, siteAccessErrorResponse, siteAccessWhere } from "@/lib/site/access";
-import { deleteSiteMedia, getSiteMedia, isSiteMediaUrl, materializeDataUrlsForSite } from "@/lib/site/media";
+import { deleteSiteMedia, isSiteMediaUrl, materializeDataUrlsForSite } from "@/lib/site/media";
 import { getSiteLaunchReadiness } from "@/lib/site/launch-readiness";
-import { normalizeSectionSettings } from "@/lib/site/section-layout";
-import { sanitizeLink } from "@/lib/site/links";
 import { toRenderSection } from "@/lib/site/section";
 import {
   normalizeCanvasSectionsV2,
   normalizeSiteContentV2,
   normalizeThemeV2,
-  V2_TEMPLATE_IDS,
 } from "@/lib/site/v2-schema";
 
 export const runtime = "nodejs";
@@ -33,33 +30,9 @@ const updateSiteSchema = z.object({
   accentColor: hex.optional(),
 });
 
-const saveSectionSchema = z.object({
-  id: z.string().min(1).max(120),
-  type: z.string().min(1).max(50),
-  title: z.string().max(200).default(""),
-  subtitle: z.string().max(400).default(""),
-  body: z.string().max(4000).default(""),
-  ctaText: z.string().max(120).default(""),
-  ctaLink: z.string().max(2000).default("").transform(sanitizeLink),
-  imagePrompt: z.string().max(500).default(""),
-  mediaUrl: z.string().max(2000).default(""),
-  altText: z.string().max(300).default(""),
-  settings: z.record(z.unknown()).default({}),
-  isVisible: z.boolean().default(true),
-  order: z.number().int().min(0).max(100),
-});
-
-const atomicSaveSchema = z.object({
-  site: updateSiteSchema,
-  sections: z.array(saveSectionSchema).max(40),
-  deletedSectionIds: z.array(z.string().min(1).max(120)).max(40).default([]),
-  expectedUpdatedAt: z.string().datetime().optional(),
-});
-
 const v2SaveSchema = z.object({
   builderVersion: z.literal(2),
   site: updateSiteSchema,
-  templateId: z.enum(V2_TEMPLATE_IDS).optional(),
   content: z.unknown(),
   design: z.unknown(),
   sections: z.array(z.unknown()).min(3).max(40),
@@ -95,7 +68,6 @@ export async function GET(
         secondaryColor: site.secondaryColor,
         accentColor: site.accentColor,
         builderVersion: site.builderVersion,
-        templateId: site.templateId,
         content: site.contentJson,
         design: site.designJson,
         replacesSiteId: site.replacesSiteId,
@@ -169,7 +141,7 @@ export async function PUT(
       siteId,
       request: req,
       requireUser: true,
-      select: { id: true, builderVersion: true, templateId: true, status: true, updatedAt: true },
+      select: { id: true, builderVersion: true, updatedAt: true },
     });
     const body = await req.json().catch(() => null);
 
@@ -180,7 +152,7 @@ export async function PUT(
       }
 
       if (owned.builderVersion !== 2) {
-        return NextResponse.json({ error: "Este proyecto V1 debe migrarse antes de editarlo.", code: "LEGACY_READ_ONLY" }, { status: 409 });
+        return NextResponse.json({ error: "El editor Legacy fue eliminado.", code: "LEGACY_EDITOR_REMOVED" }, { status: 410 });
       }
 
       const normalizedContent = normalizeSiteContentV2(parsedV2.data.content);
@@ -211,7 +183,6 @@ export async function PUT(
             where,
             data: {
               ...parsedV2.data.site,
-              templateId: parsedV2.data.templateId ?? owned.templateId,
               contentJson: content as object,
               designJson: design as object,
               primaryColor: design.primary,
@@ -256,11 +227,10 @@ export async function PUT(
         const { del } = await import("@vercel/blob");
         await del(staleMedia).catch(() => null);
       }
-      const fresh = await prisma.site.findUnique({ where: { id: siteId }, select: { updatedAt: true, templateId: true } });
+      const fresh = await prisma.site.findUnique({ where: { id: siteId }, select: { updatedAt: true } });
       return NextResponse.json({
         ok: true,
         builderVersion: 2,
-        templateId: parsedV2.data.templateId ?? owned.templateId,
         content,
         design,
         sections,
@@ -268,108 +238,10 @@ export async function PUT(
       });
     }
 
-    const parsed = atomicSaveSchema.safeParse(body);
-    if (!parsed.success) return NextResponse.json({ error: parsed.error.errors[0]?.message ?? "Datos inválidos." }, { status: 400 });
-
-    if (owned.builderVersion === 1 && owned.status === "PUBLISHED") {
-      return NextResponse.json({
-        error: "Los sitios V1 publicados son de solo lectura. Crea una copia V2 para editarlos.",
-        code: "LEGACY_READ_ONLY",
-      }, { status: 409 });
-    }
-
-    const deleted = parsed.data.deletedSectionIds.length
-      ? await prisma.siteSection.findMany({
-          where: { siteId, id: { in: parsed.data.deletedSectionIds } },
-          select: { content: true },
-        })
-      : [];
-    const deletedMedia = deleted
-      .map((section) => (section.content as Record<string, unknown> | null)?.mediaUrl)
-      .filter((value): value is string => isSiteMediaUrl(siteId, value));
-
-    try {
-      await prisma.$transaction(async (tx) => {
-        const where = {
-          ...siteAccessWhere(siteId, actor, { allowGuest: false }),
-          ...(parsed.data.expectedUpdatedAt
-            ? { updatedAt: new Date(parsed.data.expectedUpdatedAt) }
-            : {}),
-        };
-        const gated = await tx.site.updateMany({
-          where,
-          data: parsed.data.site,
-        });
-        if (!gated.count) {
-          const error = new Error("STALE_WRITE");
-          (error as Error & { code?: string }).code = "STALE_WRITE";
-          throw error;
-        }
-        if (parsed.data.deletedSectionIds.length) {
-          await tx.siteSection.deleteMany({ where: { siteId, id: { in: parsed.data.deletedSectionIds } } });
-        }
-        for (const section of parsed.data.sections) {
-          const content = {
-            subtitle: section.subtitle,
-            body: section.body,
-            ctaText: section.ctaText,
-            ctaLink: section.ctaLink,
-            imagePrompt: section.imagePrompt,
-            mediaUrl: section.mediaUrl,
-            altText: section.altText,
-          };
-          if (section.id.startsWith("new-")) {
-            await tx.siteSection.create({ data: {
-              siteId,
-              type: section.type,
-              title: section.title,
-              content,
-              order: section.order,
-              isVisible: section.isVisible,
-              settingsJson: normalizeSectionSettings(section.settings),
-            } });
-          } else {
-            const updated = await tx.siteSection.updateMany({
-              where: { id: section.id, siteId },
-              data: {
-                title: section.title,
-                content,
-                order: section.order,
-                isVisible: section.isVisible,
-                settingsJson: normalizeSectionSettings(section.settings),
-              },
-            });
-            if (!updated.count) throw new Error("Sección no encontrada.");
-          }
-        }
-      });
-    } catch (error) {
-      if (error instanceof Error && (error as Error & { code?: string }).code === "STALE_WRITE") {
-        return NextResponse.json(
-          { error: "El sitio cambió en otra pestaña. Recarga antes de guardar.", code: "STALE_WRITE" },
-          { status: 409 },
-        );
-      }
-      throw error;
-    }
-
-    const sections = await prisma.siteSection.findMany({ where: { siteId }, orderBy: { order: "asc" } });
-    const referencedMedia = new Set(sections
-      .map((section) => (section.content as Record<string, unknown> | null)?.mediaUrl)
-      .filter((value): value is string => isSiteMediaUrl(siteId, value)));
-    const storedMedia = await getSiteMedia(siteId).catch(() => []);
-    const staleMedia = [...deletedMedia, ...storedMedia.map((blob) => blob.url)]
-      .filter((url, index, all) => !referencedMedia.has(url) && all.indexOf(url) === index);
-    if (staleMedia.length) {
-      const { del } = await import("@vercel/blob");
-      await del(staleMedia).catch(() => null);
-    }
-    const fresh = await prisma.site.findUnique({ where: { id: siteId }, select: { updatedAt: true } });
-    return NextResponse.json({
-      ok: true,
-      sections: sections.map(toRenderSection),
-      updatedAt: fresh?.updatedAt.toISOString() ?? new Date().toISOString(),
-    });
+    return NextResponse.json(
+      { error: "El editor Legacy fue eliminado.", code: "LEGACY_EDITOR_REMOVED" },
+      { status: 410 },
+    );
   } catch (error) {
     return siteAccessErrorResponse(error) ?? NextResponse.json({ error: "No se pudo guardar." }, { status: 500 });
   }

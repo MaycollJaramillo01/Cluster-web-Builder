@@ -25,13 +25,12 @@ import { renderSiteV2 } from "@/lib/site/v2-render";
 import {
   setContentSlot, V2_WIDGET_TYPES,
   type CanvasColumnV2, type CanvasRowV2, type CanvasSectionV2, type SiteContentV2,
-  type ThemeTokensV2, type V2TemplateId, type V2WidgetType, type WidgetV2,
+  type ThemeTokensV2, type V2WidgetType, type WidgetV2,
 } from "@/lib/site/v2-schema";
-import { SECTION_LIBRARY_V2 } from "@/lib/site/v2-templates";
+import { SECTION_LIBRARY_V2 } from "@/lib/site/v2-section-library";
 
 type EditorSiteV2 = {
   id: string;
-  templateId: V2TemplateId;
   content: SiteContentV2;
   design: ThemeTokensV2;
   sections: CanvasSectionV2[];
@@ -42,7 +41,7 @@ type EditorSiteV2 = {
 };
 
 type Selection = { kind: "section" | "row" | "column" | "widget"; id: string } | null;
-type HistorySnapshot = { content: SiteContentV2; design: ThemeTokensV2; sections: CanvasSectionV2[]; templateId: V2TemplateId };
+type HistorySnapshot = { content: SiteContentV2; design: ThemeTokensV2; sections: CanvasSectionV2[] };
 type ContextMenuState = { x: number; y: number; target: { kind: "widget" | "column" | "section"; id: string } } | null;
 type DragData = { kind: "section" | "row" | "widget"; sectionId: string; rowId?: string; columnId?: string; id: string };
 type DropData = Omit<DragData, "kind"> & { kind: DragData["kind"] | "column" };
@@ -162,7 +161,6 @@ export function SiteEditorV2({ initialSite }: { initialSite: EditorSiteV2 }) {
   const [content, setContent] = useState(initialSite.content);
   const [design, setDesign] = useState(initialSite.design);
   const [sections, setSections] = useState(initialSite.sections);
-  const [templateId, setTemplateId] = useState(initialSite.templateId);
   const [region, setRegion] = useState<CanvasSectionV2["region"]>("main");
   const [selection, setSelection] = useState<Selection>(null);
   const [tab, setTab] = useState<PanelTab>("add");
@@ -200,8 +198,8 @@ export function SiteEditorV2({ initialSite }: { initialSite: EditorSiteV2 }) {
   const deleteDispatchRef = useRef<(kind: string, id: string) => void>(() => undefined);
   // Historial local para deshacer/rehacer. stateRef siempre refleja el estado actual.
   const historyRef = useRef<{ past: HistorySnapshot[]; future: HistorySnapshot[]; lastPush: number }>({ past: [], future: [], lastPush: 0 });
-  const stateRef = useRef<HistorySnapshot>({ content, design, sections, templateId });
-  useEffect(() => { stateRef.current = { content, design, sections, templateId }; });
+  const stateRef = useRef<HistorySnapshot>({ content, design, sections });
+  useEffect(() => { stateRef.current = { content, design, sections }; });
   // Entradas del preview con debounce: evita regenerar el iframe en cada tecla.
   const [previewInputs, setPreviewInputs] = useState<Pick<HistorySnapshot, "content" | "design" | "sections">>({ content, design, sections });
   const previewScrollRef = useRef(0);
@@ -224,17 +222,17 @@ export function SiteEditorV2({ initialSite }: { initialSite: EditorSiteV2 }) {
     try {
       const draft = JSON.parse(raw);
       if (draft.content && draft.design && Array.isArray(draft.sections)) queueMicrotask(() => {
-        setContent(draft.content); setDesign(draft.design); setSections(draft.sections); setTemplateId(draft.templateId || initialSite.templateId);
+        setContent(draft.content); setDesign(draft.design); setSections(draft.sections);
         setDirty(true); setMessage("Recuperamos cambios sin guardar.");
       });
     } catch { localStorage.removeItem(draftKey); }
-  }, [draftKey, initialSite.templateId]);
+  }, [draftKey]);
 
   useEffect(() => {
     if (!dirty) return;
-    const timer = setTimeout(() => localStorage.setItem(draftKey, JSON.stringify({ content, design, sections, templateId })), 3500);
+    const timer = setTimeout(() => localStorage.setItem(draftKey, JSON.stringify({ content, design, sections })), 3500);
     return () => clearTimeout(timer);
-  }, [content, design, sections, templateId, dirty, draftKey]);
+  }, [content, design, sections, dirty, draftKey]);
 
   useEffect(() => {
     if (!message) return;
@@ -257,7 +255,7 @@ export function SiteEditorV2({ initialSite }: { initialSite: EditorSiteV2 }) {
   };
 
   const applySnapshot = (snapshot: HistorySnapshot) => {
-    setContent(snapshot.content); setDesign(snapshot.design); setSections(snapshot.sections); setTemplateId(snapshot.templateId);
+    setContent(snapshot.content); setDesign(snapshot.design); setSections(snapshot.sections);
     setDirty(true);
   };
 
@@ -342,7 +340,7 @@ export function SiteEditorV2({ initialSite }: { initialSite: EditorSiteV2 }) {
       const response = await fetch(`/api/sites/${initialSite.id}`, {
         method: "PUT", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          builderVersion: 2, templateId, content, design, sections,
+          builderVersion: 2, content, design, sections,
           expectedUpdatedAt: updatedAt,
           site: { businessName: content.business.name, phone: content.business.phone || null, email: content.business.email || null, location: content.business.location || null },
         }),
@@ -906,7 +904,7 @@ export function SiteEditorV2({ initialSite }: { initialSite: EditorSiteV2 }) {
                       const pair = FONT_PAIRS[Number(event.target.value)];
                       if (pair) applyDesign({ ...design, headingFont: pair.headingFont, bodyFont: pair.bodyFont });
                     }}>
-                    {!FONT_PAIRS.some((pair) => pair.headingFont === design.headingFont && pair.bodyFont === design.bodyFont) && <option value={-1}>Tipografía de la plantilla</option>}
+                    {!FONT_PAIRS.some((pair) => pair.headingFont === design.headingFont && pair.bodyFont === design.bodyFont) && <option value={-1}>Tipografía actual</option>}
                     {FONT_PAIRS.map((pair, index) => <option key={pair.name} value={index}>{pair.name}</option>)}
                   </select>
 

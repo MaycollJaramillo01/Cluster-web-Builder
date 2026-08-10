@@ -26,7 +26,6 @@ export type AccessedSite = {
   secondaryColor?: string;
   accentColor?: string;
   builderVersion?: number;
-  templateId?: string | null;
   contentJson?: unknown;
   designJson?: unknown;
   replacesSiteId?: string | null;

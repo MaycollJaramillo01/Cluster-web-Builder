@@ -21,19 +21,19 @@ try {
   siteId = payload.siteId;
 
   assert(response.status === 200 && siteId, "el prompt corto no generó un proyecto");
-  assert(stream.includes("Explorando estilo Immersive"), "el prompt de pesca no seleccionó la composición inmersiva");
+  assert(stream.includes("Explorando estilo modern_clean"), "el prompt de pesca no conservó la dirección visual esperada");
 
   const site = await prisma.site.findUnique({ where: { id: siteId }, include: { sections: true } });
   assert(/pesca/i.test(site?.businessName || "") && site?.businessType === "Pesca", "el parser no reconoció la actividad de pesca");
-  assert(site?.visualStyle === "Immersive", "el sitio de pesca terminó usando una plantilla genérica");
+  assert(site?.visualStyle === "modern_clean", "el sitio de pesca no conservó su dirección visual");
   assertCopyQuality(site);
-  const prompts = site.sections.map((section) => section.content?.imagePrompt).filter(Boolean).join(" ");
+  const prompts = (site.blueprintJson?.site?.pages?.[0]?.sections || []).map((section) => section.content?.imagePrompt).filter(Boolean).join(" ");
   assert(/pesca|fishing/i.test(prompts), "las imágenes generadas no conservan el tema de pesca");
 
   const preview = await fetch(`${baseUrl}/preview/${siteId}?compact=1`, { headers: { Cookie: cookie || "" } }).then((result) => result.text());
   assert(preview.includes("fishing"), "las imágenes del preview no usan una búsqueda relacionada con pesca");
   assert(!preview.includes("fishing%2Cphotography") && !preview.includes("fishing%252Cphotography"), "la búsqueda mezcla pesca con fotografía genérica");
-  console.log(`Prompt corto: OK — pesca reconocida, copy medido y composición Immersive en ${elapsed} ms.`);
+  console.log(`Prompt corto: OK — pesca reconocida, copy medido y documento V2 generado en ${elapsed} ms.`);
 } finally {
   if (siteId) await prisma.site.deleteMany({ where: { id: siteId } });
   await prisma.rateLimit.deleteMany({ where: { key: { startsWith: `generation:${hash(ip).slice(0, 24)}:` } } });
@@ -47,13 +47,14 @@ function assertCopyQuality(site) {
   const blueprint = site?.blueprintJson?.site;
   assert(between(blueprint?.seo?.title, 25, 65), "el SEO title no cumple 25-65 caracteres");
   assert(between(blueprint?.seo?.metaDescription, 80, 165), "la meta description no cumple 80-165 caracteres");
-  const hero = site?.sections.find((section) => section.type === "hero");
+  const sections = site?.blueprintJson?.site?.pages?.[0]?.sections || [];
+  const hero = sections.find((section) => section.type === "hero");
   assert(between(hero?.title, 8, 72), "el título del hero no cumple 8-72 caracteres");
   assert(between(hero?.content?.subtitle, 12, 110), "el subtítulo del hero no cumple 12-110 caracteres");
   assert(between(hero?.content?.body, 45, 240), "el body del hero no cumple 45-240 caracteres");
   assert(wordCount(hero?.content?.ctaText) >= 1 && wordCount(hero?.content?.ctaText) <= 5, "el CTA del hero no cumple 1-5 palabras");
   const generic = /lleva tu negocio al siguiente nivel|soluciones innovadoras|transformamos tus ideas|experiencia premium|somos líderes|calidad garantizada/i;
-  const allCopy = site.sections.map((section) => `${section.title} ${section.content?.subtitle || ""} ${section.content?.body || ""}`).join(" ");
+  const allCopy = sections.map((section) => `${section.title} ${section.content?.subtitle || ""} ${section.content?.body || ""}`).join(" ");
   assert(!generic.test(allCopy), "el sitio conserva frases genéricas prohibidas");
 }
 

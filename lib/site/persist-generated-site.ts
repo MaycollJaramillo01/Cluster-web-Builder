@@ -7,7 +7,7 @@ import { createPublicSlug } from "@/lib/site/public-url";
 import { normalizeSocialLinks } from "@/lib/site/social-links";
 import { applyPageStructure } from "@/lib/site/structure";
 import { trackProductEvent } from "@/lib/product-events";
-import { migrateLegacySiteDocument } from "@/lib/site/v2-migrate";
+import { composeGeneratedSiteDocument } from "@/lib/site/generation-document";
 import { materializeDataUrlsForSite, stripDataUrls } from "@/lib/site/media";
 import type { CanvasSectionV2, SiteContentV2 } from "@/lib/site/v2-schema";
 
@@ -45,7 +45,7 @@ export async function persistGeneratedSite({
   const uploadedLogoAsset = input.assets?.logoDataUrl || null;
   const uploadedCoverAsset = input.assets?.coverDataUrl || null;
 
-  const v2 = migrateLegacySiteDocument({
+  const v2 = composeGeneratedSiteDocument({
     businessName: input.businessName,
     businessType: resolveBusinessTypeLabel(input),
     location: input.location === "Zona por definir" ? null : input.location || null,
@@ -83,7 +83,6 @@ export async function persistGeneratedSite({
       goal: input.goal,
       visualStyle: plan.selectedDesignStyle,
       builderVersion: 2,
-      templateId: v2.templateId,
       contentJson: strippedContent as object,
       designJson: v2.design as object,
       location: input.location === "Zona por definir" ? null : input.location || null,
