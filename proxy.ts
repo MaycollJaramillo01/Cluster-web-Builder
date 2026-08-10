@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import { hasTrustedMutationOrigin, isCsrfExemptPath } from "@/lib/security/request-origin";
+
 function isDevHost(host: string) {
   return (
     host === "localhost" ||
@@ -14,6 +16,16 @@ export function proxy(request: NextRequest) {
   const root = process.env.PUBLIC_ROOT_DOMAIN?.replace(/^https?:\/\//, "").replace(/\/$/, "");
   const host = request.headers.get("host")?.split(":")[0] || "";
   const pathname = request.nextUrl.pathname;
+  if (
+    pathname.startsWith("/api/")
+    && !isCsrfExemptPath(pathname)
+    && !hasTrustedMutationOrigin(request)
+  ) {
+    return NextResponse.json(
+      { error: "Origen de solicitud no permitido." },
+      { status: 403, headers: { "Cache-Control": "no-store" } },
+    );
+  }
   if (root && host.endsWith(`.${root}`)) {
     const slug = host.slice(0, -(root.length + 1));
     if (pathname === "/" && slug && !slug.includes(".")) return NextResponse.rewrite(new URL(`/s/${slug}`, request.url));
@@ -29,4 +41,4 @@ export function proxy(request: NextRequest) {
   return NextResponse.next();
 }
 
-export const config = { matcher: ["/((?!api|_next|favicon.ico).*)"] };
+export const config = { matcher: ["/((?!_next|favicon.ico).*)"] };

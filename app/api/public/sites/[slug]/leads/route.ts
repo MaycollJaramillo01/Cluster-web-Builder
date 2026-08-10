@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import { prisma } from "@/lib/db";
 import { consumeRateLimit } from "@/lib/rate-limit";
+import { getClientIp } from "@/lib/security/client-ip";
 import { escapeHtml, sendEmail } from "@/lib/email";
 import { trackProductEvent } from "@/lib/product-events";
 
@@ -35,7 +36,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const site = await prisma.site.findFirst({ where: { publicSlug: slug, status: "PUBLISHED" }, select: { id: true, businessName: true, user: { select: { id: true, email: true } } } });
   if (!site) return NextResponse.json({ error: "Sitio no encontrado." }, { status: 404, headers: cors });
 
-  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || request.headers.get("x-real-ip") || "unknown";
+  const ip = getClientIp(request);
   if (!(await consumeRateLimit("lead", `${slug}:${ip}`, 5, 60 * 60 * 1000))) {
     return NextResponse.json({ error: "Demasiados intentos. Prueba más tarde." }, { status: 429, headers: cors });
   }

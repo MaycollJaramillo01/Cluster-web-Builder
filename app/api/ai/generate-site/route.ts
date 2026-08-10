@@ -11,6 +11,7 @@ import {
   SESSION_COOKIE,
 } from "@/lib/auth";
 import { consumeRateLimit } from "@/lib/rate-limit";
+import { getClientIp } from "@/lib/security/client-ip";
 import {
   buildGenerationPlan,
   generateNormalizedSite,
@@ -38,9 +39,7 @@ export async function POST(request: NextRequest) {
       ? { token: existingGuestToken, tokenHash: existingGuestHash, expiresAt: new Date(Date.now() + GUEST_MS) }
       : createGuestAccess();
 
-  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
-    || request.headers.get("x-real-ip")
-    || "local";
+  const ip = getClientIp(request);
   const rateId = authUser?.id ?? ip;
   const generationLimit = authUser?.planStatus === "ACTIVE" ? 100 : authUser ? 10 : 3;
   if (!(await consumeRateLimit("generation", rateId, generationLimit, 60 * 60 * 1000))) {

@@ -8,6 +8,7 @@ import { sendEmail, escapeHtml } from "@/lib/email";
 import { hashPassword } from "@/lib/password";
 import { trackProductEvent } from "@/lib/product-events";
 import { consumeRateLimit } from "@/lib/rate-limit";
+import { getClientIp } from "@/lib/security/client-ip";
 
 export const runtime = "nodejs";
 
@@ -19,7 +20,7 @@ const schema = z.object({
 });
 
 export async function POST(request: NextRequest) {
-  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || request.headers.get("x-real-ip") || "local";
+  const ip = getClientIp(request);
   if (!(await consumeRateLimit("register", ip, 5, 60 * 60 * 1000))) {
     return NextResponse.json({ error: "Demasiados registros. Intenta más tarde." }, { status: 429 });
   }

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { siteAccessWhere } from "../lib/site/site-access-where.ts";
+import { siteAccessWhere } from "../lib/site/site-access-where";
 
 test("siteAccessWhere permite admin sin OR de ownership", () => {
   assert.deepEqual(

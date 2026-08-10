@@ -70,3 +70,19 @@ test("el export neutraliza enlaces peligrosos en los CTA", () => {
   assert.ok(!html.includes("javascript:"), "el enlace javascript: no debe llegar al HTML");
   assert.ok(html.includes('href="#contact"'), "el CTA debe caer al ancla segura");
 });
+
+test("el export legacy escapa texto HTML controlado por el usuario", () => {
+  const html = exportSite([
+    section({
+      id: "xss",
+      type: "text",
+      title: '</h2><script>alert("xss")</script>',
+      body: '<img src=x onerror="alert(1)">',
+      order: 0,
+    }),
+  ]);
+  assert.ok(!html.includes("<script>alert"));
+  assert.ok(!html.includes("<img src=x"));
+  assert.ok(html.includes("&lt;script&gt;"));
+  assert.ok(html.includes("&lt;img"));
+});

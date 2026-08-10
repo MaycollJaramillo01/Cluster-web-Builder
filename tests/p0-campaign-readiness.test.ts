@@ -59,8 +59,9 @@ test("home y portada usan contenido V2 real en vez de buscar hero legacy", () =>
   assert.match(cover, /imageUrlFor/);
 });
 
-test("guardado y generación V2 materializan medios antes de persistir", () => {
+test("guardado y generación V2 persisten datos seguros y finalizan medios en segundo plano", () => {
   const persist = readFileSync("lib/site/persist-generated-site.ts", "utf8");
+  const generation = readFileSync("app/api/ai/generate-site/route.ts", "utf8");
   const route = readFileSync("app/api/sites/[siteId]/route.ts", "utf8");
   const media = readFileSync("lib/site/media.ts", "utf8");
 
@@ -71,7 +72,10 @@ test("guardado y generación V2 materializan medios antes de persistir", () => {
   assert.doesNotMatch(persist, /logoUrl: input\.assets\?\.logoDataUrl \|\| null/);
   assert.doesNotMatch(persist, /coverUrl: input\.assets\?\.coverDataUrl \|\| null/);
   assert.match(persist, /stripDataUrls\(v2\.content\)/);
-  assert.match(persist, /materializeDataUrlsForSite\(site\.id, v2\.content/);
+  assert.match(persist, /finalizeMedia: \(\) => materializeGeneratedSiteMedia\(site\.id, pending\)/);
+  assert.match(persist, /materializeDataUrlsForSite\(siteId, document\.content/);
+  assert.match(generation, /after\(\(\) =>/);
+  assert.match(generation, /finalizeMedia\(\)/);
   assert.match(route, /materializeDataUrlsForSite\(siteId, normalizedContent/);
   assert.match(route, /logoUrl: content\.business\.logo \|\| null/);
   assert.match(route, /coverUrl: content\.hero\.media/);

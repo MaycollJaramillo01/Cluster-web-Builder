@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { consumeRateLimit } from "@/lib/rate-limit";
+import { getClientIp } from "@/lib/security/client-ip";
 
 export const runtime = "nodejs";
 
@@ -11,9 +12,7 @@ type PexelsPhoto = {
 };
 
 export async function GET(request: NextRequest) {
-  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
-    || request.headers.get("x-real-ip")
-    || "local";
+  const ip = getClientIp(request);
   if (!(await consumeRateLimit("pexels-image", ip, 120, 60 * 60 * 1000))) {
     return NextResponse.json({ error: "Demasiadas solicitudes de imagen. Intenta más tarde." }, { status: 429 });
   }

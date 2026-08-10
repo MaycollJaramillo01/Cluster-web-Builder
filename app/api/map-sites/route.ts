@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { prisma } from "@/lib/db";
 import { consumeRateLimit } from "@/lib/rate-limit";
+import { getClientIp } from "@/lib/security/client-ip";
+import { publishedMapSiteWhere } from "@/lib/site/public-map";
 
 // Country centroid coordinates for fallback
 const COUNTRY_COORDS: Record<string, [number, number]> = {
@@ -160,16 +162,14 @@ function resolveCoords(location: string | null): [number, number] | null {
 }
 
 export async function GET(request: NextRequest) {
-  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
-    || request.headers.get("x-real-ip")
-    || "local";
+  const ip = getClientIp(request);
   if (!(await consumeRateLimit("map-sites", ip, 60, 60 * 60 * 1000))) {
     return NextResponse.json({ error: "Demasiadas solicitudes." }, { status: 429 });
   }
 
   try {
     const sites = await prisma.site.findMany({
-      where: { location: { not: null } },
+      where: publishedMapSiteWhere,
       select: {
         id: true,
         businessName: true,

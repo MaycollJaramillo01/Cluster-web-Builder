@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 
 import { prisma } from "@/lib/db";
+import { csvCell } from "@/lib/security/csv";
 import { assertSiteAccess, siteAccessErrorResponse } from "@/lib/site/access";
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ siteId: string }> }) {
@@ -33,5 +34,3 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     return siteAccessErrorResponse(error) ?? Response.json({ error: "Sitio no encontrado." }, { status: 404 });
   }
 }
-
-function csvCell(value: string) { return `"${value.replace(/"/g, '""')}"`; }

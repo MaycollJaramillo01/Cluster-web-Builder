@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { openrouterChatComplete } from "@/lib/openrouter";
 import { getUserBySessionToken, SESSION_COOKIE } from "@/lib/auth";
 import { consumeRateLimit } from "@/lib/rate-limit";
+import { getClientIp } from "@/lib/security/client-ip";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -28,7 +29,7 @@ export async function POST(req: NextRequest) {
   // Este endpoint dispara una llamada a un LLM de pago, así que limitamos el ritmo
   // por usuario (o por IP para invitados en onboarding) para evitar abuso de costo.
   const authUser = await getUserBySessionToken(req.cookies.get(SESSION_COOKIE)?.value);
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || req.headers.get("x-real-ip") || "local";
+  const ip = getClientIp(req);
   const rateId = authUser?.id ?? ip;
   const limit = authUser ? 30 : 15;
   if (!(await consumeRateLimit("generate-logo", rateId, limit, 60 * 60 * 1000))) {

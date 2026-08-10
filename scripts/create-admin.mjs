@@ -5,6 +5,8 @@
 import { randomBytes, scryptSync } from "node:crypto";
 import { PrismaClient } from "@prisma/client";
 
+const SCRYPT_PARAMS = { N: 2 ** 17, r: 8, p: 1, maxmem: 256 * 1024 * 1024 };
+
 const USERNAME = process.env.ADMIN_USERNAME?.trim();
 const PASSWORD = process.env.ADMIN_PASSWORD;
 const NAME = process.env.ADMIN_NAME?.trim() || null;
@@ -16,8 +18,8 @@ if (!USERNAME || !PASSWORD || PASSWORD.length < 10) {
 
 function hashPassword(password) {
   const salt = randomBytes(16).toString("hex");
-  const hash = scryptSync(password, salt, 64).toString("hex");
-  return `${salt}:${hash}`;
+  const hash = scryptSync(password, salt, 64, SCRYPT_PARAMS).toString("hex");
+  return `scrypt$${SCRYPT_PARAMS.N}$${SCRYPT_PARAMS.r}$${SCRYPT_PARAMS.p}$${salt}$${hash}`;
 }
 
 const prisma = new PrismaClient();
