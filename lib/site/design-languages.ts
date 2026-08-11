@@ -151,6 +151,104 @@ export const DESIGN_LANGUAGE_PACKS: Record<DesignLanguageId, DesignLanguagePack>
   },
 };
 
+export type CompositionGraphStage = {
+  stage: CompositionStage;
+  candidates: readonly string[];
+};
+
+export type CompositionPath = {
+  keys: string[];
+  score: number;
+};
+
+type BlockProfile = {
+  density: 1 | 2 | 3;
+  layout: "focus" | "split" | "grid";
+  contrast: boolean;
+};
+
+export function optimizeCompositionPath(
+  seed: string,
+  stages: readonly CompositionGraphStage[],
+): CompositionPath {
+  const graph = stages.filter((stage) => stage.candidates.length > 0);
+  if (!graph.length) return { keys: [], score: 0 };
+
+  type CandidatePath = CompositionPath & { last: string };
+  let paths: CandidatePath[] = graph[0].candidates.map((key, index) => ({
+    keys: [key],
+    last: key,
+    score: nodeScore(seed, graph[0].stage, key, index, graph[0].candidates.length),
+  }));
+
+  // ponytail: exact O(stages*candidates²); with 10 stages and at most 3 candidates,
+  // beam search would add code without improving measurable runtime.
+  for (const stage of graph.slice(1)) {
+    paths = stage.candidates.map((key, index) => {
+      let best: CandidatePath | null = null;
+      for (const previous of paths) {
+        const candidate: CandidatePath = {
+          keys: [...previous.keys, key],
+          last: key,
+          score: previous.score
+            + nodeScore(seed, stage.stage, key, index, stage.candidates.length)
+            + edgeScore(previous.last, key),
+        };
+        if (!best || candidate.score > best.score || (candidate.score === best.score && candidate.keys.join(">") < best.keys.join(">"))) {
+          best = candidate;
+        }
+      }
+      return best!;
+    });
+  }
+
+  const best = paths.reduce((winner, candidate) =>
+    candidate.score > winner.score || (candidate.score === winner.score && candidate.keys.join(">") < winner.keys.join(">"))
+      ? candidate
+      : winner,
+  );
+  return { keys: best.keys, score: best.score };
+}
+
+function nodeScore(seed: string, stage: CompositionStage, key: string, index: number, count: number): number {
+  return (count - index) * 3 + stableHash(`${seed}:${stage}:${key}`) % 7;
+}
+
+function edgeScore(previousKey: string, nextKey: string): number {
+  const previous = blockProfile(previousKey);
+  const next = blockProfile(nextKey);
+  return (previous.layout === next.layout ? -3 : 1)
+    + (previous.density === next.density ? -2 : 1)
+    + (previous.contrast && next.contrast ? -4 : previous.contrast !== next.contrast ? 1 : 0);
+}
+
+function blockProfile(key: string): BlockProfile {
+  const density = /bento|cards|catalog|wall|mosaic|metrics/.test(key)
+    ? 3
+    : /minimal|quotes|editorial|centered/.test(key)
+      ? 1
+      : 2;
+  const layout = /split|overlap|map/.test(key)
+    ? "split"
+    : /centered|(?:^|-)card(?:-|$)|quotes|poster/.test(key)
+      ? "focus"
+      : "grid";
+  return {
+    density,
+    layout,
+    contrast: /background|poster|band|wall/.test(key),
+  };
+}
+
+function stableHash(value: string): number {
+  let result = 2166136261;
+  for (let index = 0; index < value.length; index++) {
+    result ^= value.charCodeAt(index);
+    result = Math.imul(result, 16777619);
+  }
+  return result >>> 0;
+}
+
 export type DesignLanguageRanking = {
   id: DesignLanguageId;
   score: number;

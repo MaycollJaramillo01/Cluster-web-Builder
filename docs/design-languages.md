@@ -40,9 +40,9 @@ La fuente también es editable. Al seleccionar un lenguaje se aplica su par reco
 
 ## Selección actual
 
-La primera versión usa un ranking determinista de costo constante porque solo existen tres lenguajes. Evalúa el estilo solicitado, el tipo de negocio, el objetivo, la longitud narrativa y la cantidad de medios. El resultado incluye puntaje y razones.
+La selección de lenguaje usa un ranking determinista de costo constante porque solo existen tres opciones. Evalúa el estilo solicitado, el tipo de negocio, el objetivo, la longitud narrativa y la cantidad de medios. El resultado incluye puntaje y razones.
 
-El compositor representa la página como etapas ordenadas con varios nodos candidatos por lenguaje. Esta base permite añadir después pesos entre bloques, restricciones de repetición, contraste de densidad y optimización global sin recuperar el concepto de plantilla completa.
+El compositor representa la página como etapas ordenadas con varios nodos candidatos por lenguaje. Un recorrido exacto elige la ruta global con mejor puntuación y penaliza bloques consecutivos con la misma densidad, composición o contraste. El grafo es pequeño, por lo que no necesita dependencias ni búsqueda aproximada.
 
 ## Regla de extensión
 

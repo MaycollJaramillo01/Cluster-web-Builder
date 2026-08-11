@@ -5,6 +5,7 @@ import {
   applyDesignLanguage,
   COMPOSITION_STAGES,
   DESIGN_LANGUAGE_PACKS,
+  optimizeCompositionPath,
   rankDesignLanguages,
   selectDesignLanguage,
 } from "../lib/site/design-languages";
@@ -78,6 +79,20 @@ test("el ranking usa señales de estilo y negocio sin aleatoriedad", () => {
     rankDesignLanguages({ visualStyle: "premium_elegant", businessType: "arquitectura" }),
     rankDesignLanguages({ visualStyle: "premium_elegant", businessType: "arquitectura" }),
   );
+});
+
+test("el optimizador recorre el grafo completo de forma determinista", () => {
+  const graph = [
+    { stage: "hero" as const, candidates: ["library-hero-centered-v2", "library-hero-background-image-v2"] },
+    { stage: "about" as const, candidates: ["library-about-minimal-v2", "library-about-split-v2"] },
+    { stage: "services" as const, candidates: ["library-services-cards-v2", "library-services-editorial-v2"] },
+  ];
+  const first = optimizeCompositionPath("Taller Norte", graph);
+  const second = optimizeCompositionPath("Taller Norte", graph);
+  assert.deepEqual(first, second);
+  assert.equal(first.keys.length, graph.length);
+  first.keys.forEach((key, index) => assert.ok(graph[index].candidates.includes(key)));
+  assert.ok(Number.isFinite(first.score));
 });
 
 test("cambiar de lenguaje conserva la paleta y aplica su gramática", () => {

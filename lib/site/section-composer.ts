@@ -1,5 +1,6 @@
 import {
   getDesignLanguagePack,
+  optimizeCompositionPath,
   selectDesignLanguage,
 } from "@/lib/site/design-languages";
 import {
@@ -49,8 +50,6 @@ const HEADER_SEED: SectionSeed = {
 
 const sectionByKey = new Map(SECTION_LIBRARY_V2.map((section) => [section.key, section]));
 
-const pick = (seed: string, keys: string[]) => keys[Math.abs(hash(seed)) % keys.length];
-
 export function composeSiteSectionsV2({
   content: value,
   businessType,
@@ -83,25 +82,24 @@ export function composeSiteSectionsV2({
   const hasMap = Boolean(content.business.location);
   const hasMedia = content.media.length > 1;
   const hasVideo = /\.(mp4|webm)(\?|#|$)/i.test(content.hero.media);
-  const stage = (name: keyof typeof languagePack.composition, suffix = name) =>
-    pick(`${seed}:${suffix}`, [...languagePack.composition[name]]);
   const contactCandidates = languagePack.composition.contact.filter((key) => hasMap || !key.includes("map"));
-  const contactKey = hasMap && languagePack.composition.contact.includes("library-contact-map-v2")
-    ? "library-contact-map-v2"
-    : pick(`${seed}:contact`, [...contactCandidates]);
-
-  const keys = [
-    hasVideo ? "library-hero-video-background-v2" : stage("hero"),
-    stage("about"),
-    stage("services"),
-    ...(hasMedia ? [stage("gallery")] : []),
-    ...(content.benefits.length ? [stage("benefits")] : []),
-    stage("cta"),
-    ...(content.reviews.length ? [stage("reviews")] : []),
-    ...(content.faqs.length ? [stage("faq")] : []),
-    contactKey,
-    stage("footer"),
-  ];
+  const keys = optimizeCompositionPath(seed, [
+    { stage: "hero", candidates: hasVideo ? ["library-hero-video-background-v2"] : languagePack.composition.hero },
+    { stage: "about", candidates: languagePack.composition.about },
+    { stage: "services", candidates: languagePack.composition.services },
+    ...(hasMedia ? [{ stage: "gallery" as const, candidates: languagePack.composition.gallery }] : []),
+    ...(content.benefits.length ? [{ stage: "benefits" as const, candidates: languagePack.composition.benefits }] : []),
+    { stage: "cta", candidates: languagePack.composition.cta },
+    ...(content.reviews.length ? [{ stage: "reviews" as const, candidates: languagePack.composition.reviews }] : []),
+    ...(content.faqs.length ? [{ stage: "faq" as const, candidates: languagePack.composition.faq }] : []),
+    {
+      stage: "contact",
+      candidates: hasMap && languagePack.composition.contact.includes("library-contact-map-v2")
+        ? ["library-contact-map-v2"]
+        : contactCandidates,
+    },
+    { stage: "footer", candidates: languagePack.composition.footer },
+  ]).keys;
 
   const sections = [
     cloneSection(HEADER_SEED),
@@ -135,13 +133,4 @@ function cloneSection(seed: SectionSeed): CanvasSectionV2 {
       })),
     })),
   };
-}
-
-function hash(value: string) {
-  let result = 2166136261;
-  for (let index = 0; index < value.length; index++) {
-    result ^= value.charCodeAt(index);
-    result = Math.imul(result, 16777619);
-  }
-  return result >>> 0;
 }
