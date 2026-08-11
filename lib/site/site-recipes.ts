@@ -5,7 +5,7 @@ import {
   type OnboardingInput,
 } from "@/lib/validators/site-onboarding";
 
-export const SITE_RECIPE_IDS = ["local-leads", "appointments", "catalog", "portfolio"] as const;
+export const SITE_RECIPE_IDS = ["contractor-pro", "local-leads", "appointments", "catalog", "portfolio"] as const;
 
 export type SiteRecipeId = (typeof SITE_RECIPE_IDS)[number];
 
@@ -25,6 +25,13 @@ export type SiteRecipeRanking = {
 };
 
 export const SITE_RECIPES: Record<SiteRecipeId, SiteRecipe> = {
+  "contractor-pro": {
+    id: "contractor-pro",
+    name: "Contratista profesional",
+    description: "Presenta alcance, prueba de trabajo y un camino corto hacia llamada o cotización.",
+    sections: ["hero", "about_us", "services", "gallery", "benefits", "testimonials", "faq", "contact", "footer"],
+    languageAffinity: { industrial: 9, swiss: 1 },
+  },
   "local-leads": {
     id: "local-leads",
     name: "Captación local",
@@ -57,12 +64,14 @@ export const SITE_RECIPES: Record<SiteRecipeId, SiteRecipe> = {
 
 export function rankSiteRecipes(input: OnboardingInput): SiteRecipeRanking[] {
   const scores: Record<SiteRecipeId, number> = {
+    "contractor-pro": 0,
     "local-leads": 1,
     appointments: 0,
     catalog: 0,
     portfolio: 0,
   };
   const reasons: Record<SiteRecipeId, string[]> = {
+    "contractor-pro": [],
     "local-leads": [],
     appointments: [],
     catalog: [],
@@ -83,6 +92,7 @@ export function rankSiteRecipes(input: OnboardingInput): SiteRecipeRanking[] {
     case "calls":
     case "quote_forms":
       add("local-leads", 18, "el objetivo principal es generar contactos directos");
+      add("contractor-pro", 5, "el objetivo admite una ruta corta hacia llamada o cotización");
       break;
     case "show_services":
       add("local-leads", 8, "la prioridad es explicar servicios con claridad");
@@ -102,10 +112,16 @@ export function rankSiteRecipes(input: OnboardingInput): SiteRecipeRanking[] {
   if (input.businessType === "real_estate") {
     add("portfolio", 5, "la oferta se entiende mejor como colección visual");
   }
+  if (["roofing", "painting", "landscaping"].includes(input.businessType)) {
+    add("contractor-pro", 30, "la actividad depende de alcance, evidencia de obra y respuesta local");
+  }
 
   const business = resolveBusinessTypeLabel(input).toLocaleLowerCase("es");
   if (/(arquitect|fotograf|diseñ|disen|creativ|portafolio|estudio|arte|artista)/.test(business)) {
     add("portfolio", 24, "la actividad depende de mostrar trabajo y criterio visual");
+  }
+  if (/(roof|techo|siding|gutter|canaleta|contractor|contratista|construction|construc|remodel|restoration|concrete|masonry|hvac|plumb|electric|solar)/.test(business)) {
+    add("contractor-pro", 32, "el servicio es propio de un contratista de obra o mantenimiento técnico");
   }
 
   return SITE_RECIPE_IDS

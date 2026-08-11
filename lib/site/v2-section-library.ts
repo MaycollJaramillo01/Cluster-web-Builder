@@ -36,12 +36,14 @@ export const SECTION_LIBRARY_V2: SectionSeedV2[] = [
 
   section("library-gallery-grid-v2", "Galeria: grilla", "main", [row(column(12, [widget("gallery", "media", "grid")]))], { desktop: { padding: "xl" } }),
   section("library-gallery-mosaic-v2", "Galeria: mosaico", "main", [row(column(12, [widget("gallery", "media", "mosaic")]))], { desktop: { padding: "xl" } }),
+  section("library-gallery-projects-v2", "Galería: proyectos documentados", "main", [row(column(4, [labelHeading("Trabajo reciente"), labelText("Proyectos reales para evaluar terminación, orden y alcance.")]), column(8, [widget("gallery", "media", "mosaic")]))], { desktop: { padding: "xl" } }),
 
   section("library-cta-card-v2", "CTA: tarjeta centrada", "main", [row(column(12, [heading("contact.title", "h2", { desktop: { align: "center" } }), text("contact.body", { desktop: { align: "center" } }), button("contact.ctaText", "hero.ctaLink")]))], { desktop: { background: "#f4f4f5", padding: "xl", radius: "lg" } }),
   section("library-cta-split-v2", "CTA: texto + contacto", "main", [row(column(7, [heading("contact.title"), text("contact.body")]), column(5, [widget("business_info", undefined, "stacked"), button("contact.ctaText", "hero.ctaLink")]))], { desktop: { padding: "xl" } }),
 
   section("library-reviews-cards-v2", "Resenas: tarjetas", "main", [row(column(12, [widget("testimonials", "reviews", "cards")]))], { desktop: { padding: "lg" } }),
   section("library-reviews-wall-v2", "Resenas: muro", "main", [row(column(12, [widget("testimonials", "reviews", "wall")]))], { desktop: { background: "secondary", padding: "xl" } }),
+  section("library-reviews-trust-v2", "Reseñas: prueba de confianza", "main", [row(column(4, [labelHeading("Clientes que ya dieron el paso"), labelText("Experiencias concretas sobre comunicación, orden y resultado final.")]), column(8, [widget("testimonials", "reviews", "cards")]))], { desktop: { padding: "xl" } }),
 
   section("library-faq-minimal-v2", "FAQ: minimal", "main", [row(column(4, [labelHeading("Preguntas frecuentes"), labelText("Lo esencial antes de dar el siguiente paso.")]), column(8, [widget("accordion", "faqs", "minimal")]))], { desktop: { padding: "xl" } }),
   section("library-faq-cards-v2", "FAQ: tarjetas", "main", [row(column(12, [widget("accordion", "faqs", "cards")]))], { desktop: { padding: "lg" } }),

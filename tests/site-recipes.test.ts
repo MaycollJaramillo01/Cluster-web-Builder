@@ -21,6 +21,7 @@ test("todas las recetas cumplen el contrato funcional mínimo", () => {
 
 test("el ranking de recetas responde al objetivo y al tipo de negocio", () => {
   const cases = [
+    [{ ...onboardingFixture, businessType: "roofing" as const, customBusinessType: "", goal: "quote_forms" as const }, "contractor-pro"],
     [{ ...onboardingFixture, goal: "sell_products" as const }, "catalog"],
     [{ ...onboardingFixture, businessType: "restaurant" as const, customBusinessType: "", goal: "professional_presence" as const }, "appointments"],
     [{ ...onboardingFixture, businessType: "cleaning" as const, customBusinessType: "", goal: "quote_forms" as const }, "local-leads"],

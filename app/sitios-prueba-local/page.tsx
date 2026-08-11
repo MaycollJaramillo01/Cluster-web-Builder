@@ -6,6 +6,7 @@ import { notFound } from "next/navigation";
 import type { DesignLanguageId } from "@/lib/site/design-language-types";
 import { isLocalPreviewRequest } from "@/lib/site/local-preview";
 import { composeSiteSectionsV2 } from "@/lib/site/section-composer";
+import { SITE_RECIPES } from "@/lib/site/site-recipes";
 import type { ThemeTokensV2 } from "@/lib/site/v2-schema";
 import { renderSiteV2 } from "@/lib/site/v2-render";
 
@@ -260,15 +261,96 @@ const DEMOS: DemoSeed[] = [
       seo: { title: "Casa Mombacho | Hospedaje boutique en Granada", description: "Hospedaje boutique de ocho habitaciones en el centro histórico de Granada." },
     },
   },
+  {
+    slug: "cumbre-roofing",
+    name: "Cumbre Roofing & Exteriors",
+    businessType: "Roofing residencial y exteriores",
+    language: "industrial",
+    languageName: "Industrial Utility",
+    summary: "Jerarquía de obra, evidencia verificable y una ruta corta hacia llamada o cotización.",
+    swatch: "#f5a623",
+    theme: {
+      primary: "#17324d",
+      secondary: "#101820",
+      accent: "#f5a623",
+      background: "#f4f1ea",
+      text: "#101820",
+      muted: "#5d6670",
+    },
+    content: {
+      business: {
+        name: "Cumbre Roofing & Exteriors",
+        type: "Roofing residencial y exteriores",
+        location: "Houston, Katy y Cypress, Texas",
+        phone: "+1 (713) 555-0148",
+        email: "estimados@cumbreroofing.test",
+      },
+      hero: {
+        subtitle: "Inspección clara · Trabajo asegurado · Houston, TX",
+        title: "Tu techo listo para la próxima tormenta.",
+        body: "Inspeccionamos el daño, documentamos el alcance y resolvemos reparaciones o reemplazos con materiales y plazos por escrito.",
+        ctaText: "Pedir inspección",
+        ctaLink: "#contact",
+        media: image(31771166),
+      },
+      about: {
+        subtitle: "Contratista local · Atención en español e inglés",
+        title: "Una cuadrilla local que explica el trabajo antes de empezar.",
+        body: "Cumbre atiende viviendas en el oeste y noroeste de Houston. Cada visita comienza con una inspección documentada, fotografías del daño y una propuesta por escrito. El propietario sabe qué se hará, qué materiales se usarán y quién responderá durante la obra.",
+        media: image(30514132, 1000, 1200),
+        highlights: [
+          { title: "10 años", description: "Garantía de mano de obra en reemplazos completos." },
+          { title: "24 horas", description: "Respuesta inicial para daños por tormenta." },
+          { title: "1 contacto", description: "Un responsable desde la inspección hasta el cierre." },
+        ],
+      },
+      services: [
+        { title: "Inspección de techo", description: "Revisión de shingles, flashing, ventilación y puntos de filtración con reporte fotográfico.", meta: "Sin presión de venta" },
+        { title: "Reemplazo completo", description: "Retiro, preparación de deck, instalación y limpieza final con alcance documentado.", meta: "Residencial" },
+        { title: "Daño por tormenta", description: "Protección temporal, documentación del daño y reparación priorizada para detener filtraciones.", meta: "Respuesta rápida" },
+        { title: "Gutters y siding", description: "Canaletas, fascia y revestimiento exterior coordinados con el sistema de techo.", meta: "Exterior completo" },
+      ],
+      benefits: [
+        { title: "01 · Inspeccionar", description: "Fotografiamos el estado actual y separamos mantenimiento, reparación y reemplazo." },
+        { title: "02 · Cotizar", description: "Entregamos alcance, materiales, exclusiones y plazo por escrito." },
+        { title: "03 · Ejecutar", description: "Protegemos la propiedad, coordinamos la cuadrilla y reportamos avances." },
+        { title: "04 · Verificar", description: "Hacemos recorrido final, limpieza magnética y entrega de garantías." },
+      ],
+      media: [
+        { url: image(31771166, 1400, 1000), alt: "Instalación de shingles en una vivienda" },
+        { url: image(37623622, 1200, 900), alt: "Técnico trabajando con equipo de seguridad sobre un techo" },
+        { url: image(30514132, 1200, 900), alt: "Cuadrilla instalando la estructura de un techo" },
+        { url: image(259588, 1200, 900), alt: "Exterior terminado de una vivienda residencial" },
+      ],
+      reviews: [
+        { name: "Marisol G.", role: "Propietaria en Katy", quote: "Nos enseñaron las fotos, explicaron qué sí necesitaba reparación y terminaron sin dejar clavos en el patio.", rating: 5, source: "Reseña de demostración" },
+        { name: "Daniel R.", role: "Propietario en Cypress", quote: "La propuesta fue clara y el supervisor respondió el teléfono durante todo el trabajo.", rating: 5, source: "Reseña de demostración" },
+        { name: "Ana y Luis P.", role: "Propietarios en Houston", quote: "Pudimos hablar en español con la cuadrilla y entender cada decisión antes de aprobarla.", rating: 5, source: "Reseña de demostración" },
+      ],
+      faqs: [
+        { question: "¿La inspección me obliga a contratar?", answer: "No. Recibes el diagnóstico y las opciones recomendadas; la decisión de continuar es tuya." },
+        { question: "¿Atienden daños después de una tormenta?", answer: "Sí. Priorizamos filtraciones activas y podemos instalar protección temporal antes de la reparación definitiva." },
+        { question: "¿Trabajan con seguros?", answer: "Documentamos daños y alcance para que puedas conversar con tu aseguradora. La cobertura final siempre la determina tu póliza y su ajustador." },
+        { question: "¿En qué zonas trabajan?", answer: "Atendemos Houston, Katy, Cypress y comunidades cercanas según el alcance del proyecto." },
+      ],
+      contact: {
+        title: "Empieza con una inspección, no con una promesa.",
+        body: "Cuéntanos tu zona, tipo de techo y si existe una filtración activa. Te llamamos para confirmar la visita y el siguiente paso.",
+        ctaText: "Solicitar inspección",
+      },
+      seo: { title: "Cumbre Roofing & Exteriors | Houston, TX", description: "Inspección, reparación y reemplazo de techos residenciales en Houston, Katy y Cypress.", keyword: "roofing Houston" },
+    },
+  },
 ];
 
 function renderDemo(demo: DemoSeed) {
   const composed = composeSiteSectionsV2({
     content: demo.content,
     businessType: demo.businessType,
-    visualStyle: demo.language === "bauhaus" ? "bold" : demo.language === "swiss" ? "modern_clean" : "premium_elegant",
+    visualStyle: demo.language === "bauhaus" ? "bold" : demo.language === "swiss" ? "modern_clean" : demo.language === "industrial" ? "local_trustworthy" : "premium_elegant",
     designLanguage: demo.language,
     theme: demo.theme,
+    blueprint: demo.language === "industrial" ? SITE_RECIPES["contractor-pro"].sections : undefined,
   });
 
   return {
@@ -348,7 +430,7 @@ export default async function LocalTestSitesPage({
       <section className="mx-auto w-full max-w-7xl px-5 py-14 sm:px-8 sm:py-20">
         <div className="grid gap-8 border-b border-[#171a17]/25 pb-12 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-end">
           <div>
-            <p className="text-xs font-black uppercase tracking-[0.18em] text-[#315c45]">Tres lenguajes, un solo motor</p>
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-[#315c45]">Cuatro lenguajes, un solo motor</p>
             <h1 className="mt-4 max-w-4xl text-5xl font-black leading-[0.94] tracking-[-0.055em] sm:text-7xl">
               Sitios de prueba para mirar el sistema en acción.
             </h1>

@@ -52,8 +52,8 @@ const content = normalizeSiteContentV2({
   ],
 });
 
-test("el sistema expone exactamente Bauhaus, Swiss y Editorial", () => {
-  assert.deepEqual(DESIGN_LANGUAGE_IDS, ["bauhaus", "swiss", "editorial"]);
+test("el sistema expone Bauhaus, Swiss, Editorial e Industrial", () => {
+  assert.deepEqual(DESIGN_LANGUAGE_IDS, ["bauhaus", "swiss", "editorial", "industrial"]);
   assert.deepEqual(Object.keys(DESIGN_LANGUAGE_PACKS), [...DESIGN_LANGUAGE_IDS]);
 });
 
@@ -75,6 +75,7 @@ test("el ranking usa señales de estilo y negocio sin aleatoriedad", () => {
   assert.equal(selectDesignLanguage({ visualStyle: "bold", businessType: "fitness" }).id, "bauhaus");
   assert.equal(selectDesignLanguage({ visualStyle: "modern_clean", businessType: "software" }).id, "swiss");
   assert.equal(selectDesignLanguage({ visualStyle: "premium_elegant", businessType: "arquitectura" }).id, "editorial");
+  assert.equal(selectDesignLanguage({ visualStyle: "local_trustworthy", businessType: "roofing contractor" }).id, "industrial");
   assert.equal(selectDesignLanguage({ languageAffinity: { editorial: 5 } }).id, "editorial");
   assert.deepEqual(
     rankDesignLanguages({ visualStyle: "premium_elegant", businessType: "arquitectura" }),
@@ -151,4 +152,15 @@ test("el renderer identifica el lenguaje y emite sus reglas globales", () => {
   assert.match(rendered.body, /v2-region-footer/);
   assert.match(rendered.css, /\[data-design-language="bauhaus"\]/);
   assert.match(rendered.css, /--language-rule:3px/);
+});
+
+test("Industrial conserva la paleta y expone conversión directa en el encabezado", () => {
+  const document = composeSiteSectionsV2({ content, designLanguage: "industrial" });
+  const rendered = renderSiteV2({ ...document, leadEndpoint: "/api/leads" });
+  assert.equal(document.design.accent, normalizeThemeV2({}).accent);
+  assert.match(rendered.body, /data-design-language="industrial"/);
+  assert.match(rendered.body, /v2-nav-phone/);
+  assert.match(rendered.body, /v2-nav-cta/);
+  assert.match(rendered.css, /\[data-design-language="industrial"\]/);
+  assert.match(rendered.css, /--language-rule:2px/);
 });
