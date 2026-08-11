@@ -21,12 +21,44 @@ export type GenerationRequest = {
 };
 
 export type GenerationPlan = {
+  blueprintId: GenerationBlueprintId;
   selectedDesignStyle: string;
   designBrief: string;
   sectionPlan: SectionType[];
   paletteId: string;
   systemPrompt: string;
   userPrompt: string;
+};
+
+export type GenerationBlueprintId = "local-leads" | "appointments" | "catalog" | "portfolio";
+
+export type GenerationBlueprint = {
+  id: GenerationBlueprintId;
+  description: string;
+  sections: readonly SectionType[];
+};
+
+export const GENERATION_BLUEPRINTS: Record<GenerationBlueprintId, GenerationBlueprint> = {
+  "local-leads": {
+    id: "local-leads",
+    description: "Explica la oferta, construye confianza y conduce a una consulta.",
+    sections: ["hero", "services", "benefits", "about_us", "faq", "contact", "cta", "footer"],
+  },
+  appointments: {
+    id: "appointments",
+    description: "Presenta servicios, resuelve objeciones y conduce a una solicitud de cita.",
+    sections: ["hero", "services", "about_us", "benefits", "faq", "contact", "cta", "footer"],
+  },
+  catalog: {
+    id: "catalog",
+    description: "Prioriza productos, evidencia visual y contacto para completar la compra.",
+    sections: ["hero", "services", "gallery", "about_us", "benefits", "faq", "contact", "cta", "footer"],
+  },
+  portfolio: {
+    id: "portfolio",
+    description: "Abre con el trabajo, explica los servicios y termina en una consulta.",
+    sections: ["hero", "gallery", "services", "about_us", "benefits", "contact", "cta", "footer"],
+  },
 };
 
 export function parseGenerationInput(body: unknown): GenerationRequest {
@@ -40,8 +72,9 @@ export function parseGenerationInput(body: unknown): GenerationRequest {
 export function buildGenerationPlan(input: OnboardingInput, originalRequest?: string): GenerationPlan {
   const designRequest = originalRequest ?? buildGuidedDesignRequest(input);
   const selectedDesignStyle = input.visualStyle;
-  const designBrief = buildVisualDirection(input, designRequest);
-  const sectionPlan = buildSectionPlan(input);
+  const blueprint = selectGenerationBlueprint(input);
+  const designBrief = buildVisualDirection(input, designRequest, blueprint);
+  const sectionPlan = expandBlueprint(blueprint, input);
   const prompt = buildSiteGenerationPrompt(
     input,
     originalRequest,
@@ -51,6 +84,7 @@ export function buildGenerationPlan(input: OnboardingInput, originalRequest?: st
   );
 
   return {
+    blueprintId: blueprint.id,
     selectedDesignStyle,
     designBrief,
     sectionPlan,
@@ -71,27 +105,33 @@ export function generationStatusStages(style: string) {
   ];
 }
 
-function buildVisualDirection(input: OnboardingInput, request: string): string {
+function buildVisualDirection(input: OnboardingInput, request: string, blueprint: GenerationBlueprint): string {
   return [
     `Dirección visual solicitada: ${input.visualStyle.replaceAll("_", " ")}.`,
     `Contexto: ${request}.`,
-    "Construye una interfaz original desde bloques editables; no imites ni selecciones una plantilla prearmada.",
+    `Blueprint funcional: ${blueprint.description}`,
+    "Compón una interfaz original con bloques editables y variantes compatibles. No generes HTML ni estilos fuera del contrato.",
   ].join(" ");
 }
 
-function buildSectionPlan(input: OnboardingInput): SectionType[] {
-  const hasLocation = input.location.trim().length > 0;
-  return [
-    "hero",
-    "services",
-    "about_us",
-    "benefits",
-    ...(hasLocation ? ["location" as const] : []),
-    "faq",
-    "contact",
-    "cta",
-    "footer",
-  ];
+export function selectGenerationBlueprint(input: OnboardingInput): GenerationBlueprint {
+  const customType = input.customBusinessType?.toLocaleLowerCase("es") ?? "";
+  if (input.goal === "sell_products") return GENERATION_BLUEPRINTS.catalog;
+  if (input.goal === "book_appointments" || input.businessType === "restaurant") return GENERATION_BLUEPRINTS.appointments;
+  if (/(arquitect|fotograf|diseñ|disen|creativ|portafolio|estudio)/.test(customType)) return GENERATION_BLUEPRINTS.portfolio;
+  return GENERATION_BLUEPRINTS["local-leads"];
+}
+
+function expandBlueprint(blueprint: GenerationBlueprint, input: OnboardingInput): SectionType[] {
+  const sections = [...blueprint.sections];
+  const contactIndex = sections.indexOf("contact");
+  if (input.location.trim() && input.location !== "Zona por definir" && !sections.includes("location")) {
+    sections.splice(Math.max(contactIndex, 1), 0, "location");
+  }
+  if (input.reviews?.trim() && !sections.includes("testimonials")) {
+    sections.splice(Math.max(sections.indexOf("contact"), 1), 0, "testimonials");
+  }
+  return sections;
 }
 
 export async function generateNormalizedSite({

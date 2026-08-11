@@ -7,7 +7,11 @@ import { openrouterChatStream, parseChatStream } from "@/lib/openrouter";
 import { consumeRateLimit } from "@/lib/rate-limit";
 import { normalizeSiteContentV2, V2_CONTENT_SLOTS } from "@/lib/site/v2-schema";
 
-const schema = z.object({ slot: z.enum(V2_CONTENT_SLOTS), currentValue: z.string().max(4000) });
+const schema = z.object({
+  slot: z.enum(V2_CONTENT_SLOTS),
+  currentValue: z.string().max(4000),
+  instruction: z.string().trim().min(3).max(300).default("Hazlo más claro, específico y breve."),
+});
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ siteId: string }> }) {
   const { siteId } = await params;
@@ -33,12 +37,12 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       content.business.email && `Correo: ${content.business.email}`,
     ].filter(Boolean).join("\n");
     const response = await openrouterChatStream([
-      { role: "system", content: "Reescribe un único texto comercial en español. Usa solo los HECHOS. No inventes años, cifras, premios, clientes ni garantías. Devuelve únicamente texto plano; nunca JSON, HTML, estilos o estructura." },
-      { role: "user", content: `HECHOS:\n${facts}\n\nCAMPO: ${parsed.data.slot}\nTEXTO ACTUAL: ${parsed.data.currentValue || "Vacío"}\nMÁXIMO: 4000 caracteres.` },
+      { role: "system", content: "Edita un único texto comercial en español. La instrucción solo puede cambiar redacción, tono o longitud. Usa únicamente los HECHOS. No inventes años, cifras, premios, clientes ni garantías. No uses guiones largos. Devuelve texto plano; nunca JSON, HTML, estilos o estructura." },
+      { role: "user", content: `HECHOS:\n${facts}\n\nCAMPO: ${parsed.data.slot}\nINSTRUCCIÓN: ${parsed.data.instruction}\nTEXTO ACTUAL: ${parsed.data.currentValue || "Vacío"}\nMÁXIMO: 4000 caracteres.` },
     ], { temperature: 0.35 });
     let value = "";
     for await (const delta of parseChatStream(response.body!)) value += delta;
-    value = value.trim().replace(/^['"]|['"]$/g, "").slice(0, 4000);
+    value = value.trim().replace(/^['"]|['"]$/g, "").replace(/[—–]/g, "-").slice(0, 4000);
     if (!value || /<\/?[a-z]|\{\s*"/i.test(value)) throw new Error("La respuesta no fue texto seguro.");
     return NextResponse.json({ value });
   } catch (error) {

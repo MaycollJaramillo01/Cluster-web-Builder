@@ -360,7 +360,12 @@ export function SiteEditorV2({ initialSite }: { initialSite: EditorSiteV2 }) {
       if (typeof data.updatedAt === "string") setUpdatedAt(data.updatedAt);
       setDirty(false);
       localStorage.removeItem(draftKey);
-      setMessage("Cambios guardados.");
+      const warnings = Array.isArray(data.quality?.issues)
+        ? data.quality.issues.filter((issue: { level?: string }) => issue.level === "warning")
+        : [];
+      setMessage(warnings.length
+        ? `Cambios guardados. Revisa: ${warnings.slice(0, 2).map((issue: { message?: string }) => issue.message).filter(Boolean).join(" ")}`
+        : "Cambios guardados.");
       return true;
     } catch (reason) { setMessage(reason instanceof Error ? reason.message : "No se pudo guardar."); return false; }
     finally { setSaving(false); }

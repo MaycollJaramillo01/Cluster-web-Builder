@@ -48,6 +48,7 @@ REGLA PRINCIPAL: el objeto FACTS es la unica fuente de verdad.
 - No generes testimonios ni resenas inventadas. Solo puedes crear la seccion testimonials cuando FACTS.verifiedReviews contiene resenas reales; usalas textualmente o con edicion minima, sin cambiar su sentido.
 - No uses placeholders ni afirmaciones como "somos lideres", "calidad garantizada" o "equipo experto".
 - Evita frases vacias como "experiencia premium", "lleva tu negocio al siguiente nivel", "soluciones innovadoras" o "transformamos tus ideas".
+- No uses guiones largos, etiquetas decorativas, numeracion de secciones ni metadatos ficticios.
 - No uses la palabra generica "negocio" como propuesta de valor, audiencia o nombre de servicio. Si faltan detalles, escribe copy breve, factual y neutral.
 - Si un dato no aparece en FACTS, omitelo. No completes huecos.
 - Conserva exactamente los nombres de verifiedServices. Puedes mejorar la redaccion de su descripcion sin agregar prestaciones.
@@ -58,7 +59,7 @@ OBJETIVO DE EXPERIENCIA:
 - Genera UNA SOLA LANDING PAGE COHESIVA con una unica experiencia de scroll y un arco narrativo completo.
 - designDirection contiene la direccion artistica del estilo. Aplicala a la atmosfera, jerarquia, tipografia sugerida, ritmo y movimiento; no la trates como datos del negocio.
 - copyVoice define el tono de escritura que debes usar en titulos, subtitulos, body y CTA. Aplicalo a CADA pieza de copy que generes. No uses un tono generico: el copy debe sonar como el estilo pide.
-- sectionPlan define las secciones y el ORDEN EXACTO que debe tener este sitio — siguelo fielmente. Solo puedes omitir una seccion si literalmente no hay datos en FACTS que la justifiquen (trust_badges sin verifiedTrustFacts, pricing sin precios, location sin serviceArea, faq sin hechos verificados, testimonials sin verifiedReviews). about_us es OBLIGATORIA: nunca la omitas; construyela con businessName, businessType, yearsExperience, targetCustomer y verifiedTrustFacts. No cambies el orden ni insertes secciones que no esten en sectionPlan.
+- sectionPlan define el blueprint y el ORDEN EXACTO que debe tener este sitio. Siguelo fielmente. Solo puedes omitir una seccion si literalmente no hay datos en FACTS que la justifiquen (trust_badges sin verifiedTrustFacts, pricing sin precios, location sin serviceArea, faq sin hechos verificados, testimonials sin verifiedReviews). about_us es OBLIGATORIA: nunca la omitas; construyela con businessName, businessType, yearsExperience, targetCustomer y verifiedTrustFacts. No cambies el orden ni insertes secciones que no esten en sectionPlan.
 - La pagina debe responder con claridad: que ofrece, para quien es, por que importa y cual es la siguiente accion.
 - Cada seccion debe cumplir una sola funcion y conducir a la siguiente. Prioriza lectura escaneable, CTA claro y contenido especifico.
 - Piensa mobile-first: titulos breves, contraste accesible, orden semantico y bloques que funcionen sin depender de hover.

@@ -118,18 +118,18 @@ export function PromptComposer({ variant = "chat" }: PromptComposerProps) {
   if (step === "logo") {
     return (
       <div className="mx-auto w-full max-w-4xl">
-        <div className="rounded-lg border border-[#494454] bg-[#15121b] p-6 shadow-[0_0_0_3px_rgb(139_92_246/0.08),var(--shadow-md)]">
+        <div className="rounded-lg border border-zinc-700 bg-zinc-950 p-6 shadow-lg shadow-black/20">
           <button
             type="button"
             onClick={() => { setStep("prompt"); setLogoDataUrl(null); setLogoError(null); }}
-            className="mb-5 flex items-center gap-1.5 text-sm text-[#9b8ab4] hover:text-[#cbc3d7] transition-colors"
+            className="mb-5 flex items-center gap-1.5 text-sm text-zinc-400 transition-colors hover:text-zinc-100 active:translate-y-px"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
             Volver al prompt
           </button>
 
-          <p className="mb-1 text-lg font-semibold text-[#f7f2fb]">¿Tienes un logo?</p>
-          <p className="mb-6 text-sm text-[#9b8ab4]">
+          <p className="mb-1 text-lg font-semibold text-zinc-100">¿Tienes un logo?</p>
+          <p className="mb-6 text-sm text-zinc-400">
             Súbelo o arrástralo al área, o deja que la IA lo cree automáticamente.
           </p>
 
@@ -146,8 +146,8 @@ export function PromptComposer({ variant = "chat" }: PromptComposerProps) {
               className={[
                 "flex flex-col items-center gap-3 rounded-lg border px-5 py-6 text-center transition-colors disabled:cursor-not-allowed disabled:opacity-50",
                 isDragging
-                  ? "border-[#8b5cf6] bg-[#2c2141] ring-2 ring-[#8b5cf6]/30"
-                  : "border-[#494454] bg-[#1d1a23] hover:border-[#8b5cf6] hover:bg-[#2c2141]",
+                  ? "border-violet-400 bg-zinc-800 ring-2 ring-violet-400/30"
+                  : "border-zinc-700 bg-zinc-900 hover:border-violet-400 hover:bg-zinc-800",
               ].join(" ")}
             >
               {logoDataUrl ? (
@@ -157,13 +157,13 @@ export function PromptComposer({ variant = "chat" }: PromptComposerProps) {
                   className="h-14 w-auto max-w-[120px] rounded object-contain"
                 />
               ) : (
-                <Upload className={`h-7 w-7 ${isDragging ? "text-[#c4b5fd]" : "text-[#8b5cf6]"}`} />
+                <Upload className={`h-7 w-7 ${isDragging ? "text-violet-200" : "text-violet-400"}`} />
               )}
-              <span className="text-sm font-medium text-[#f7f2fb]">
+              <span className="text-sm font-medium text-zinc-100">
                 {logoDataUrl ? "Cambiar logo" : isDragging ? "Suelta aquí" : "Subir mi logo"}
               </span>
-              <span className="text-xs text-[#9b8ab4]">
-                {isDragging ? "Suelta el archivo para subirlo" : "PNG, SVG, WebP o JPG · máx. 8 MB · o arrastra aquí"}
+              <span className="text-xs text-zinc-400">
+                {isDragging ? "Suelta el archivo para subirlo" : "PNG, SVG, WebP o JPG. Máximo 8 MB. También puedes arrastrarlo."}
               </span>
             </button>
             <input
@@ -180,24 +180,24 @@ export function PromptComposer({ variant = "chat" }: PromptComposerProps) {
               type="button"
               onClick={generateAiLogo}
               disabled={submitting || generatingLogo}
-              className="flex flex-col items-center gap-3 rounded-lg border border-[#494454] bg-[#1d1a23] px-5 py-6 text-center transition-colors hover:border-[#8b5cf6] hover:bg-[#2c2141] disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex flex-col items-center gap-3 rounded-lg border border-zinc-700 bg-zinc-900 px-5 py-6 text-center transition-colors hover:border-violet-400 hover:bg-zinc-800 active:translate-y-px disabled:cursor-not-allowed disabled:opacity-50"
             >
               {generatingLogo ? (
-                <Loader2 className="h-7 w-7 animate-spin text-[#8b5cf6]" />
+                <Loader2 className="h-7 w-7 animate-spin text-violet-400" />
               ) : (
-                <Sparkles className="h-7 w-7 text-[#8b5cf6]" />
+                <Sparkles className="h-7 w-7 text-violet-400" />
               )}
-              <span className="text-sm font-medium text-[#f7f2fb]">
+              <span className="text-sm font-medium text-zinc-100">
                 {generatingLogo ? "Generando..." : "Que la IA lo cree"}
               </span>
-              <span className="text-xs text-[#9b8ab4]">
+              <span className="text-xs text-zinc-400">
                 {generatingLogo ? "Un momento..." : "Creamos un logotipo para tu negocio"}
               </span>
             </button>
           </div>
 
           {logoError && (
-            <p role="alert" className="mt-3 text-sm text-[#ffb4ab]">{logoError}</p>
+            <p role="alert" className="mt-3 text-sm text-red-300">{logoError}</p>
           )}
 
           {logoDataUrl ? (
@@ -217,7 +217,7 @@ export function PromptComposer({ variant = "chat" }: PromptComposerProps) {
                 type="button"
                 onClick={() => finish(false)}
                 disabled={submitting || generatingLogo}
-                className="text-sm text-[#9b8ab4] hover:text-[#cbc3d7] transition-colors disabled:opacity-50"
+                className="text-sm text-zinc-400 transition-colors hover:text-zinc-100 active:translate-y-px disabled:opacity-50"
               >
                 Continuar sin logo
               </button>
@@ -232,7 +232,7 @@ export function PromptComposer({ variant = "chat" }: PromptComposerProps) {
     <div className="mx-auto w-full max-w-4xl">
       <form
         onSubmit={(event) => { event.preventDefault(); submitPrompt(); }}
-        className="rounded-lg border border-[#494454] bg-[#15121b] p-3 shadow-[0_0_0_3px_rgb(139_92_246/0.08),var(--shadow-md)] focus-within:border-[#8b5cf6] focus-within:shadow-[var(--shadow-glow)]"
+        className="rounded-lg border border-zinc-700 bg-zinc-950 p-3 shadow-lg shadow-black/20 transition focus-within:border-violet-400 focus-within:ring-2 focus-within:ring-violet-400/20"
       >
         <label htmlFor={inputId} className="sr-only">
           Describe el sitio que quieres crear
@@ -252,7 +252,7 @@ export function PromptComposer({ variant = "chat" }: PromptComposerProps) {
           className="min-h-32 resize-none border-0 bg-transparent px-2 py-2 text-base shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
           aria-describedby={`${inputId}-help${error ? ` ${inputId}-error` : ""}`}
         />
-        <div className="flex items-center justify-between gap-3 border-t border-[#2d243d] px-2 pt-3">
+        <div className="flex items-center justify-between gap-3 border-t border-zinc-800 px-2 pt-3">
           <p id={`${inputId}-help`} className="text-xs text-muted-foreground">
             {prompt.length}/2000 · Enter para enviar · Shift + Enter para otra línea
           </p>
@@ -263,7 +263,7 @@ export function PromptComposer({ variant = "chat" }: PromptComposerProps) {
         </div>
       </form>
 
-      {error && <p id={`${inputId}-error`} role="alert" className="mt-3 text-sm text-[#ffb4ab]">{error}</p>}
+      {error && <p id={`${inputId}-error`} role="alert" className="mt-3 text-sm text-red-300">{error}</p>}
 
       <div className="mt-4 flex flex-wrap gap-2" aria-label="Prompts sugeridos">
         {PROMPT_PRESETS.map((preset) => (
@@ -272,7 +272,7 @@ export function PromptComposer({ variant = "chat" }: PromptComposerProps) {
             type="button"
             onClick={() => choosePreset(preset.prompt)}
             disabled={submitting}
-            className="min-h-11 cursor-pointer rounded-full border border-[#494454] bg-[#1d1a23] px-3.5 py-2 text-sm text-[#cbc3d7] transition-colors hover:border-[#8b5cf6] hover:bg-[#2c2141] hover:text-[#e9ddff] disabled:cursor-not-allowed disabled:opacity-50"
+            className="min-h-11 cursor-pointer rounded-md border border-zinc-700 bg-zinc-900 px-3.5 py-2 text-sm text-zinc-300 transition-colors hover:border-violet-400 hover:bg-zinc-800 hover:text-zinc-100 active:translate-y-px disabled:cursor-not-allowed disabled:opacity-50"
           >
             {preset.label}
           </button>
@@ -280,8 +280,4 @@ export function PromptComposer({ variant = "chat" }: PromptComposerProps) {
       </div>
     </div>
   );
-}
-
-export function OnboardingWizard() {
-  return <PromptComposer variant="chat" />;
 }

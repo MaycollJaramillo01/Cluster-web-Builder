@@ -362,9 +362,9 @@ function brandHtml(attr: string, variant: string, name: string, logo: string) {
 function navHtml(attr: string, items: Record<string, unknown>[]) {
   const links = items.map((item) => {
     const href = safeUrl(item.href) || "#contact";
-    return `<a href="${escapeHtml(href)}" class="whitespace-nowrap text-sm no-underline opacity-90 hover:opacity-100 hover:text-[var(--accent)]">${escapeHtml(item.label)}</a>`;
+    return `<a href="${escapeHtml(href)}" class="inline-flex min-h-11 items-center whitespace-nowrap text-sm no-underline opacity-90 hover:opacity-100 hover:text-[var(--accent)]">${escapeHtml(item.label)}</a>`;
   }).join("");
-  return `<nav ${attr} class="relative flex items-center justify-end" aria-label="Navegación principal">
+  return `<nav ${attr} class="flex items-center justify-end" aria-label="Navegación principal">
 <button class="v2-nav-toggle relative z-10 flex h-11 w-11 flex-col items-center justify-center gap-[5px] rounded-md lg:hidden" type="button" aria-label="Abrir menú" aria-expanded="false"><span class="block h-0.5 w-6 rounded bg-current"></span><span class="block h-0.5 w-6 rounded bg-current"></span><span class="block h-0.5 w-6 rounded bg-current"></span></button>
 <div class="v2-nav-links hidden flex-wrap items-center justify-end gap-6 lg:flex">${links}</div>
 </nav>`;
@@ -543,9 +543,9 @@ function columnHasBackgroundMedia(column: CanvasColumnV2) {
 function columnHtml(column: CanvasColumnV2, content: SiteContentV2, theme: ThemeTokensV2, leadEndpoint: string, editable: boolean, sectionRegion: CanvasSectionV2["region"]) {
   const widgets = column.widgets.map((widget) => widgetHtml(widget, content, theme, leadEndpoint, editable)).join("");
   if (!widgets && !editable) return "";
-  const span = columnSpanClasses(column.span);
   const hasBg = columnHasBackgroundMedia(column);
   const isHeaderColumn = sectionRegion === "header";
+  const span = isHeaderColumn ? "" : columnSpanClasses(column.span);
   const layoutClasses = hasBg
     ? "relative isolate flex min-h-[clamp(560px,78dvh,820px)] flex-col justify-center overflow-hidden px-6 py-16 text-white sm:px-10 sm:py-20"
     : isHeaderColumn
@@ -561,7 +561,7 @@ function sectionHtml(section: CanvasSectionV2, content: SiteContentV2, theme: Th
     if (!columns && !editable) return "";
     const isHeaderRow = section.region === "header";
     const rowClass = isHeaderRow
-      ? "grid grid-cols-12 items-center gap-4"
+      ? "grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4"
       : "grid grid-cols-12 items-center gap-6 sm:gap-8 lg:gap-10";
     return `<div class="${rowClass}" data-row-id="${escapeHtml(row.id)}">${columns}</div>`;
   }).join("");
@@ -596,6 +596,7 @@ function baseCss(theme: ThemeTokensV2) {
   const themeVars = `:root{--primary:${theme.primary};--secondary:${theme.secondary};--accent:${theme.accent};--button-text:${buttonText};--footer-text:${footerText};--bg:${theme.background};--text:${theme.text};--muted:${theme.muted};--on-primary:${readableText(theme.primary)};--on-secondary:${footerText};--on-accent:${buttonText};--on-background:${theme.text};--on-text:${readableText(theme.text)};--on-muted:${readableText(theme.muted)};--radius:${radius};--heading:${theme.headingFont};--body:${theme.bodyFont};--language-content:${grammar.contentWidth};--language-rule:${grammar.ruleWidth};--language-heading-tracking:${grammar.headingTracking};--language-heading-leading:${grammar.headingLineHeight};--language-body-leading:${grammar.bodyLineHeight};--language-nav-tracking:${grammar.navTracking}}
 html{scroll-behavior:smooth}
 body{margin:0;overflow-x:hidden;background:var(--bg)}
+.v2-region-header{position:sticky;top:0;z-index:30;background:var(--bg);box-shadow:0 1px 0 color-mix(in srgb,var(--text) 12%,transparent)}
 .v2-region-footer{margin-top:auto;background:var(--secondary)!important;color:var(--footer-text)!important}
 .v2-region-footer a{color:inherit}
 [data-widget-type="nav"].v2-nav-open .v2-nav-links{position:absolute;left:0;right:0;top:100%;z-index:40;display:flex!important;flex-direction:column;align-items:stretch;gap:0;padding:.4rem 1.1rem 1rem;background:var(--bg);color:var(--text);border-bottom:1px solid color-mix(in srgb,var(--text) 14%,transparent);box-shadow:0 24px 48px #00000026}
@@ -621,7 +622,8 @@ body{margin:0;overflow-x:hidden;background:var(--bg)}
 [data-design-language="editorial"] [data-widget-type="testimonials"] blockquote{font-family:var(--heading);font-size:1.2em;line-height:1.45}
 [data-design-language="editorial"] [data-widget-type="button"]{font-weight:600;letter-spacing:.025em}
 [data-design-language="editorial"] [data-widget-type="image"]:not(.v2-media-bg){filter:saturate(.82) contrast(1.04)}
-@media(max-width:640px){[data-design-language="bauhaus"] [data-widget-type="list"]>article{box-shadow:4px 4px 0 color-mix(in srgb,var(--accent) 65%,transparent)}}`;
+@media(max-width:640px){[data-design-language="bauhaus"] [data-widget-type="list"]>article{box-shadow:4px 4px 0 color-mix(in srgb,var(--accent) 65%,transparent)}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.v2-reveal{transition:none!important;transform:none!important}}`;
   return `${themeVars}\n${V2_TAILWIND_CSS}\n${languageCss}`;
 }
 
@@ -629,7 +631,7 @@ body{margin:0;overflow-x:hidden;background:var(--bg)}
 // fijo, etc.) igual empuja contenido fuera del viewport en móvil, esto evita
 // el scroll horizontal como última red — Tailwind ya previene la mayoría de
 // los casos, esto es un backstop, no el mecanismo principal.
-const mobileSafetyCss = `@media(max-width:640px){h1,h2,h3,p,a,span{overflow-wrap:break-word}}`;
+const mobileSafetyCss = `.v2-section h1,.v2-section h2,.v2-section h3,.v2-section p,.v2-section a,.v2-section span{overflow-wrap:anywhere}@media(max-width:640px){.v2-region-main{padding-inline:1.25rem!important}.v2-region-header{padding-inline:1rem!important}}`;
 
 // Recursos que solo se inyectan cuando el sitio se renderiza dentro del editor (iframe del builder).
 const editorCss = `[data-widget-id],[data-column-id],[data-section-id]{cursor:pointer}
@@ -698,10 +700,10 @@ strip.addEventListener('click',function(event){if(moved){event.preventDefault();
 
 // Menú móvil del header: abre y cierra la lista de enlaces bajo el encabezado.
 function navScript() {
-  return `document.querySelectorAll('.v2-nav-toggle').forEach(function(toggle){toggle.addEventListener('click',function(event){event.preventDefault();event.stopPropagation();var nav=toggle.closest('nav');if(!nav)return;var open=nav.classList.toggle('v2-nav-open');toggle.setAttribute('aria-expanded',open?'true':'false');});});
-function closeMenus(except){document.querySelectorAll('nav.v2-nav-open').forEach(function(nav){if(nav===except)return;nav.classList.remove('v2-nav-open');var toggle=nav.querySelector('.v2-nav-toggle');if(toggle)toggle.setAttribute('aria-expanded','false');});}
+  return `document.querySelectorAll('.v2-nav-toggle').forEach(function(toggle){toggle.addEventListener('click',function(event){event.preventDefault();event.stopPropagation();var nav=toggle.closest('nav');if(!nav)return;var open=nav.classList.toggle('v2-nav-open');toggle.setAttribute('aria-expanded',open?'true':'false');toggle.setAttribute('aria-label',open?'Cerrar menú':'Abrir menú');});});
+function closeMenus(except){document.querySelectorAll('nav.v2-nav-open').forEach(function(nav){if(nav===except)return;nav.classList.remove('v2-nav-open');var toggle=nav.querySelector('.v2-nav-toggle');if(toggle){toggle.setAttribute('aria-expanded','false');toggle.setAttribute('aria-label','Abrir menú');}});}
 document.addEventListener('click',function(event){var target=event.target instanceof Element?event.target:null;if(target&&target.closest('.v2-nav-links a'))return closeMenus(null);var inside=target?target.closest('nav.v2-nav-open'):null;closeMenus(inside);});
-document.addEventListener('keydown',function(event){if(event.key==='Escape')closeMenus(null);});`;
+document.addEventListener('keydown',function(event){if(event.key==='Escape')closeMenus(null);});window.addEventListener('resize',function(){if(window.innerWidth>=1024)closeMenus(null);});`;
 }
 
 function formScript() {

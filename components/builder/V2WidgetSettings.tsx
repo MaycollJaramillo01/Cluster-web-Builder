@@ -69,6 +69,7 @@ export function V2WidgetSettings({ siteId, widget, content, setContent, updateWi
       const preset = BUTTON_TARGETS.some((target) => target.value === link) ? link : "custom";
       return <>
         <TextControl label="Texto del botón" value={readText()} onChange={writeText} placeholder="Ej: Contáctanos" />
+        {widget.slot && <ImproveButton siteId={siteId} slot={widget.slot} value={readText()} onImproved={writeText} />}
         <SelectControl label="Al hacer clic lleva a" value={preset} onChange={(value) => writeLink(value === "custom" ? "" : value)}
           options={BUTTON_TARGETS.map((target) => [target.value, target.label])} />
         {preset === "custom" && <TextControl label="URL" value={link} onChange={writeLink} placeholder="https://... o tel:+52..." hint="Acepta enlaces web, tel: y mailto:" />}
@@ -339,25 +340,47 @@ function StyleControls({ widget, updateWidget, typography = true, colorControl =
 }
 
 function ImproveButton({ siteId, slot, value, onImproved }: { siteId: string; slot: V2ContentSlot; value: string; onImproved: (value: string) => void }) {
+  const [instruction, setInstruction] = useState("");
   const [improving, setImproving] = useState(false);
   const [error, setError] = useState("");
   const improve = async () => {
-    setImproving(true); setError("");
-    const response = await fetch(`/api/sites/${siteId}/improve-content`, {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ slot, currentValue: value }),
-    });
-    const data = await response.json().catch(() => ({}));
-    if (response.ok && data.value) onImproved(data.value);
-    else setError(data.error || "No se pudo mejorar el texto.");
-    setImproving(false);
+    if (instruction.trim().length < 3) return;
+    setImproving(true);
+    setError("");
+    try {
+      const response = await fetch(`/api/sites/${siteId}/improve-content`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ slot, currentValue: value, instruction: instruction.trim() }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || !data.value) throw new Error(data.error || "No se pudo aplicar el cambio.");
+      onImproved(data.value);
+      setInstruction("");
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "No se pudo aplicar el cambio.");
+    } finally {
+      setImproving(false);
+    }
   };
-  return <div className="mb-3">
-    <button type="button" disabled={improving} onClick={improve} className="min-h-10 rounded-md border border-violet-600 px-3 text-xs font-medium text-violet-700 hover:bg-violet-50 disabled:opacity-60">
-      {improving ? "Mejorando…" : "Mejorar con IA"}
+  return <form className="mb-4 border-l-2 border-violet-500 pl-3" onSubmit={(event) => { event.preventDefault(); void improve(); }}>
+    <label className="block text-xs font-medium text-zinc-800">
+      Pedir un cambio a la IA
+      <input
+        className="v2-field mt-1"
+        value={instruction}
+        maxLength={300}
+        onChange={(event) => { setInstruction(event.target.value); setError(""); }}
+        placeholder="Ej: Acórtalo y hazlo más directo"
+        disabled={improving}
+        aria-describedby={`${slot}-ai-help`}
+      />
+    </label>
+    <p id={`${slot}-ai-help`} className="mt-1 text-[11px] leading-relaxed text-zinc-500">Solo se modificará este campo.</p>
+    <button type="submit" disabled={improving || instruction.trim().length < 3} className="mt-2 min-h-10 whitespace-nowrap rounded-md bg-violet-700 px-3 text-xs font-semibold text-white transition hover:bg-violet-800 active:translate-y-px disabled:cursor-not-allowed disabled:opacity-50">
+      {improving ? "Aplicando..." : "Aplicar cambio"}
     </button>
-    {error && <span className="mt-2 block text-xs text-red-600">{error}</span>}
-  </div>;
+    {error && <span className="mt-2 block text-xs text-red-700" role="alert">{error}</span>}
+  </form>;
 }
 
 function ItemList<T extends Record<string, unknown>>({ items, onChange, render, create, addLabel, max }: {

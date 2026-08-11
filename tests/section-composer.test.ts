@@ -38,3 +38,30 @@ test("section composer varies structure by business context", () => {
   const softwareFingerprint = software.sections.map((section) => section.key).join(">");
   assert.notEqual(serviceFingerprint, softwareFingerprint);
 });
+
+test("section composer respeta el orden funcional del blueprint", () => {
+  const document = composeSiteSectionsV2({
+    content: baseContent,
+    businessType: "Architecture",
+    blueprint: ["hero", "gallery", "services", "about_us", "contact", "cta", "footer"],
+  });
+  const stages = document.sections.map((section) => section.key).map((key) => {
+    if (key.includes("hero")) return "hero";
+    if (key.includes("gallery")) return "gallery";
+    if (key.includes("services")) return "services";
+    if (key.includes("about")) return "about";
+    if (key.includes("contact")) return "contact";
+    if (key.includes("cta")) return "cta";
+    if (key.includes("footer")) return "footer";
+    return null;
+  }).filter(Boolean);
+
+  assert.deepEqual(stages, ["hero", "gallery", "services", "about", "contact", "cta", "footer"]);
+  const nav = document.sections[0].rows[0].columns[1].widgets[0];
+  assert.deepEqual(nav.data?.items, [
+    { label: "Proyectos", href: `#${document.sections[2].key}` },
+    { label: "Servicios", href: `#${document.sections[3].key}` },
+    { label: "Nosotros", href: `#${document.sections[4].key}` },
+    { label: "Contacto", href: `#${document.sections[5].key}` },
+  ]);
+});

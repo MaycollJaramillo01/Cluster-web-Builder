@@ -1,4 +1,5 @@
 import { sectionImageUrl } from "@/lib/site/images";
+import type { SectionType } from "@/lib/site/blueprint";
 import { composeSiteSectionsV2 } from "@/lib/site/section-composer";
 import { normalizeSiteContentV2, type SiteContentV2 } from "@/lib/site/v2-schema";
 
@@ -36,12 +37,13 @@ const items = (section: GeneratedSectionRow | undefined) => {
 };
 const contentOf = (section: GeneratedSectionRow | undefined) => record(section?.content);
 
-export function composeGeneratedSiteDocument(site: GeneratedSiteSeed, sections: GeneratedSectionRow[]) {
+export function composeGeneratedSiteDocument(site: GeneratedSiteSeed, sections: GeneratedSectionRow[], blueprint?: readonly SectionType[]) {
   const content = contentFromGeneratedSite(site, sections);
   const composed = composeSiteSectionsV2({
     content,
     businessType: site.businessType,
     visualStyle: site.visualStyle,
+    blueprint,
     theme: {
       primary: site.primaryColor || undefined,
       secondary: site.secondaryColor || undefined,
@@ -84,7 +86,7 @@ function contentFromGeneratedSite(site: GeneratedSiteSeed, sections: GeneratedSe
           prompt: text(contentOf(gallery).imagePrompt), businessType: site.businessType,
           seed: `${site.businessName}:gallery:${index}`, width: 900, height: 700, section: "gallery",
         }),
-        alt: `${site.businessName} — galería ${index + 1}`,
+        alt: `${site.businessName} - galería ${index + 1}`,
       });
     }
   }
@@ -126,7 +128,7 @@ function contentFromGeneratedSite(site: GeneratedSiteSeed, sections: GeneratedSe
     social,
     seo: {
       title: seo.title || site.businessName,
-      description: seo.metaDescription || `${site.businessName} — ${site.businessType}`,
+      description: seo.metaDescription || `${site.businessName} - ${site.businessType}`,
       keyword: seo.mainKeyword || site.businessType,
     },
   });

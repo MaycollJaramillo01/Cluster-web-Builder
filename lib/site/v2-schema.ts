@@ -105,6 +105,23 @@ export type CanvasSectionV2 = {
   style?: ResponsiveStyleV2;
 };
 
+export type SiteDocumentV2 = {
+  content: SiteContentV2;
+  design: ThemeTokensV2;
+  sections: CanvasSectionV2[];
+};
+
+export type SiteQualityIssueV2 = {
+  level: "error" | "warning";
+  code: string;
+  message: string;
+};
+
+export type SiteQualityReportV2 = {
+  passed: boolean;
+  issues: SiteQualityIssueV2[];
+};
+
 const hex = z.string().regex(/^#[0-9a-fA-F]{6}$/);
 const themeColor = z.union([hex, z.enum(V2_THEME_COLOR_KEYS)]);
 const styleSchema = z.object({
@@ -133,7 +150,7 @@ export const canvasSectionSchema = z.object({
   region: z.enum(["header", "main", "footer"]), rows: z.array(rowSchema).min(1).max(12), style: responsiveStyleSchema.optional(),
 }).strip();
 
-function text(value: unknown, max = 2000) { return typeof value === "string" ? value.slice(0, max) : ""; }
+function text(value: unknown, max = 2000) { return typeof value === "string" ? value.replace(/[—–]/g, "-").slice(0, max) : ""; }
 function records(value: unknown): Record<string, unknown>[] { return Array.isArray(value) ? value.filter((item): item is Record<string, unknown> => Boolean(item) && typeof item === "object") : []; }
 
 export function normalizeSiteContentV2(value: unknown): SiteContentV2 {
@@ -187,6 +204,42 @@ export function normalizeThemeV2(value: unknown): ThemeTokensV2 {
     radius: ["none", "sm", "md", "lg", "pill"].includes(String(raw.radius)) ? raw.radius as ThemeTokensV2["radius"] : "md",
     motion: ["none", "subtle", "stagger", "cinematic"].includes(String(raw.motion)) ? raw.motion as ThemeTokensV2["motion"] : "subtle",
   };
+}
+
+export function auditSiteDocumentV2(document: SiteDocumentV2): SiteQualityReportV2 {
+  const issues: SiteQualityIssueV2[] = [];
+  const add = (level: SiteQualityIssueV2["level"], code: string, message: string) => issues.push({ level, code, message });
+  const sections = document.sections;
+  const widgets = sections.flatMap((section) => section.rows.flatMap((row) => row.columns.flatMap((column) => column.widgets)));
+  const regionCount = (region: CanvasSectionV2["region"]) => sections.filter((section) => section.region === region).length;
+
+  if (!document.content.business.name.trim()) add("error", "BUSINESS_NAME", "El sitio necesita el nombre del negocio.");
+  if (!document.content.hero.title.trim()) add("error", "HERO_TITLE", "El sitio necesita un título principal.");
+  if (regionCount("header") !== 1) add("error", "HEADER_COUNT", "El sitio necesita exactamente un encabezado.");
+  if (regionCount("footer") !== 1) add("error", "FOOTER_COUNT", "El sitio necesita exactamente un pie de página.");
+  if (regionCount("main") < 1) add("error", "MAIN_CONTENT", "El sitio necesita contenido principal.");
+
+  const h1Count = widgets.filter((widget) => widget.type === "hero_pixel" || (widget.type === "heading" && widget.variant === "h1")).length;
+  if (h1Count !== 1) add("warning", "H1_COUNT", `Se esperaba un título H1 y se encontraron ${h1Count}.`);
+  if (document.content.hero.title.trim().split(/\s+/).length > 12) add("warning", "HERO_LENGTH", "El título principal puede ocupar demasiadas líneas en móvil.");
+  if (!widgets.some((widget) => widget.type === "form")) add("warning", "CONTACT_FORM", "El sitio no contiene un formulario de contacto.");
+
+  const sectionIds = new Set(sections.map((section) => `#${section.key}`));
+  for (const nav of widgets.filter((widget) => widget.type === "nav")) {
+    const items = Array.isArray(nav.data?.items) ? nav.data.items : [];
+    if (!items.length) add("warning", "EMPTY_NAV", "El menú no contiene enlaces.");
+    for (const item of items) {
+      const href = item && typeof item === "object" ? String((item as Record<string, unknown>).href ?? "") : "";
+      if (href.startsWith("#") && href !== "#top" && href !== "#contact" && !sectionIds.has(href)) {
+        add("warning", "NAV_TARGET", `El enlace ${href} no apunta a una sección existente.`);
+      }
+    }
+  }
+  if (document.content.media.some((item) => item.url && !item.alt.trim())) {
+    add("warning", "MEDIA_ALT", "Hay imágenes sin descripción accesible.");
+  }
+
+  return { passed: !issues.some((issue) => issue.level === "error"), issues };
 }
 
 export function resolveContentSlot(content: SiteContentV2, slot?: V2ContentSlot): unknown {

@@ -69,7 +69,7 @@ export const DESIGN_LANGUAGE_PACKS: Record<DesignLanguageId, DesignLanguagePack>
       navTracking: ".1em",
     },
     composition: {
-      hero: ["library-poster-hero", "library-hero-split-image-v2", "library-hero-background-image-v2"],
+      hero: ["library-hero-split-image-v2", "library-hero-background-image-v2", "library-poster-hero"],
       about: ["library-about-stats", "library-about-overlap", "library-about-split-v2"],
       services: ["library-services-bento", "library-services-cards-v2"],
       gallery: ["library-gallery-mosaic-v2", "library-gallery-filmstrip"],

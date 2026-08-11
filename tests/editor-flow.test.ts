@@ -17,6 +17,21 @@ test("el editor principal no muestra cambio de plantilla", () => {
   assert.doesNotMatch(editor, /Cambiar plantilla/);
 });
 
+test("la mejora con IA queda limitada al campo seleccionado", () => {
+  const settings = readFileSync("components/builder/V2WidgetSettings.tsx", "utf8");
+  const route = readFileSync("app/api/sites/[siteId]/improve-content/route.ts", "utf8");
+  assert.match(settings, /Solo se modificará este campo\./);
+  assert.match(settings, /instruction/);
+  assert.match(route, /instruction: z\.string\(\)\.trim\(\)\.min\(3\)\.max\(300\)/);
+  assert.match(route, /No inventes años, cifras, premios, clientes ni garantías/);
+});
+
+test("el editor muestra las advertencias del control de calidad", () => {
+  const editor = readFileSync("components/builder/SiteEditorV2.tsx", "utf8");
+  assert.match(editor, /data\.quality\?\.issues/);
+  assert.match(editor, /Cambios guardados\. Revisa:/);
+});
+
 test("los catálogos y el editor Legacy ya no existen", () => {
   assert.equal(existsSync("components/builder/SiteEditorPanel.tsx"), false);
   assert.equal(existsSync("components/builder/TemplatePickerV2.tsx"), false);

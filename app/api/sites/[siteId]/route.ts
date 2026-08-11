@@ -7,6 +7,7 @@ import { deleteSiteMedia, isSiteMediaUrl, materializeDataUrlsForSite } from "@/l
 import { getSiteLaunchReadiness } from "@/lib/site/launch-readiness";
 import { toRenderSection } from "@/lib/site/section";
 import {
+  auditSiteDocumentV2,
   normalizeCanvasSectionsV2,
   normalizeSiteContentV2,
   normalizeThemeV2,
@@ -163,9 +164,12 @@ export async function PUT(
       if (sections.length !== parsedV2.data.sections.length) {
         return NextResponse.json({ error: "El documento contiene bloques o estilos no permitidos." }, { status: 400 });
       }
-      const regions = sections.map((section) => section.region);
-      if (regions.filter((region) => region === "header").length !== 1 || regions.filter((region) => region === "footer").length !== 1 || !regions.includes("main")) {
-        return NextResponse.json({ error: "El sitio necesita un header, contenido principal y un footer." }, { status: 400 });
+      const quality = auditSiteDocumentV2({ content, design, sections });
+      if (!quality.passed) {
+        return NextResponse.json({
+          error: quality.issues.find((issue) => issue.level === "error")?.message ?? "El documento no supera la validación de calidad.",
+          quality,
+        }, { status: 400 });
       }
 
       const before = await prisma.siteSection.findMany({ where: { siteId }, select: { content: true } });
@@ -234,6 +238,7 @@ export async function PUT(
         content,
         design,
         sections,
+        quality,
         updatedAt: fresh?.updatedAt.toISOString() ?? new Date().toISOString(),
       });
     }

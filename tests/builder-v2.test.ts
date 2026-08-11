@@ -7,7 +7,7 @@ import { composeSiteSectionsV2 } from "../lib/site/section-composer";
 import { parseV2Clipboard } from "../lib/site/v2-clipboard";
 import { renderSiteV2 } from "../lib/site/v2-render";
 import { SECTION_LIBRARY_V2 } from "../lib/site/v2-section-library";
-import { normalizeCanvasSectionsV2, normalizeSiteContentV2, normalizeWidgetV2, V2_WIDGET_TYPES } from "../lib/site/v2-schema";
+import { auditSiteDocumentV2, normalizeCanvasSectionsV2, normalizeSiteContentV2, normalizeWidgetV2, V2_WIDGET_TYPES } from "../lib/site/v2-schema";
 
 const content = normalizeSiteContentV2({
   business: { name: "Taller Norte", type: "Arquitectura", location: "Managua", phone: "+505 8000 0000", email: "hola@example.com" },
@@ -65,6 +65,21 @@ test("el renderer incluye responsive, formulario y sanitiza javascript", () => {
   assert.match(rendered.html, /data-cluster-form/);
   assert.doesNotMatch(rendered.html, /javascript:alert/);
   assert.match(rendered.body, /v2-nav-toggle/);
+  assert.match(rendered.css, /overflow-wrap:anywhere/);
+  assert.match(rendered.css, /prefers-reduced-motion:reduce/);
+});
+
+test("el control de calidad bloquea documentos rotos y reporta advertencias", () => {
+  const document = buildDocument();
+  const healthy = auditSiteDocumentV2(document);
+  assert.equal(healthy.passed, true);
+  assert.equal(healthy.issues.some((issue) => issue.level === "error"), false);
+
+  const broken = structuredClone(document);
+  broken.sections = broken.sections.filter((section) => section.region !== "footer");
+  const report = auditSiteDocumentV2(broken);
+  assert.equal(report.passed, false);
+  assert.ok(report.issues.some((issue) => issue.code === "FOOTER_COUNT"));
 });
 
 test("el portapapeles V2 valida el widget antes de pegar", () => {
