@@ -32,6 +32,14 @@ test("el editor muestra las advertencias del control de calidad", () => {
   assert.match(editor, /Cambios guardados\. Revisa:/);
 });
 
+test("el editor consume el registro canónico de bloques", () => {
+  const editor = readFileSync("components/builder/SiteEditorV2.tsx", "utf8");
+  assert.match(editor, /SECTION_REGISTRY_V2/);
+  assert.match(editor, /getSectionCompatibilityV2/);
+  assert.match(editor, /Compatible con todos los estilos/);
+  assert.doesNotMatch(editor, /SECTION_LIBRARY_V2/);
+});
+
 test("los catálogos y el editor Legacy ya no existen", () => {
   assert.equal(existsSync("components/builder/SiteEditorPanel.tsx"), false);
   assert.equal(existsSync("components/builder/TemplatePickerV2.tsx"), false);

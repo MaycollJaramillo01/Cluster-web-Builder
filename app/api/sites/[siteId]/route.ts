@@ -7,11 +7,11 @@ import { deleteSiteMedia, isSiteMediaUrl, materializeDataUrlsForSite } from "@/l
 import { getSiteLaunchReadiness } from "@/lib/site/launch-readiness";
 import { toRenderSection } from "@/lib/site/section";
 import {
-  auditSiteDocumentV2,
   normalizeCanvasSectionsV2,
   normalizeSiteContentV2,
   normalizeThemeV2,
 } from "@/lib/site/v2-schema";
+import { auditSiteDocumentWithRegistryV2 } from "@/lib/site/v2-section-registry";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -164,7 +164,7 @@ export async function PUT(
       if (sections.length !== parsedV2.data.sections.length) {
         return NextResponse.json({ error: "El documento contiene bloques o estilos no permitidos." }, { status: 400 });
       }
-      const quality = auditSiteDocumentV2({ content, design, sections });
+      const quality = auditSiteDocumentWithRegistryV2({ content, design, sections });
       if (!quality.passed) {
         return NextResponse.json({
           error: quality.issues.find((issue) => issue.level === "error")?.message ?? "El documento no supera la validación de calidad.",

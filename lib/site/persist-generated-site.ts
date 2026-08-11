@@ -9,7 +9,8 @@ import { applyPageStructure } from "@/lib/site/structure";
 import { trackProductEvent } from "@/lib/product-events";
 import { composeGeneratedSiteDocument } from "@/lib/site/generation-document";
 import { materializeDataUrlsForSite, stripDataUrls } from "@/lib/site/media";
-import { auditSiteDocumentV2, type CanvasSectionV2, type SiteContentV2 } from "@/lib/site/v2-schema";
+import { type CanvasSectionV2, type SiteContentV2 } from "@/lib/site/v2-schema";
+import { auditSiteDocumentWithRegistryV2 } from "@/lib/site/v2-section-registry";
 
 type GuestAccess = { tokenHash: string; expiresAt: Date } | null;
 
@@ -66,7 +67,7 @@ export async function persistGeneratedSite({
     order: section.order,
   })), plan.sectionPlan);
 
-  const quality = auditSiteDocumentV2(v2);
+  const quality = auditSiteDocumentWithRegistryV2(v2);
   if (!quality.passed) {
     throw new Error(quality.issues.filter((issue) => issue.level === "error").map((issue) => issue.message).join(" "));
   }

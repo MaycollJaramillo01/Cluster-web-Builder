@@ -32,7 +32,16 @@ import {
   type CanvasColumnV2, type CanvasRowV2, type CanvasSectionV2, type SiteContentV2,
   type ThemeTokensV2, type V2WidgetType, type WidgetV2,
 } from "@/lib/site/v2-schema";
-import { SECTION_LIBRARY_V2 } from "@/lib/site/v2-section-library";
+import {
+  getSectionCompatibilityV2,
+  getSectionDataSignalsV2,
+  getSectionRegistryEntryV2,
+  SECTION_REGISTRY_V2,
+  SECTION_REQUIREMENT_LABELS_V2,
+  SECTION_ROLE_LABELS_V2,
+  type SectionDataSignalsV2,
+  type SectionRegistryEntryV2,
+} from "@/lib/site/v2-section-registry";
 
 type EditorSiteV2 = {
   id: string;
@@ -120,6 +129,20 @@ function sectionIcon(name: string): IconComponent {
   if (value.includes("testimoni")) return Star;
   if (value.includes("contact")) return Mail;
   return PanelsTopLeft;
+}
+
+function sectionRegistryHint(
+  entry: SectionRegistryEntryV2,
+  signals: SectionDataSignalsV2,
+  language: ThemeTokensV2["language"],
+) {
+  const compatibility = getSectionCompatibilityV2(entry, signals);
+  if (compatibility.missing.length) {
+    return `Necesita ${compatibility.missing.map((item) => SECTION_REQUIREMENT_LABELS_V2[item]).join(", ")}`;
+  }
+  return entry.preferredLanguages.includes(language)
+    ? `Recomendado para ${DESIGN_LANGUAGE_PACKS[language].name}`
+    : "Compatible con todos los estilos";
 }
 
 const REGION_LABELS: Record<CanvasSectionV2["region"], string> = {
@@ -329,6 +352,11 @@ export function SiteEditorV2({ initialSite }: { initialSite: EditorSiteV2 }) {
   const selectedColumn = findColumn(sections, selection?.kind === "column" ? selection.id : selectedWidget?.column.id || "");
   const selectedSection = selection?.kind === "section" ? sections.find((item) => item.id === selection.id) || null : null;
   const selectedRow = selection?.kind === "row" ? findRow(sections, selection.id) : null;
+  const sectionSignals = useMemo(() => getSectionDataSignalsV2(content), [content]);
+  const sectionCatalog = useMemo(() => [...SECTION_REGISTRY_V2].sort((left, right) =>
+    Number(right.preferredLanguages.includes(design.language)) - Number(left.preferredLanguages.includes(design.language))
+      || left.role.localeCompare(right.role)
+      || left.name.localeCompare(right.name)), [design.language]);
 
   const mutateSections = (mutator: (draft: CanvasSectionV2[]) => CanvasSectionV2[]) => {
     pushHistory();
@@ -543,9 +571,9 @@ export function SiteEditorV2({ initialSite }: { initialSite: EditorSiteV2 }) {
         return;
       }
       if (data.kind === "drop-section" && typeof data.sectionKey === "string") {
-        const seed = SECTION_LIBRARY_V2.find((item) => item.key === data.sectionKey);
-        if (!seed) return;
-        addLibrarySection(seed, typeof data.targetSectionId === "string" ? data.targetSectionId : undefined, data.position === "before" ? "before" : "after");
+        const entry = getSectionRegistryEntryV2(data.sectionKey);
+        if (!entry) return;
+        addLibrarySection(entry.section, typeof data.targetSectionId === "string" ? data.targetSectionId : undefined, data.position === "before" ? "before" : "after");
         return;
       }
       if (!data.id || (data.kind !== "widget" && data.kind !== "column" && data.kind !== "section")) return;
@@ -835,7 +863,7 @@ export function SiteEditorV2({ initialSite }: { initialSite: EditorSiteV2 }) {
                   </label>
 
                   {query.trim() ? (
-                    <AddSearchResults query={query} addLibrarySection={addLibrarySection} addWidget={addWidget} clearCanvasDrop={clearCanvasDrop} />
+                    <AddSearchResults query={query} entries={sectionCatalog} signals={sectionSignals} language={design.language} addLibrarySection={addLibrarySection} addWidget={addWidget} clearCanvasDrop={clearCanvasDrop} />
                   ) : <>
                     <details className="group mb-2 rounded-lg border border-zinc-200">
                       <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between px-3 text-sm font-semibold [&::-webkit-details-marker]:hidden">
@@ -843,10 +871,15 @@ export function SiteEditorV2({ initialSite }: { initialSite: EditorSiteV2 }) {
                         <ChevronDown className="h-4 w-4 text-zinc-400 transition-transform group-open:rotate-180" />
                       </summary>
                       <div className="grid gap-2 p-3 pt-0">
-                        {SECTION_LIBRARY_V2.map((section) => {
-                          const Icon = sectionIcon(section.name);
-                          return <button key={section.key} className="v2-add" onClick={() => addLibrarySection(section)} {...sectionDragProps(section.key, section.name, clearCanvasDrop)}>
-                            <Icon className="h-4 w-4 shrink-0 text-violet-600" />{section.name}
+                        {sectionCatalog.map((entry) => {
+                          const Icon = sectionIcon(entry.name);
+                          const hint = sectionRegistryHint(entry, sectionSignals, design.language);
+                          return <button key={entry.key} className="v2-add items-start" onClick={() => addLibrarySection(entry.section)} {...sectionDragProps(entry.key, entry.name, clearCanvasDrop)}>
+                            <Icon className="mt-0.5 h-4 w-4 shrink-0 text-violet-600" />
+                            <span className="min-w-0 text-left">
+                              <span className="block">{entry.name}</span>
+                              <span className={`mt-0.5 block text-[10px] font-normal leading-4 ${hint.startsWith("Necesita") ? "text-amber-700" : "text-zinc-400"}`}>{SECTION_ROLE_LABELS_V2[entry.role]} · {hint}</span>
+                            </span>
                           </button>;
                         })}
                       </div>
@@ -1143,24 +1176,36 @@ function CanvasContextMenu({ menu, sections, close, select, duplicateWidget, dup
   </div>;
 }
 
-function AddSearchResults({ query, addLibrarySection, addWidget, clearCanvasDrop }: {
+function AddSearchResults({ query, entries, signals, language, addLibrarySection, addWidget, clearCanvasDrop }: {
   query: string;
+  entries: SectionRegistryEntryV2[];
+  signals: SectionDataSignalsV2;
+  language: ThemeTokensV2["language"];
   addLibrarySection: (seed: Omit<CanvasSectionV2, "id">) => void;
   addWidget: (type: V2WidgetType) => void;
   clearCanvasDrop: () => void;
 }) {
   const needle = query.trim().toLowerCase();
-  const sections = SECTION_LIBRARY_V2.filter((section) => section.name.toLowerCase().includes(needle));
+  const sections = entries.filter((entry) => [
+    entry.name,
+    SECTION_ROLE_LABELS_V2[entry.role],
+    ...entry.dataRequirements.map((requirement) => SECTION_REQUIREMENT_LABELS_V2[requirement]),
+  ].some((value) => value.toLowerCase().includes(needle)));
   const widgets = V2_WIDGET_TYPES.filter((type) => WIDGET_LABELS[type].toLowerCase().includes(needle));
   if (!sections.length && !widgets.length) return <p className="rounded-lg border border-dashed border-zinc-300 p-4 text-center text-xs text-zinc-500">No encontramos bloques con ese nombre.</p>;
   return <>
     {sections.length > 0 && <>
       <h2 className="v2-label">Secciones</h2>
       <div className="mb-4 grid gap-2">
-        {sections.map((section) => {
-          const Icon = sectionIcon(section.name);
-          return <button key={section.key} className="v2-add" onClick={() => addLibrarySection(section)} {...sectionDragProps(section.key, section.name, clearCanvasDrop)}>
-            <Icon className="h-4 w-4 shrink-0 text-violet-600" />{section.name}
+        {sections.map((entry) => {
+          const Icon = sectionIcon(entry.name);
+          const hint = sectionRegistryHint(entry, signals, language);
+          return <button key={entry.key} className="v2-add items-start" onClick={() => addLibrarySection(entry.section)} {...sectionDragProps(entry.key, entry.name, clearCanvasDrop)}>
+            <Icon className="mt-0.5 h-4 w-4 shrink-0 text-violet-600" />
+            <span className="min-w-0 text-left">
+              <span className="block">{entry.name}</span>
+              <span className={`mt-0.5 block text-[10px] font-normal leading-4 ${hint.startsWith("Necesita") ? "text-amber-700" : "text-zinc-400"}`}>{SECTION_ROLE_LABELS_V2[entry.role]} · {hint}</span>
+            </span>
           </button>;
         })}
       </div>

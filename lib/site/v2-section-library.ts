@@ -2,20 +2,20 @@ import type {
   CanvasColumnV2, CanvasRowV2, CanvasSectionV2, V2ContentSlot, V2WidgetType, WidgetV2,
 } from "@/lib/site/v2-schema";
 
-type SectionSeed = Omit<CanvasSectionV2, "id">;
+export type SectionSeedV2 = Omit<CanvasSectionV2, "id">;
 let seedIndex = 0;
 const seedId = (kind: string) => `section-${kind}-${++seedIndex}`;
 const widget = (type: V2WidgetType, slot?: V2ContentSlot, variant?: string, data?: Record<string, unknown>, style?: WidgetV2["style"]): WidgetV2 => ({ id: seedId("widget"), type, ...(slot ? { slot } : {}), ...(variant ? { variant } : {}), ...(data ? { data } : {}), ...(style ? { style } : {}) });
 const column = (desktop: CanvasColumnV2["span"]["desktop"], widgets: WidgetV2[], tablet: CanvasColumnV2["span"]["tablet"] = desktop > 6 ? 12 : desktop as CanvasColumnV2["span"]["tablet"]): CanvasColumnV2 => ({ id: seedId("column"), span: { desktop, tablet, mobile: 12 }, widgets });
 const row = (...columns: CanvasColumnV2[]): CanvasRowV2 => ({ id: seedId("row"), columns });
-const section = (key: string, name: string, region: CanvasSectionV2["region"], rows: CanvasRowV2[], style?: CanvasSectionV2["style"]): SectionSeed => ({ schemaVersion: 2, key, name, region, rows, ...(style ? { style } : {}) });
+const section = (key: string, name: string, region: CanvasSectionV2["region"], rows: CanvasRowV2[], style?: CanvasSectionV2["style"]): SectionSeedV2 => ({ schemaVersion: 2, key, name, region, rows, ...(style ? { style } : {}) });
 
 const heading = (slot: V2ContentSlot, level: "h1" | "h2" | "h3" = "h2", style?: WidgetV2["style"]) => widget("heading", slot, level, undefined, style);
 const text = (slot: V2ContentSlot, style?: WidgetV2["style"]) => widget("text", slot, undefined, undefined, style);
 const button = (label: V2ContentSlot = "hero.ctaText", link: V2ContentSlot = "hero.ctaLink") => widget("button", label, "solid", { linkSlot: link });
 const image = (slot: V2ContentSlot, variant = "cover") => widget("image", slot, variant);
 
-export const SECTION_LIBRARY_V2: SectionSeed[] = [
+export const SECTION_LIBRARY_V2: SectionSeedV2[] = [
   section("library-hero-split-image-v2", "Hero normal: texto + imagen", "main", [row(column(6, [text("hero.subtitle", { desktop: { fontSize: "sm" } }), heading("hero.title", "h1", { desktop: { fontSize: "display", fontWeight: "bold" } }), text("hero.body", { desktop: { fontSize: "lg" } }), button()]), column(6, [image("hero.media", "wide")]))], { desktop: { padding: "xl", width: "wide" } }),
   section("library-hero-background-image-v2", "Hero normal: imagen de fondo", "main", [row(column(12, [image("hero.media", "background"), text("hero.subtitle", { desktop: { fontSize: "sm" } }), heading("hero.title", "h1", { desktop: { fontSize: "display", fontWeight: "bold" } }), text("hero.body", { desktop: { fontSize: "lg", width: "content" } }), button()]))], { desktop: { padding: "xl", width: "full", background: "secondary" } }),
   section("library-hero-video-background-v2", "Hero normal: video de fondo", "main", [row(column(12, [widget("video", "hero.media", "background"), text("hero.subtitle", { desktop: { fontSize: "sm" } }), heading("hero.title", "h1", { desktop: { fontSize: "display", fontWeight: "black" } }), text("hero.body", { desktop: { fontSize: "lg", width: "content" } }), button()]))], { desktop: { padding: "xl", width: "full", background: "secondary" } }),

@@ -8,8 +8,12 @@ import {
   isDesignLanguageId,
   type DesignLanguageId,
 } from "@/lib/site/design-language-types";
-import { SECTION_LIBRARY_V2 } from "@/lib/site/v2-section-library";
 import type { SectionType } from "@/lib/site/blueprint";
+import {
+  filterCompatibleSectionKeysV2,
+  getSectionDataSignalsV2,
+  SECTION_REGISTRY_V2,
+} from "@/lib/site/v2-section-registry";
 import {
   normalizeCanvasSectionsV2,
   normalizeSiteContentV2,
@@ -50,7 +54,7 @@ const HEADER_SEED: SectionSeed = {
   style: { desktop: { padding: "sm", width: "full" } },
 };
 
-const sectionByKey = new Map(SECTION_LIBRARY_V2.map((section) => [section.key, section]));
+const sectionByKey = new Map(SECTION_REGISTRY_V2.map((entry) => [entry.key, entry.section]));
 const NAV_LABELS: Partial<Record<CompositionStage, string>> = {
   about: "Nosotros",
   services: "Servicios",
@@ -120,29 +124,27 @@ export function composeSiteSectionsV2({
   }).id;
   const languagePack = getDesignLanguagePack(language);
   const seed = `${content.business.name}:${businessType ?? content.business.type}:${visualStyle ?? ""}:${language}`;
-  const hasMap = Boolean(content.business.location);
-  const hasMedia = content.media.length > 1;
-  const hasVideo = /\.(mp4|webm)(\?|#|$)/i.test(content.hero.media);
-  const hasServiceImages = content.services.filter((item) => item.image).length >= 2;
+  const signals = getSectionDataSignalsV2(content);
   const planned = blueprint ? new Set(blueprint) : null;
   const wants = (...types: SectionType[]) => !planned || types.some((type) => planned.has(type));
-  const contactCandidates = languagePack.composition.contact.filter((key) => hasMap || !key.includes("map"));
-  const serviceCandidates = languagePack.composition.services.filter((key) => hasServiceImages || !key.includes("bento"));
+  const candidates = (keys: readonly string[]) => filterCompatibleSectionKeysV2(keys, signals);
+  const contactCandidates = candidates(languagePack.composition.contact);
+  const serviceCandidates = candidates(languagePack.composition.services);
   const candidatesByStage: Partial<Record<CompositionStage, readonly string[]>> = {
-    hero: hasVideo ? ["library-hero-video-background-v2"] : languagePack.composition.hero,
-    ...(wants("about", "about_us") ? { about: languagePack.composition.about } : {}),
+    hero: signals["hero-video"] ? ["library-hero-video-background-v2"] : candidates(languagePack.composition.hero),
+    ...(wants("about", "about_us") ? { about: candidates(languagePack.composition.about) } : {}),
     ...(wants("services") ? { services: serviceCandidates } : {}),
-    ...(hasMedia && wants("gallery") ? { gallery: languagePack.composition.gallery } : {}),
-    ...(content.benefits.length && wants("benefits", "trust_badges", "process") ? { benefits: languagePack.composition.benefits } : {}),
-    ...(wants("cta") ? { cta: languagePack.composition.cta } : {}),
-    ...(content.reviews.length && wants("testimonials") ? { reviews: languagePack.composition.reviews } : {}),
-    ...(content.faqs.length && wants("faq") ? { faq: languagePack.composition.faq } : {}),
+    ...(wants("gallery") ? { gallery: candidates(languagePack.composition.gallery) } : {}),
+    ...(wants("benefits", "trust_badges", "process") ? { benefits: candidates(languagePack.composition.benefits) } : {}),
+    ...(wants("cta") ? { cta: candidates(languagePack.composition.cta) } : {}),
+    ...(wants("testimonials") ? { reviews: candidates(languagePack.composition.reviews) } : {}),
+    ...(wants("faq") ? { faq: candidates(languagePack.composition.faq) } : {}),
     ...(wants("contact", "location") ? {
-      contact: hasMap && languagePack.composition.contact.includes("library-contact-map-v2")
+      contact: signals.location && contactCandidates.includes("library-contact-map-v2")
         ? ["library-contact-map-v2"]
         : contactCandidates,
     } : {}),
-    ...(wants("footer") ? { footer: languagePack.composition.footer } : {}),
+    ...(wants("footer") ? { footer: candidates(languagePack.composition.footer) } : {}),
   };
   const requestedStageOrder = blueprint
     ? blueprint.flatMap((sectionType) => BLUEPRINT_STAGE[sectionType] ?? [])
