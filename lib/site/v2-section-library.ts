@@ -12,6 +12,8 @@ const section = (key: string, name: string, region: CanvasSectionV2["region"], r
 
 const heading = (slot: V2ContentSlot, level: "h1" | "h2" | "h3" = "h2", style?: WidgetV2["style"]) => widget("heading", slot, level, undefined, style);
 const text = (slot: V2ContentSlot, style?: WidgetV2["style"]) => widget("text", slot, undefined, undefined, style);
+const labelHeading = (value: string, level: "h1" | "h2" | "h3" = "h2") => widget("heading", undefined, level, { text: value });
+const labelText = (value: string) => widget("text", undefined, undefined, { text: value });
 const button = (label: V2ContentSlot = "hero.ctaText", link: V2ContentSlot = "hero.ctaLink") => widget("button", label, "solid", { linkSlot: link });
 const image = (slot: V2ContentSlot, variant = "cover") => widget("image", slot, variant);
 
@@ -28,7 +30,7 @@ export const SECTION_LIBRARY_V2: SectionSeedV2[] = [
   section("library-services-editorial-v2", "Servicios: editorial", "main", [row(column(12, [widget("list", "services", "editorial")]))], { desktop: { padding: "xl" } }),
   section("library-services-catalog-v2", "Servicios: catalogo visual", "main", [row(column(12, [widget("list", "services", "catalog")]))], { desktop: { background: "#f8fafc", padding: "xl" } }),
 
-  section("library-benefits-metrics-v2", "Beneficios: metricas", "main", [row(column(5, [heading("about.subtitle"), text("about.body")]), column(7, [widget("list", "benefits", "metrics")]))], { desktop: { padding: "lg" } }),
+  section("library-benefits-metrics-v2", "Beneficios: metricas", "main", [row(column(4, [labelHeading("Cómo trabajamos"), labelText("Un proceso claro, medible y explicado desde el inicio.")]), column(8, [widget("list", "benefits", "metrics")]))], { desktop: { padding: "lg" } }),
   section("library-benefits-pills-v2", "Beneficios: pildoras", "main", [row(column(12, [heading("about.title"), widget("list", "benefits", "pills")]))], { desktop: { padding: "lg" } }),
   section("library-benefits-numbered-v2", "Beneficios: numerados", "main", [row(column(12, [widget("list", "benefits", "numbered")]))], { desktop: { padding: "lg" } }),
 
@@ -41,10 +43,10 @@ export const SECTION_LIBRARY_V2: SectionSeedV2[] = [
   section("library-reviews-cards-v2", "Resenas: tarjetas", "main", [row(column(12, [widget("testimonials", "reviews", "cards")]))], { desktop: { padding: "lg" } }),
   section("library-reviews-wall-v2", "Resenas: muro", "main", [row(column(12, [widget("testimonials", "reviews", "wall")]))], { desktop: { background: "secondary", padding: "xl" } }),
 
-  section("library-faq-minimal-v2", "FAQ: minimal", "main", [row(column(4, [heading("contact.title"), text("contact.body")]), column(8, [widget("accordion", "faqs", "minimal")]))], { desktop: { padding: "xl" } }),
+  section("library-faq-minimal-v2", "FAQ: minimal", "main", [row(column(4, [labelHeading("Preguntas frecuentes"), labelText("Lo esencial antes de dar el siguiente paso.")]), column(8, [widget("accordion", "faqs", "minimal")]))], { desktop: { padding: "xl" } }),
   section("library-faq-cards-v2", "FAQ: tarjetas", "main", [row(column(12, [widget("accordion", "faqs", "cards")]))], { desktop: { padding: "lg" } }),
 
-  section("library-contact-split-v2", "Contacto: formulario dividido", "main", [row(column(6, [heading("contact.title"), text("contact.body"), widget("social", "social", "buttons")]), column(6, [widget("form", undefined, "split", { titleSlot: "contact.title", bodySlot: "contact.body", buttonSlot: "contact.ctaText" })]))], { desktop: { padding: "xl" } }),
+  section("library-contact-split-v2", "Contacto: formulario dividido", "main", [row(column(6, [heading("contact.title"), text("contact.body"), widget("social", "social", "buttons")]), column(6, [widget("form", undefined, "split", { buttonSlot: "contact.ctaText" })]))], { desktop: { padding: "xl" } }),
   section("library-contact-map-v2", "Contacto: mapa + formulario", "main", [row(column(6, [widget("map", "business.location", "card"), widget("business_info", undefined, "compact")]), column(6, [widget("form", undefined, "card", { buttonSlot: "contact.ctaText" })]))], { desktop: { padding: "xl" } }),
 
   section("library-footer-columns-v2", "Footer: columnas", "footer", [row(column(5, [widget("brand", "business.name", "columns"), text("business.type")]), column(4, [widget("business_info", undefined, "compact")]), column(3, [widget("social", "social", "icons")]))], { desktop: { padding: "lg", width: "full" } }),

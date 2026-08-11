@@ -59,10 +59,10 @@ const DEMOS: DemoSeed[] = [
       },
       hero: {
         subtitle: "Diseño local - Hecho para durar",
-        title: "Muebles que ordenan el espacio y cambian la rutina.",
-        body: "Diseñamos y fabricamos piezas a medida para hogares, oficinas y comercios. Cada proyecto parte de una necesidad real, no de un catálogo genérico.",
+        title: "Muebles que ordenan tu espacio.",
+        body: "Diseñamos y fabricamos piezas a medida para hogares, oficinas y comercios. Sin catálogos genéricos.",
         ctaText: "Cotizar un proyecto",
-        ctaLink: "#contacto",
+        ctaLink: "#contact",
         media: image(18947396),
       },
       about: {
@@ -135,10 +135,10 @@ const DEMOS: DemoSeed[] = [
       },
       hero: {
         subtitle: "Evaluación precisa - Plan claro",
-        title: "Volver a moverte con confianza empieza por entender la causa.",
-        body: "Fisioterapia basada en evaluación funcional para dolor, recuperación deportiva y movilidad. Te explicamos qué ocurre, qué haremos y cómo mediremos el avance.",
+        title: "Entiende la causa. Vuelve a moverte con confianza.",
+        body: "Fisioterapia basada en evaluación funcional para dolor, recuperación deportiva y movilidad. Un plan claro y medible desde la primera cita.",
         ctaText: "Agendar evaluación",
-        ctaLink: "#contacto",
+        ctaLink: "#contact",
         media: image(20860579),
       },
       about: {
@@ -213,7 +213,7 @@ const DEMOS: DemoSeed[] = [
         title: "Una casa tranquila para vivir la ciudad sin prisa.",
         body: "Ocho habitaciones alrededor de un patio fresco, desayuno de temporada y rutas a pie para descubrir Granada desde adentro.",
         ctaText: "Consultar disponibilidad",
-        ctaLink: "#contacto",
+        ctaLink: "#contact",
         media: image(30952470),
       },
       about: {
@@ -285,13 +285,16 @@ function renderDemo(demo: DemoSeed) {
 export default async function LocalTestSitesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ site?: string | string[] }>;
+  searchParams: Promise<{ site?: string | string[]; viewport?: string | string[] }>;
 }) {
   const host = (await headers()).get("host");
   if (!isLocalPreviewRequest(host)) notFound();
 
-  const requested = (await searchParams).site;
+  const params = await searchParams;
+  const requested = params.site;
   const slug = Array.isArray(requested) ? requested[0] : requested;
+  const requestedViewport = Array.isArray(params.viewport) ? params.viewport[0] : params.viewport;
+  const mobileViewport = requestedViewport === "mobile";
   const demos = DEMOS.map(renderDemo);
 
   if (slug) {
@@ -299,25 +302,36 @@ export default async function LocalTestSitesPage({
     if (!demo) notFound();
 
     return (
-      <main className="h-dvh overflow-hidden bg-[#111411] text-white">
-        <header className="flex h-16 items-center justify-between gap-4 border-b border-white/15 px-4 sm:px-6">
+      <main className="flex h-dvh flex-col overflow-hidden bg-[#111411] text-white">
+        <header className="flex h-16 shrink-0 items-center justify-between gap-4 border-b border-white/15 px-4 sm:px-6">
           <Link
             href="/sitios-prueba-local"
             className="inline-flex min-h-11 items-center font-semibold text-white underline decoration-white/35 underline-offset-4 transition-colors hover:decoration-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
           >
             Volver al laboratorio
           </Link>
-          <div className="min-w-0 text-right">
-            <p className="truncate text-sm font-semibold">{demo.name}</p>
-            <p className="truncate text-xs text-white/60">{demo.languageName}</p>
+          <div className="flex min-w-0 items-center gap-4 sm:gap-6">
+            <Link
+              href={`/sitios-prueba-local?site=${demo.slug}${mobileViewport ? "" : "&viewport=mobile"}`}
+              prefetch={false}
+              className="inline-flex min-h-11 items-center text-xs font-bold uppercase tracking-[0.1em] text-white/70 underline decoration-white/30 underline-offset-4 transition-colors hover:text-white hover:decoration-white"
+            >
+              {mobileViewport ? "Ver escritorio" : "Ver móvil"}
+            </Link>
+            <div className="min-w-0 text-right">
+              <p className="truncate text-sm font-semibold">{demo.name}</p>
+              <p className="truncate text-xs text-white/60">{demo.languageName}</p>
+            </div>
           </div>
         </header>
-        <iframe
-          title={`Sitio completo de ${demo.name}`}
-          srcDoc={demo.html}
-          sandbox="allow-forms allow-scripts"
-          className="h-[calc(100dvh-4rem)] w-full border-0 bg-white"
-        />
+        <div className={`flex min-h-0 flex-1 justify-center ${mobileViewport ? "bg-[#20241f] p-3 sm:p-5" : ""}`}>
+          <iframe
+            title={`Sitio completo de ${demo.name}`}
+            srcDoc={demo.html}
+            sandbox="allow-forms allow-scripts"
+            className={mobileViewport ? "h-full w-[390px] max-w-full border-0 bg-white shadow-2xl" : "h-full w-full border-0 bg-white"}
+          />
+        </div>
       </main>
     );
   }

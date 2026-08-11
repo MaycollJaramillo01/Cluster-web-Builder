@@ -140,11 +140,7 @@ export function composeSiteSectionsV2({
     ...(wants("cta") ? { cta: candidates(languagePack.composition.cta) } : {}),
     ...(wants("testimonials") ? { reviews: candidates(languagePack.composition.reviews) } : {}),
     ...(wants("faq") ? { faq: candidates(languagePack.composition.faq) } : {}),
-    ...(wants("contact", "location") ? {
-      contact: signals.location && contactCandidates.includes("library-contact-map-v2")
-        ? ["library-contact-map-v2"]
-        : contactCandidates,
-    } : {}),
+    ...(wants("contact", "location") ? { contact: contactCandidates } : {}),
     ...(wants("footer") ? { footer: candidates(languagePack.composition.footer) } : {}),
   };
   const requestedStageOrder = blueprint

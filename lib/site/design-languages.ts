@@ -137,7 +137,7 @@ export const DESIGN_LANGUAGE_PACKS: Record<DesignLanguageId, DesignLanguagePack>
       navTracking: ".025em",
     },
     composition: {
-      hero: ["library-hero-background-image-v2", "library-hero-split-image-v2", "library-hero-centered-v2"],
+      hero: ["library-hero-split-image-v2", "library-hero-background-image-v2", "library-hero-centered-v2"],
       about: ["library-about-overlap", "library-about-split-v2", "library-about-minimal-v2"],
       services: ["library-services-editorial-v2", "library-services-catalog-v2"],
       gallery: ["library-gallery-filmstrip", "library-gallery-mosaic-v2", "library-gallery-grid-v2"],
@@ -220,7 +220,9 @@ export function optimizeCompositionPath(
 }
 
 function nodeScore(seed: string, stage: CompositionStage, key: string, index: number, count: number): number {
-  return (count - index) * 3 + stableHash(`${seed}:${stage}:${key}`) % 7;
+  // El orden del pack expresa criterio de diseño. La semilla aporta variedad,
+  // pero no debe convertir una dirección editorial en una selección aleatoria.
+  return (count - index) * 12 + stableHash(`${seed}:${stage}:${key}`) % 3;
 }
 
 function edgeScore(previousKey: string, nextKey: string, resolveProfile: CompositionProfileResolver): number {
