@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import test from "node:test";
 
+import { isLocalPreviewHost, isLocalPreviewRequest } from "../lib/site/local-preview";
+
 test("la generación abre directo el editor, no el selector de templates", () => {
   const stream = readFileSync("components/builder/useGenerationStream.ts", "utf8");
   assert.match(stream, /router\.push\(`\/builder\/\$\{payload\.siteId\}`\)/);
@@ -26,4 +28,15 @@ test("los catálogos y el editor Legacy ya no existen", () => {
     existsSync("public/templates/v2") ? readdirSync("public/templates/v2", { recursive: true }) : [],
     [],
   );
+});
+
+test("el laboratorio de sitios solo acepta hosts locales", () => {
+  assert.equal(isLocalPreviewHost("127.0.0.1:3000"), true);
+  assert.equal(isLocalPreviewHost("localhost:3000"), true);
+  assert.equal(isLocalPreviewHost("[::1]:3000"), true);
+  assert.equal(isLocalPreviewHost("sitios.example.com"), false);
+  assert.equal(isLocalPreviewHost("localhost.example.com"), false);
+  assert.equal(isLocalPreviewHost(null), false);
+  assert.equal(isLocalPreviewRequest("localhost:3000", "development"), true);
+  assert.equal(isLocalPreviewRequest("localhost:3000", "production"), false);
 });
