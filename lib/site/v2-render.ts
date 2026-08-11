@@ -1,4 +1,5 @@
 import { sanitizeLink } from "@/lib/site/links";
+import { getDesignLanguagePack } from "@/lib/site/design-languages";
 import {
   normalizeCanvasSectionsV2, normalizeSiteContentV2, normalizeThemeV2, resolveContentSlot,
   type CanvasColumnV2, type CanvasSectionV2, type ResponsiveStyleV2, type SiteContentV2, type StyleTokensV2, type ThemeTokensV2, type WidgetV2,
@@ -576,7 +577,7 @@ function sectionHtml(section: CanvasSectionV2, content: SiteContentV2, theme: Th
 
   const reveal = section.region === "main" && !editable ? ` v2-reveal` : "";
   const revealStyle = section.region === "main" && !editable ? ` style="--reveal-index:${mainIndex}"` : "";
-  return `<section id="${escapeHtml(section.key)}" class="v2-section relative ${padding} ${chrome} v2-key-${key}${reveal}" data-section-id="${escapeHtml(section.id)}"${revealStyle}><div class="${innerClass}">${rows}</div></section>`;
+  return `<section id="${escapeHtml(section.key)}" class="v2-section v2-region-${section.region} relative ${padding} ${chrome} v2-key-${key}${reveal}" data-section-id="${escapeHtml(section.id)}"${revealStyle}><div class="${innerClass}">${rows}</div></section>`;
 }
 
 function dynamicCss(sections: CanvasSectionV2[]) {
@@ -591,7 +592,8 @@ function baseCss(theme: ThemeTokensV2) {
   const radius = RADIUS[theme.radius];
   const buttonText = readableText(theme.accent);
   const footerText = readableText(theme.secondary);
-  const themeVars = `:root{--primary:${theme.primary};--secondary:${theme.secondary};--accent:${theme.accent};--button-text:${buttonText};--footer-text:${footerText};--bg:${theme.background};--text:${theme.text};--muted:${theme.muted};--on-primary:${readableText(theme.primary)};--on-secondary:${footerText};--on-accent:${buttonText};--on-background:${theme.text};--on-text:${readableText(theme.text)};--on-muted:${readableText(theme.muted)};--radius:${radius};--heading:${theme.headingFont};--body:${theme.bodyFont}}
+  const grammar = getDesignLanguagePack(theme.language).grammar;
+  const themeVars = `:root{--primary:${theme.primary};--secondary:${theme.secondary};--accent:${theme.accent};--button-text:${buttonText};--footer-text:${footerText};--bg:${theme.background};--text:${theme.text};--muted:${theme.muted};--on-primary:${readableText(theme.primary)};--on-secondary:${footerText};--on-accent:${buttonText};--on-background:${theme.text};--on-text:${readableText(theme.text)};--on-muted:${readableText(theme.muted)};--radius:${radius};--heading:${theme.headingFont};--body:${theme.bodyFont};--language-content:${grammar.contentWidth};--language-rule:${grammar.ruleWidth};--language-heading-tracking:${grammar.headingTracking};--language-heading-leading:${grammar.headingLineHeight};--language-body-leading:${grammar.bodyLineHeight};--language-nav-tracking:${grammar.navTracking}}
 html{scroll-behavior:smooth}
 body{margin:0;overflow-x:hidden;background:var(--bg)}
 .v2-region-footer{margin-top:auto;background:var(--secondary)!important;color:var(--footer-text)!important}
@@ -599,7 +601,28 @@ body{margin:0;overflow-x:hidden;background:var(--bg)}
 [data-widget-type="nav"].v2-nav-open .v2-nav-links{position:absolute;left:0;right:0;top:100%;z-index:40;display:flex!important;flex-direction:column;align-items:stretch;gap:0;padding:.4rem 1.1rem 1rem;background:var(--bg);color:var(--text);border-bottom:1px solid color-mix(in srgb,var(--text) 14%,transparent);box-shadow:0 24px 48px #00000026}
 [data-widget-type="nav"].v2-nav-open .v2-nav-links a{padding:.9rem .15rem;font-size:1rem;border-bottom:1px solid color-mix(in srgb,var(--text) 8%,transparent)}
 [data-widget-type="nav"].v2-nav-open .v2-nav-links a:last-child{border-bottom:0}`;
-  return `${themeVars}\n${V2_TAILWIND_CSS}`;
+  const languageCss = `
+[data-design-language] .v2-section>div{max-width:var(--language-content)}
+[data-design-language] [data-widget-type="heading"]{letter-spacing:var(--language-heading-tracking);line-height:var(--language-heading-leading)}
+[data-design-language] [data-widget-type="text"]{line-height:var(--language-body-leading)}
+[data-design-language] [data-widget-type="nav"] a{letter-spacing:var(--language-nav-tracking)}
+[data-design-language="bauhaus"] .v2-region-main+.v2-region-main{border-top:var(--language-rule) solid color-mix(in srgb,var(--text) 88%,transparent)}
+[data-design-language="bauhaus"] [data-widget-type="button"],[data-design-language="bauhaus"] [data-widget-type="form"] button{text-transform:uppercase;letter-spacing:.08em;border:2px solid currentColor;box-shadow:4px 4px 0 color-mix(in srgb,var(--text) 82%,transparent)}
+[data-design-language="bauhaus"] [data-widget-type="nav"] a{text-transform:uppercase;font-weight:700}
+[data-design-language="bauhaus"] [data-widget-type="list"]>article{border:2px solid currentColor;padding:1.25rem;box-shadow:6px 6px 0 color-mix(in srgb,var(--accent) 72%,transparent)}
+[data-design-language="bauhaus"] [data-widget-type="image"]:not(.v2-media-bg){outline:2px solid currentColor;outline-offset:-2px;filter:saturate(.9) contrast(1.08)}
+[data-design-language="swiss"] .v2-region-main+.v2-region-main{border-top:var(--language-rule) solid color-mix(in srgb,var(--text) 18%,transparent)}
+[data-design-language="swiss"] [data-widget-type="nav"] a{text-transform:uppercase;font-size:.75rem;font-weight:700}
+[data-design-language="swiss"] [data-widget-type="list"]>article{border-color:color-mix(in srgb,currentColor 18%,transparent)}
+[data-design-language="editorial"] .v2-region-main+.v2-region-main{border-top:var(--language-rule) solid color-mix(in srgb,var(--text) 14%,transparent)}
+[data-design-language="editorial"] [data-widget-type="heading"]{font-weight:600;max-width:18ch}
+[data-design-language="editorial"] [data-widget-type="text"]{max-width:58ch}
+[data-design-language="editorial"] [data-widget-type="list"]>article{border-top:1px solid color-mix(in srgb,currentColor 18%,transparent);padding-top:1.25rem}
+[data-design-language="editorial"] [data-widget-type="testimonials"] blockquote{font-family:var(--heading);font-size:1.2em;line-height:1.45}
+[data-design-language="editorial"] [data-widget-type="button"]{font-weight:600;letter-spacing:.025em}
+[data-design-language="editorial"] [data-widget-type="image"]:not(.v2-media-bg){filter:saturate(.82) contrast(1.04)}
+@media(max-width:640px){[data-design-language="bauhaus"] [data-widget-type="list"]>article{box-shadow:4px 4px 0 color-mix(in srgb,var(--accent) 65%,transparent)}}`;
+  return `${themeVars}\n${V2_TAILWIND_CSS}\n${languageCss}`;
 }
 
 // Recorte de seguridad: si un valor arbitrario del usuario (padding XL, ancho
@@ -768,7 +791,7 @@ export function renderSiteV2(input: RenderSiteV2Input): RenderedSiteV2 {
   } : null;
   const structuredDataHtml = structuredData ? `<script type="application/ld+json">${JSON.stringify(structuredData).replace(/</g, "\\u003c")}</script>` : "";
   let mainCounter = 0;
-  const body = `<div id="top" class="v2-motion-${theme.motion} flex min-h-dvh flex-col bg-[var(--bg)] text-[var(--text)]" style="font-family:var(--body)">${sections.map((section) => sectionHtml(section, content, theme, input.leadEndpoint, input.editable, section.region === "main" ? mainCounter++ : 0)).join("")}${input.showBranding ? `<div class="p-4 text-center text-xs text-[var(--muted)]">Creado con Cluster</div>` : ""}</div>${structuredDataHtml}`;
+  const body = `<div id="top" data-design-language="${theme.language}" class="v2-motion-${theme.motion} flex min-h-dvh flex-col bg-[var(--bg)] text-[var(--text)]" style="font-family:var(--body)">${sections.map((section) => sectionHtml(section, content, theme, input.leadEndpoint, input.editable, section.region === "main" ? mainCounter++ : 0)).join("")}${input.showBranding ? `<div class="p-4 text-center text-xs text-[var(--muted)]">Creado con Cluster</div>` : ""}</div>${structuredDataHtml}`;
   const css = `${baseCss(theme)}${dynamicCss(sections)}${mobileSafetyCss}${input.editable ? editorCss : ""}`;
   const hasPixelHero = sections.some((section) => section.rows.some((row) => row.columns.some((column) => column.widgets.some((widget) => widget.type === "hero_pixel"))));
   const script = `${formScript()}${navScript()}${galleryScript()}${input.editable ? "" : revealScript()}${hasPixelHero ? pixelHeroScript() : ""}${input.editable ? editorScript() : ""}`;

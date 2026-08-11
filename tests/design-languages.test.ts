@@ -1,0 +1,126 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+
+import {
+  applyDesignLanguage,
+  COMPOSITION_STAGES,
+  DESIGN_LANGUAGE_PACKS,
+  rankDesignLanguages,
+  selectDesignLanguage,
+} from "../lib/site/design-languages";
+import { DESIGN_LANGUAGE_IDS } from "../lib/site/design-language-types";
+import { composeSiteSectionsV2 } from "../lib/site/section-composer";
+import { renderSiteV2 } from "../lib/site/v2-render";
+import { SECTION_LIBRARY_V2 } from "../lib/site/v2-section-library";
+import { normalizeSiteContentV2, normalizeThemeV2 } from "../lib/site/v2-schema";
+
+const content = normalizeSiteContentV2({
+  business: {
+    name: "Taller Norte",
+    type: "Estudio de arquitectura",
+    location: "Managua",
+    phone: "+505 8000 0000",
+    email: "hola@example.com",
+  },
+  hero: {
+    title: "Espacios pensados para vivir mejor",
+    subtitle: "Arquitectura local",
+    body: "Diseñamos hogares y comercios que responden al lugar y a la vida diaria.",
+    ctaText: "Ver proyectos",
+    ctaLink: "#contact",
+    media: "https://images.example.com/hero.webp",
+  },
+  about: {
+    title: "Un estudio cercano",
+    subtitle: "Sobre nosotros",
+    body: "Trabajamos cada proyecto con atención directa y una narrativa clara.",
+    media: "https://images.example.com/about.webp",
+    highlights: [],
+  },
+  services: [
+    { title: "Diseño residencial", description: "Anteproyecto y planos ejecutivos." },
+    { title: "Diseño comercial", description: "Espacios que ordenan la experiencia de marca." },
+  ],
+  benefits: [{ title: "Proceso claro", description: "Decisiones documentadas en cada etapa." }],
+  reviews: [{ name: "Ana", quote: "El proceso fue claro.", rating: 5 }],
+  faqs: [{ question: "¿Trabajan fuera de Managua?", answer: "Sí, según el alcance." }],
+  contact: { title: "Hablemos", body: "Cuéntanos qué quieres construir.", ctaText: "Enviar" },
+  media: [
+    { url: "https://images.example.com/hero.webp", alt: "Exterior" },
+    { url: "https://images.example.com/interior.webp", alt: "Interior" },
+  ],
+});
+
+test("el sistema expone exactamente Bauhaus, Swiss y Editorial", () => {
+  assert.deepEqual(DESIGN_LANGUAGE_IDS, ["bauhaus", "swiss", "editorial"]);
+  assert.deepEqual(Object.keys(DESIGN_LANGUAGE_PACKS), [...DESIGN_LANGUAGE_IDS]);
+});
+
+test("cada lenguaje define un grafo de composición válido y completo", () => {
+  const sectionKeys = new Set(SECTION_LIBRARY_V2.map((section) => section.key));
+  for (const languageId of DESIGN_LANGUAGE_IDS) {
+    const pack = DESIGN_LANGUAGE_PACKS[languageId];
+    assert.deepEqual(Object.keys(pack.composition), [...COMPOSITION_STAGES]);
+    for (const stage of COMPOSITION_STAGES) {
+      assert.ok(pack.composition[stage].length > 0, `${languageId}:${stage} no tiene candidatos`);
+      for (const key of pack.composition[stage]) {
+        assert.ok(sectionKeys.has(key), `${languageId}:${stage} referencia ${key}, que no existe`);
+      }
+    }
+  }
+});
+
+test("el ranking usa señales de estilo y negocio sin aleatoriedad", () => {
+  assert.equal(selectDesignLanguage({ visualStyle: "bold", businessType: "fitness" }).id, "bauhaus");
+  assert.equal(selectDesignLanguage({ visualStyle: "modern_clean", businessType: "software" }).id, "swiss");
+  assert.equal(selectDesignLanguage({ visualStyle: "premium_elegant", businessType: "arquitectura" }).id, "editorial");
+  assert.deepEqual(
+    rankDesignLanguages({ visualStyle: "premium_elegant", businessType: "arquitectura" }),
+    rankDesignLanguages({ visualStyle: "premium_elegant", businessType: "arquitectura" }),
+  );
+});
+
+test("cambiar de lenguaje conserva la paleta y aplica su gramática", () => {
+  const base = normalizeThemeV2({
+    primary: "#112233",
+    secondary: "#223344",
+    accent: "#cc3300",
+    background: "#f7f6f1",
+    text: "#101820",
+    muted: "#667788",
+  });
+  const editorial = applyDesignLanguage(base, "editorial");
+  assert.deepEqual(
+    [editorial.primary, editorial.secondary, editorial.accent, editorial.background, editorial.text, editorial.muted],
+    [base.primary, base.secondary, base.accent, base.background, base.text, base.muted],
+  );
+  assert.equal(editorial.language, "editorial");
+  assert.equal(editorial.headingFont, DESIGN_LANGUAGE_PACKS.editorial.themeDefaults.headingFont);
+  assert.notEqual(editorial.headingFont, base.headingFont);
+});
+
+test("el compositor usa los candidatos del lenguaje sin crear plantillas", () => {
+  const fingerprints = new Set<string>();
+  for (const languageId of DESIGN_LANGUAGE_IDS) {
+    const document = composeSiteSectionsV2({
+      content,
+      businessType: content.business.type,
+      designLanguage: languageId,
+      theme: { primary: "#112233", accent: "#cc3300" },
+    });
+    assert.equal(document.design.language, languageId);
+    assert.equal(document.design.primary, "#112233");
+    assert.ok(DESIGN_LANGUAGE_PACKS[languageId].composition.hero.includes(document.sections[1].key));
+    fingerprints.add(document.sections.map((section) => section.key).join(">"));
+  }
+  assert.equal(fingerprints.size, DESIGN_LANGUAGE_IDS.length);
+});
+
+test("el renderer identifica el lenguaje y emite sus reglas globales", () => {
+  const document = composeSiteSectionsV2({ content, designLanguage: "bauhaus" });
+  const rendered = renderSiteV2({ ...document, leadEndpoint: "/api/leads" });
+  assert.match(rendered.body, /data-design-language="bauhaus"/);
+  assert.match(rendered.body, /v2-region-footer/);
+  assert.match(rendered.css, /\[data-design-language="bauhaus"\]/);
+  assert.match(rendered.css, /--language-rule:3px/);
+});

@@ -1,3 +1,11 @@
+import {
+  getDesignLanguagePack,
+  selectDesignLanguage,
+} from "@/lib/site/design-languages";
+import {
+  isDesignLanguageId,
+  type DesignLanguageId,
+} from "@/lib/site/design-language-types";
 import { SECTION_LIBRARY_V2 } from "@/lib/site/v2-section-library";
 import {
   normalizeCanvasSectionsV2,
@@ -10,14 +18,15 @@ import {
 type SectionSeed = Omit<CanvasSectionV2, "id">;
 
 const DEFAULT_THEME: ThemeTokensV2 = {
+  language: "swiss",
   primary: "#2563eb",
   secondary: "#111827",
   accent: "#f59e0b",
   background: "#ffffff",
   text: "#111827",
   muted: "#64748b",
-  headingFont: "Inter, system-ui, sans-serif",
-  bodyFont: "Inter, system-ui, sans-serif",
+  headingFont: "Arial, Helvetica, sans-serif",
+  bodyFont: "Arial, Helvetica, sans-serif",
   headingCase: "none",
   radius: "md",
   motion: "subtle",
@@ -46,33 +55,52 @@ export function composeSiteSectionsV2({
   content: value,
   businessType,
   visualStyle,
+  designLanguage,
   theme,
   customSections = [],
 }: {
   content: unknown;
   businessType?: string | null;
   visualStyle?: string | null;
+  designLanguage?: DesignLanguageId | null;
   theme?: Partial<ThemeTokensV2> | null;
   customSections?: CanvasSectionV2[];
 }) {
   const content = normalizeSiteContentV2(value);
-  const seed = `${content.business.name}:${businessType ?? content.business.type}:${visualStyle ?? ""}`;
-  const type = `${businessType ?? content.business.type}`.toLowerCase();
+  const requestedLanguage = isDesignLanguageId(designLanguage)
+    ? designLanguage
+    : isDesignLanguageId(theme?.language)
+      ? theme.language
+      : null;
+  const language = requestedLanguage ?? selectDesignLanguage({
+    visualStyle,
+    businessType: businessType ?? content.business.type,
+    aboutLength: content.about.body.length,
+    mediaCount: content.media.length,
+  }).id;
+  const languagePack = getDesignLanguagePack(language);
+  const seed = `${content.business.name}:${businessType ?? content.business.type}:${visualStyle ?? ""}:${language}`;
   const hasMap = Boolean(content.business.location);
   const hasMedia = content.media.length > 1;
   const hasVideo = /\.(mp4|webm)(\?|#|$)/i.test(content.hero.media);
+  const stage = (name: keyof typeof languagePack.composition, suffix = name) =>
+    pick(`${seed}:${suffix}`, [...languagePack.composition[name]]);
+  const contactCandidates = languagePack.composition.contact.filter((key) => hasMap || !key.includes("map"));
+  const contactKey = hasMap && languagePack.composition.contact.includes("library-contact-map-v2")
+    ? "library-contact-map-v2"
+    : pick(`${seed}:contact`, [...contactCandidates]);
 
   const keys = [
-    hasVideo ? "library-hero-video-background-v2" : pick(seed, heroKeys(type)),
-    pick(`${seed}:about`, ["library-about-split-v2", "library-about-minimal-v2", "library-about-overlap", "library-about-stats"]),
-    pick(`${seed}:services`, serviceKeys(type)),
-    ...(hasMedia ? [pick(`${seed}:gallery`, ["library-gallery-grid-v2", "library-gallery-mosaic-v2", "library-gallery-filmstrip"])] : []),
-    ...(content.benefits.length ? [pick(`${seed}:benefits`, ["library-benefits-metrics-v2", "library-benefits-pills-v2", "library-benefits-numbered-v2"])] : []),
-    pick(`${seed}:cta`, ["library-cta-card-v2", "library-cta-split-v2", "library-cta-band"]),
-    ...(content.reviews.length ? [pick(`${seed}:reviews`, ["library-reviews-cards-v2", "library-reviews-wall-v2", "library-reviews-quotes"])] : []),
-    ...(content.faqs.length ? [pick(`${seed}:faq`, ["library-faq-minimal-v2", "library-faq-cards-v2"])] : []),
-    hasMap ? "library-contact-map-v2" : "library-contact-split-v2",
-    pick(`${seed}:footer`, ["library-footer-columns-v2", "library-footer-minimal-v2"]),
+    hasVideo ? "library-hero-video-background-v2" : stage("hero"),
+    stage("about"),
+    stage("services"),
+    ...(hasMedia ? [stage("gallery")] : []),
+    ...(content.benefits.length ? [stage("benefits")] : []),
+    stage("cta"),
+    ...(content.reviews.length ? [stage("reviews")] : []),
+    ...(content.faqs.length ? [stage("faq")] : []),
+    contactKey,
+    stage("footer"),
   ];
 
   const sections = [
@@ -83,22 +111,14 @@ export function composeSiteSectionsV2({
 
   return {
     content,
-    design: normalizeThemeV2({ ...DEFAULT_THEME, ...theme }),
+    design: normalizeThemeV2({
+      ...DEFAULT_THEME,
+      ...languagePack.themeDefaults,
+      ...theme,
+      language,
+    }),
     sections: normalizeCanvasSectionsV2(sections).map((section, order) => ({ ...section, order })),
   };
-}
-
-function heroKeys(type: string) {
-  if (/restaurant|comida|caf|bar|hotel|turismo|fitness|gym|yoga|spa|belleza|pintura|painting|hvac|reparaci|construc/.test(type)) {
-    return ["library-hero-split-image-v2", "library-hero-background-image-v2"];
-  }
-  return ["library-hero-split-image-v2", "library-hero-centered-v2", "library-poster-hero"];
-}
-
-function serviceKeys(type: string) {
-  if (/tienda|producto|catalog|menu|restaurant|comida/.test(type)) return ["library-services-catalog-v2", "library-services-bento"];
-  if (/legal|abogad|consult|conta|software|tecnolog/.test(type)) return ["library-services-editorial-v2", "library-services-cards-v2"];
-  return ["library-services-cards-v2", "library-services-bento", "library-services-editorial-v2"];
 }
 
 function cloneSection(seed: SectionSeed): CanvasSectionV2 {

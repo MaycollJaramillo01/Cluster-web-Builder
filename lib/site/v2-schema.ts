@@ -1,5 +1,9 @@
 import { z } from "zod";
 
+import {
+  isDesignLanguageId,
+  type DesignLanguageId,
+} from "@/lib/site/design-language-types";
 import { sanitizeLink } from "@/lib/site/links";
 
 export const BUILDER_V2 = 2;
@@ -40,6 +44,7 @@ export type SiteContentV2 = {
 };
 
 export type ThemeTokensV2 = {
+  language: DesignLanguageId;
   primary: string;
   secondary: string;
   accent: string;
@@ -174,9 +179,10 @@ export function normalizeThemeV2(value: unknown): ThemeTokensV2 {
   const raw = value && typeof value === "object" ? value as Record<string, unknown> : {};
   const color = (key: string, fallback: string) => typeof raw[key] === "string" && /^#[0-9a-fA-F]{6}$/.test(raw[key] as string) ? raw[key] as string : fallback;
   return {
+    language: isDesignLanguageId(raw.language) ? raw.language : "swiss",
     primary: color("primary", "#6d28d9"), secondary: color("secondary", "#111827"), accent: color("accent", "#f59e0b"),
     background: color("background", "#ffffff"), text: color("text", "#111827"), muted: color("muted", "#64748b"),
-    headingFont: text(raw.headingFont, 160) || "Inter, system-ui, sans-serif", bodyFont: text(raw.bodyFont, 160) || "Inter, system-ui, sans-serif",
+    headingFont: text(raw.headingFont, 160) || "Arial, Helvetica, sans-serif", bodyFont: text(raw.bodyFont, 160) || "Arial, Helvetica, sans-serif",
     headingCase: raw.headingCase === "uppercase" ? "uppercase" : "none",
     radius: ["none", "sm", "md", "lg", "pill"].includes(String(raw.radius)) ? raw.radius as ThemeTokensV2["radius"] : "md",
     motion: ["none", "subtle", "stagger", "cinematic"].includes(String(raw.motion)) ? raw.motion as ThemeTokensV2["motion"] : "subtle",

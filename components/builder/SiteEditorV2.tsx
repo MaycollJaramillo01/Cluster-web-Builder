@@ -20,6 +20,11 @@ import {
 import { V2WidgetSettings } from "@/components/builder/V2WidgetSettings";
 import { EditorMediaField } from "@/components/builder/EditorMediaField";
 import { getLaunchReadinessV2, type LaunchReadiness } from "@/lib/site/launch-readiness";
+import {
+  applyDesignLanguage,
+  DESIGN_LANGUAGE_PACKS,
+} from "@/lib/site/design-languages";
+import { DESIGN_LANGUAGE_IDS } from "@/lib/site/design-language-types";
 import { readV2Clipboard, V2_CLIPBOARD_KEY, type V2Clipboard } from "@/lib/site/v2-clipboard";
 import { renderSiteV2 } from "@/lib/site/v2-render";
 import {
@@ -884,6 +889,29 @@ export function SiteEditorV2({ initialSite }: { initialSite: EditorSiteV2 }) {
                 </>}
 
                 {tab === "design" && <>
+                  <h2 className="v2-label">Lenguaje visual</h2>
+                  <p className="mb-3 text-xs leading-relaxed text-zinc-500">Cambia la retícula, tipografía, ritmo y superficies. Tu contenido y colores se conservan.</p>
+                  <div className="grid gap-2" role="radiogroup" aria-label="Lenguaje visual">
+                    {DESIGN_LANGUAGE_IDS.map((languageId) => {
+                      const language = DESIGN_LANGUAGE_PACKS[languageId];
+                      const active = design.language === languageId;
+                      return (
+                        <button
+                          key={languageId}
+                          type="button"
+                          role="radio"
+                          aria-checked={active}
+                          onClick={() => applyDesign(applyDesignLanguage(design, languageId))}
+                          className={`min-h-16 border px-3 py-2.5 text-left transition-colors ${active ? "border-violet-600 bg-violet-50 text-violet-950" : "border-zinc-200 bg-white text-zinc-800 hover:border-zinc-400"}`}
+                        >
+                          <span className="block text-sm font-semibold">{language.name}</span>
+                          <span className="mt-1 block text-xs leading-relaxed text-zinc-500">{language.description}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <div className="my-6 border-t border-zinc-200" />
                   <h2 className="v2-label">Colores del sitio</h2>
                   <p className="mb-3 text-xs text-zinc-500">Se aplican a todo el sitio publicado.</p>
                   <div className="grid gap-2">
