@@ -1,5 +1,6 @@
 import { sectionImageUrl } from "@/lib/site/images";
 import type { SectionType } from "@/lib/site/blueprint";
+import type { DesignLanguageId } from "@/lib/site/design-language-types";
 import { composeSiteSectionsV2 } from "@/lib/site/section-composer";
 import { normalizeSiteContentV2, type SiteContentV2 } from "@/lib/site/v2-schema";
 
@@ -20,6 +21,7 @@ type GeneratedSiteSeed = {
   logoUrl: string | null;
   coverUrl: string | null;
   visualStyle: string | null;
+  designLanguage?: DesignLanguageId | null;
   blueprintJson: unknown;
   primaryColor: string | null;
   secondaryColor: string | null;
@@ -43,6 +45,7 @@ export function composeGeneratedSiteDocument(site: GeneratedSiteSeed, sections: 
     content,
     businessType: site.businessType,
     visualStyle: site.visualStyle,
+    designLanguage: site.designLanguage,
     blueprint,
     theme: {
       primary: site.primaryColor || undefined,

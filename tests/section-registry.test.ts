@@ -11,6 +11,7 @@ import {
   auditSiteDocumentWithRegistryV2,
   filterCompatibleSectionKeysV2,
   getSectionCompatibilityV2,
+  getSectionCompositionProfileV2,
   getSectionDataSignalsV2,
   getSectionRegistryEntryV2,
   SECTION_REGISTRY_V2,
@@ -40,6 +41,9 @@ test("el registro cubre toda la biblioteca con metadatos universales", () => {
     assert.deepEqual(entry.supportedLanguages, DESIGN_LANGUAGE_IDS);
     assert.deepEqual(entry.responsive, ["mobile", "tablet", "desktop"]);
     assert.ok(COMPOSITION_STAGES.includes(entry.role));
+    assert.ok([1, 2, 3].includes(entry.composition.density));
+    assert.ok(["focus", "split", "grid"].includes(entry.composition.layout));
+    assert.equal(getSectionCompositionProfileV2(entry.key), entry.composition);
   }
 });
 

@@ -5,8 +5,18 @@ import { OpenRouterError, openrouterChatStream, parseChatStream } from "@/lib/op
 import { buildSiteGenerationPrompt } from "@/lib/prompts/site-generator";
 import type { SectionType } from "@/lib/site/blueprint";
 import { auditBlueprintCopy, enforceBlueprintCopyQuality } from "@/lib/site/copy-quality";
+import { getDesignLanguagePack, selectDesignLanguage } from "@/lib/site/design-languages";
 import { buildFallbackSiteBlueprint } from "@/lib/site/fallback-site-blueprint";
 import { normalizeSiteBlueprint, type NormalizedSite } from "@/lib/site/normalize-site-blueprint";
+import {
+  expandSiteRecipe,
+  rankSiteRecipes,
+  selectSiteRecipe,
+  SITE_RECIPES,
+  type SiteRecipe,
+  type SiteRecipeId,
+} from "@/lib/site/site-recipes";
+import type { DesignLanguageId } from "@/lib/site/design-language-types";
 import {
   onboardingSchema,
   promptToOnboardingInput,
@@ -22,6 +32,9 @@ export type GenerationRequest = {
 
 export type GenerationPlan = {
   blueprintId: GenerationBlueprintId;
+  recipeReasons: string[];
+  designLanguage: DesignLanguageId;
+  designLanguageReasons: string[];
   selectedDesignStyle: string;
   designBrief: string;
   sectionPlan: SectionType[];
@@ -30,36 +43,9 @@ export type GenerationPlan = {
   userPrompt: string;
 };
 
-export type GenerationBlueprintId = "local-leads" | "appointments" | "catalog" | "portfolio";
-
-export type GenerationBlueprint = {
-  id: GenerationBlueprintId;
-  description: string;
-  sections: readonly SectionType[];
-};
-
-export const GENERATION_BLUEPRINTS: Record<GenerationBlueprintId, GenerationBlueprint> = {
-  "local-leads": {
-    id: "local-leads",
-    description: "Explica la oferta, construye confianza y conduce a una consulta.",
-    sections: ["hero", "services", "benefits", "about_us", "faq", "contact", "cta", "footer"],
-  },
-  appointments: {
-    id: "appointments",
-    description: "Presenta servicios, resuelve objeciones y conduce a una solicitud de cita.",
-    sections: ["hero", "services", "about_us", "benefits", "faq", "contact", "cta", "footer"],
-  },
-  catalog: {
-    id: "catalog",
-    description: "Prioriza productos, evidencia visual y contacto para completar la compra.",
-    sections: ["hero", "services", "gallery", "about_us", "benefits", "faq", "contact", "cta", "footer"],
-  },
-  portfolio: {
-    id: "portfolio",
-    description: "Abre con el trabajo, explica los servicios y termina en una consulta.",
-    sections: ["hero", "gallery", "services", "about_us", "benefits", "contact", "cta", "footer"],
-  },
-};
+export type GenerationBlueprintId = SiteRecipeId;
+export type GenerationBlueprint = SiteRecipe;
+export const GENERATION_BLUEPRINTS = SITE_RECIPES;
 
 export function parseGenerationInput(body: unknown): GenerationRequest {
   if (typeof body === "object" && body !== null && "prompt" in body) {
@@ -72,8 +58,18 @@ export function parseGenerationInput(body: unknown): GenerationRequest {
 export function buildGenerationPlan(input: OnboardingInput, originalRequest?: string): GenerationPlan {
   const designRequest = originalRequest ?? buildGuidedDesignRequest(input);
   const selectedDesignStyle = input.visualStyle;
-  const blueprint = selectGenerationBlueprint(input);
-  const designBrief = buildVisualDirection(input, designRequest, blueprint);
+  const recipeRanking = rankSiteRecipes(input);
+  const recipeSelection = recipeRanking[0];
+  const blueprint = recipeSelection.recipe;
+  const languageSelection = selectDesignLanguage({
+    visualStyle: input.visualStyle,
+    businessType: resolveBusinessTypeLabel(input),
+    goal: input.goal,
+    aboutLength: input.proofPoints?.length ?? 0,
+    mediaCount: Number(Boolean(input.assets?.logoDataUrl)) + Number(Boolean(input.assets?.coverDataUrl)),
+    languageAffinity: blueprint.languageAffinity,
+  });
+  const designBrief = buildVisualDirection(input, designRequest, blueprint, languageSelection.id, languageSelection.reasons);
   const sectionPlan = expandBlueprint(blueprint, input);
   const prompt = buildSiteGenerationPrompt(
     input,
@@ -85,6 +81,9 @@ export function buildGenerationPlan(input: OnboardingInput, originalRequest?: st
 
   return {
     blueprintId: blueprint.id,
+    recipeReasons: recipeSelection.reasons,
+    designLanguage: languageSelection.id,
+    designLanguageReasons: languageSelection.reasons,
     selectedDesignStyle,
     designBrief,
     sectionPlan,
@@ -105,33 +104,30 @@ export function generationStatusStages(style: string) {
   ];
 }
 
-function buildVisualDirection(input: OnboardingInput, request: string, blueprint: GenerationBlueprint): string {
+function buildVisualDirection(
+  input: OnboardingInput,
+  request: string,
+  blueprint: GenerationBlueprint,
+  designLanguage: DesignLanguageId,
+  languageReasons: readonly string[],
+): string {
+  const language = getDesignLanguagePack(designLanguage);
   return [
     `Dirección visual solicitada: ${input.visualStyle.replaceAll("_", " ")}.`,
     `Contexto: ${request}.`,
-    `Blueprint funcional: ${blueprint.description}`,
+    `Receta funcional ${blueprint.name}: ${blueprint.description}`,
+    `Lenguaje visual ${language.name}${languageReasons.length ? `: ${languageReasons.join(", ")}` : ""}.`,
+    "La paleta y los datos del cliente permanecen en variables independientes del lenguaje visual.",
     "Compón una interfaz original con bloques editables y variantes compatibles. No generes HTML ni estilos fuera del contrato.",
   ].join(" ");
 }
 
 export function selectGenerationBlueprint(input: OnboardingInput): GenerationBlueprint {
-  const customType = input.customBusinessType?.toLocaleLowerCase("es") ?? "";
-  if (input.goal === "sell_products") return GENERATION_BLUEPRINTS.catalog;
-  if (input.goal === "book_appointments" || input.businessType === "restaurant") return GENERATION_BLUEPRINTS.appointments;
-  if (/(arquitect|fotograf|diseñ|disen|creativ|portafolio|estudio)/.test(customType)) return GENERATION_BLUEPRINTS.portfolio;
-  return GENERATION_BLUEPRINTS["local-leads"];
+  return selectSiteRecipe(input).recipe;
 }
 
 function expandBlueprint(blueprint: GenerationBlueprint, input: OnboardingInput): SectionType[] {
-  const sections = [...blueprint.sections];
-  const contactIndex = sections.indexOf("contact");
-  if (input.location.trim() && input.location !== "Zona por definir" && !sections.includes("location")) {
-    sections.splice(Math.max(contactIndex, 1), 0, "location");
-  }
-  if (input.reviews?.trim() && !sections.includes("testimonials")) {
-    sections.splice(Math.max(sections.indexOf("contact"), 1), 0, "testimonials");
-  }
-  return sections;
+  return expandSiteRecipe(blueprint, input);
 }
 
 export async function generateNormalizedSite({

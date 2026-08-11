@@ -75,6 +75,7 @@ test("el ranking usa señales de estilo y negocio sin aleatoriedad", () => {
   assert.equal(selectDesignLanguage({ visualStyle: "bold", businessType: "fitness" }).id, "bauhaus");
   assert.equal(selectDesignLanguage({ visualStyle: "modern_clean", businessType: "software" }).id, "swiss");
   assert.equal(selectDesignLanguage({ visualStyle: "premium_elegant", businessType: "arquitectura" }).id, "editorial");
+  assert.equal(selectDesignLanguage({ languageAffinity: { editorial: 5 } }).id, "editorial");
   assert.deepEqual(
     rankDesignLanguages({ visualStyle: "premium_elegant", businessType: "arquitectura" }),
     rankDesignLanguages({ visualStyle: "premium_elegant", businessType: "arquitectura" }),
@@ -93,6 +94,18 @@ test("el optimizador recorre el grafo completo de forma determinista", () => {
   assert.equal(first.keys.length, graph.length);
   first.keys.forEach((key, index) => assert.ok(graph[index].candidates.includes(key)));
   assert.ok(Number.isFinite(first.score));
+});
+
+test("el optimizador consume perfiles declarados en vez de inferirlos por el nombre", () => {
+  const graph = [
+    { stage: "hero" as const, candidates: ["bloque-a"] },
+    { stage: "about" as const, candidates: ["bloque-b"] },
+  ];
+  const repetitive = optimizeCompositionPath("perfil", graph, () => ({ density: 3, layout: "grid", contrast: true }));
+  const varied = optimizeCompositionPath("perfil", graph, (key) => key === "bloque-a"
+    ? { density: 3, layout: "grid", contrast: true }
+    : { density: 1, layout: "split", contrast: false });
+  assert.ok(varied.score > repetitive.score);
 });
 
 test("cambiar de lenguaje conserva la paleta y aplica su gramática", () => {

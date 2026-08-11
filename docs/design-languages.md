@@ -23,6 +23,8 @@ Contenido del negocio
         |
 Señales de estilo y actividad
         |
+Ranking de receta funcional
+        |
 Ranking de lenguajes
         |
 Grafo acíclico de etapas
@@ -42,7 +44,13 @@ La fuente también es editable. Al seleccionar un lenguaje se aplica su par reco
 
 La selección de lenguaje usa un ranking determinista de costo constante porque solo existen tres opciones. Evalúa el estilo solicitado, el tipo de negocio, el objetivo, la longitud narrativa y la cantidad de medios. El resultado incluye puntaje y razones.
 
-El compositor representa la página como etapas ordenadas con varios nodos candidatos por lenguaje. Un recorrido exacto elige la ruta global con mejor puntuación y penaliza bloques consecutivos con la misma densidad, composición o contraste. El grafo es pequeño, por lo que no necesita dependencias ni búsqueda aproximada.
+El compositor representa la página como etapas ordenadas con varios nodos candidatos por lenguaje. Un recorrido exacto elige la ruta global con mejor puntuación y penaliza bloques consecutivos con la misma densidad, composición o contraste. Esos perfiles se declaran en el registro canónico; no se deducen del nombre del bloque. El grafo es pequeño, por lo que no necesita dependencias ni búsqueda aproximada.
+
+## Recetas funcionales
+
+Las recetas `local-leads`, `appointments`, `catalog` y `portfolio` definen el orden narrativo y una afinidad de lenguaje. Se seleccionan mediante un ranking explicable basado en objetivo y actividad. No contienen HTML, colores ni fuentes: una misma receta puede resolverse en Bauhaus, Swiss o Editorial y siempre conserva las variables del cliente.
+
+La decisión completa queda fijada en el plan de generación y llega a persistencia. Así, el prompt, el compositor, el editor y el sitio publicado trabajan con la misma receta y el mismo lenguaje visual.
 
 ## Regla de extensión
 

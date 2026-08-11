@@ -12,6 +12,7 @@ import type { SectionType } from "@/lib/site/blueprint";
 import {
   filterCompatibleSectionKeysV2,
   getSectionDataSignalsV2,
+  getSectionCompositionProfileV2,
   SECTION_REGISTRY_V2,
 } from "@/lib/site/v2-section-registry";
 import {
@@ -154,7 +155,7 @@ export function composeSiteSectionsV2({
     const candidates = candidatesByStage[stage];
     return candidates?.length ? [{ stage, candidates }] : [];
   });
-  const keys = optimizeCompositionPath(seed, stages).keys;
+  const keys = optimizeCompositionPath(seed, stages, getSectionCompositionProfileV2).keys;
   const selected = keys.map((key, index) => ({ key, stage: stages[index].stage }));
   const header = cloneSection(HEADER_SEED);
   setHeaderNavigation(header, selected);

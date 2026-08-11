@@ -55,6 +55,7 @@ export async function persistGeneratedSite({
     logoUrl: uploadedLogoAsset,
     coverUrl: uploadedCoverAsset,
     visualStyle: plan.selectedDesignStyle,
+    designLanguage: plan.designLanguage,
     blueprintJson: blueprint,
     primaryColor: theme.primary,
     secondaryColor: theme.secondary,
@@ -117,7 +118,15 @@ export async function persistGeneratedSite({
     },
   });
 
-  await trackProductEvent("site_generated", { userId, siteId: site.id, metadata: { style: plan.selectedDesignStyle } });
+  await trackProductEvent("site_generated", {
+    userId,
+    siteId: site.id,
+    metadata: {
+      style: plan.selectedDesignStyle,
+      language: plan.designLanguage,
+      recipe: plan.blueprintId,
+    },
+  });
 
   const pending: PendingV2Document = { content: v2.content, sections: v2.sections };
   return {

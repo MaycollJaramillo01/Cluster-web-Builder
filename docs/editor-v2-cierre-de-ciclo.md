@@ -1,9 +1,12 @@
 # Plan de trabajo: cerrar el ciclo del Editor V2
 
-Objetivo: llevar el Editor V2 de "funcional" a "completo" al nivel de un builder tipo Elementor.
+Estado: completado.
+
+Objetivo histórico: llevar el Editor V2 de "funcional" a "completo" al nivel de un builder tipo Elementor.
 Duración estimada: 1 a 2 semanas. El editor ya tiene selección en lienzo, panel único
 contextual, ajustes por bloque, drag and drop desde el panel, deshacer/rehacer, publicar y
-menú contextual por niveles. Este plan cubre lo que falta para cerrar la experiencia.
+menú contextual por niveles. Los cuatro entregables de este documento ya están implementados;
+se conserva como registro de criterios de aceptación y decisiones técnicas.
 
 ## Estado actual (punto de partida)
 

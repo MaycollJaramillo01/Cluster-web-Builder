@@ -161,15 +161,24 @@ export type CompositionPath = {
   score: number;
 };
 
-type BlockProfile = {
+export type CompositionProfile = {
   density: 1 | 2 | 3;
   layout: "focus" | "split" | "grid";
   contrast: boolean;
 };
 
+type CompositionProfileResolver = (key: string) => CompositionProfile | null | undefined;
+
+const NEUTRAL_COMPOSITION_PROFILE: CompositionProfile = {
+  density: 2,
+  layout: "grid",
+  contrast: false,
+};
+
 export function optimizeCompositionPath(
   seed: string,
   stages: readonly CompositionGraphStage[],
+  resolveProfile: CompositionProfileResolver = () => NEUTRAL_COMPOSITION_PROFILE,
 ): CompositionPath {
   const graph = stages.filter((stage) => stage.candidates.length > 0);
   if (!graph.length) return { keys: [], score: 0 };
@@ -192,7 +201,7 @@ export function optimizeCompositionPath(
           last: key,
           score: previous.score
             + nodeScore(seed, stage.stage, key, index, stage.candidates.length)
-            + edgeScore(previous.last, key),
+            + edgeScore(previous.last, key, resolveProfile),
         };
         if (!best || candidate.score > best.score || (candidate.score === best.score && candidate.keys.join(">") < best.keys.join(">"))) {
           best = candidate;
@@ -214,30 +223,12 @@ function nodeScore(seed: string, stage: CompositionStage, key: string, index: nu
   return (count - index) * 3 + stableHash(`${seed}:${stage}:${key}`) % 7;
 }
 
-function edgeScore(previousKey: string, nextKey: string): number {
-  const previous = blockProfile(previousKey);
-  const next = blockProfile(nextKey);
+function edgeScore(previousKey: string, nextKey: string, resolveProfile: CompositionProfileResolver): number {
+  const previous = resolveProfile(previousKey) ?? NEUTRAL_COMPOSITION_PROFILE;
+  const next = resolveProfile(nextKey) ?? NEUTRAL_COMPOSITION_PROFILE;
   return (previous.layout === next.layout ? -3 : 1)
     + (previous.density === next.density ? -2 : 1)
     + (previous.contrast && next.contrast ? -4 : previous.contrast !== next.contrast ? 1 : 0);
-}
-
-function blockProfile(key: string): BlockProfile {
-  const density = /bento|cards|catalog|wall|mosaic|metrics/.test(key)
-    ? 3
-    : /minimal|quotes|editorial|centered/.test(key)
-      ? 1
-      : 2;
-  const layout = /split|overlap|map/.test(key)
-    ? "split"
-    : /centered|(?:^|-)card(?:-|$)|quotes|poster/.test(key)
-      ? "focus"
-      : "grid";
-  return {
-    density,
-    layout,
-    contrast: /background|poster|band|wall/.test(key),
-  };
 }
 
 function stableHash(value: string): number {
@@ -261,6 +252,7 @@ export type DesignLanguageSignals = {
   goal?: string | null;
   aboutLength?: number;
   mediaCount?: number;
+  languageAffinity?: Partial<Record<DesignLanguageId, number>>;
 };
 
 const STYLE_AFFINITIES: Record<string, Partial<Record<DesignLanguageId, number>>> = {
@@ -305,6 +297,13 @@ export function rankDesignLanguages(signals: DesignLanguageSignals): DesignLangu
   const visualStyle = normalizeSignal(signals.visualStyle);
   const businessType = normalizeSignal(signals.businessType);
   const goal = normalizeSignal(signals.goal);
+
+  for (const id of DESIGN_LANGUAGE_IDS) {
+    const affinity = signals.languageAffinity?.[id] ?? 0;
+    if (!affinity) continue;
+    scores[id] += affinity;
+    reasons[id].push("afinidad con la receta funcional");
+  }
 
   const styleAffinity = STYLE_AFFINITIES[visualStyle];
   if (styleAffinity) {

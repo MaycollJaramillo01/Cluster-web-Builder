@@ -2,6 +2,9 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { composeSiteSectionsV2 } from "../lib/site/section-composer";
+import { DESIGN_LANGUAGE_IDS } from "../lib/site/design-language-types";
+import { SITE_RECIPES } from "../lib/site/site-recipes";
+import { getSectionRegistryEntryV2 } from "../lib/site/v2-section-registry";
 import { renderSiteV2 } from "../lib/site/v2-render";
 
 const baseContent = {
@@ -64,4 +67,25 @@ test("section composer respeta el orden funcional del blueprint", () => {
     { label: "Nosotros", href: `#${document.sections[4].key}` },
     { label: "Contacto", href: `#${document.sections[5].key}` },
   ]);
+});
+
+test("la matriz de recetas y lenguajes produce documentos válidos desde el registro", () => {
+  for (const recipe of Object.values(SITE_RECIPES)) {
+    for (const language of DESIGN_LANGUAGE_IDS) {
+      const document = composeSiteSectionsV2({
+        content: baseContent,
+        businessType: baseContent.business.type,
+        designLanguage: language,
+        blueprint: recipe.sections,
+      });
+      assert.equal(document.design.language, language);
+      assert.equal(document.sections[0].region, "header");
+      assert.equal(document.sections.at(-1)?.region, "footer");
+      for (const section of document.sections.filter((item) => item.region !== "header")) {
+        const entry = getSectionRegistryEntryV2(section.key);
+        assert.ok(entry, `${recipe.id}:${language} generó un bloque no registrado: ${section.key}`);
+        assert.ok(entry.supportedLanguages.includes(language));
+      }
+    }
+  }
 });

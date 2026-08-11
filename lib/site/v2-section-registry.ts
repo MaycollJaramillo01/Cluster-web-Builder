@@ -1,6 +1,7 @@
 import {
   COMPOSITION_STAGES,
   DESIGN_LANGUAGE_PACKS,
+  type CompositionProfile,
   type CompositionStage,
 } from "@/lib/site/design-languages";
 import {
@@ -50,6 +51,7 @@ export type SectionRegistryEntryV2 = {
   preferredLanguages: readonly DesignLanguageId[];
   dataRequirements: readonly SectionDataRequirementV2[];
   responsive: readonly SectionViewportV2[];
+  composition: CompositionProfile;
   section: SectionSeedV2;
 };
 
@@ -96,6 +98,43 @@ const EXTRA_REQUIREMENTS: Record<string, readonly SectionDataRequirementV2[]> = 
   "library-footer-columns-v2": ["contact-channel"],
 };
 
+const SECTION_COMPOSITION: Record<string, { role: CompositionStage; profile: CompositionProfile }> = {
+  "library-hero-split-image-v2": { role: "hero", profile: { density: 2, layout: "split", contrast: false } },
+  "library-hero-background-image-v2": { role: "hero", profile: { density: 2, layout: "focus", contrast: true } },
+  "library-hero-video-background-v2": { role: "hero", profile: { density: 2, layout: "focus", contrast: true } },
+  "library-hero-centered-v2": { role: "hero", profile: { density: 1, layout: "focus", contrast: false } },
+  "library-split-hero": { role: "hero", profile: { density: 2, layout: "split", contrast: false } },
+  "library-pixel-hero": { role: "hero", profile: { density: 2, layout: "focus", contrast: true } },
+  "library-poster-hero": { role: "hero", profile: { density: 1, layout: "focus", contrast: true } },
+  "library-about-split-v2": { role: "about", profile: { density: 2, layout: "split", contrast: false } },
+  "library-about-minimal-v2": { role: "about", profile: { density: 1, layout: "split", contrast: false } },
+  "library-about-overlap": { role: "about", profile: { density: 2, layout: "split", contrast: false } },
+  "library-about-stats": { role: "about", profile: { density: 3, layout: "split", contrast: false } },
+  "library-services-cards-v2": { role: "services", profile: { density: 3, layout: "grid", contrast: false } },
+  "library-services-editorial-v2": { role: "services", profile: { density: 1, layout: "grid", contrast: false } },
+  "library-services-catalog-v2": { role: "services", profile: { density: 3, layout: "grid", contrast: false } },
+  "library-services-bento": { role: "services", profile: { density: 3, layout: "grid", contrast: false } },
+  "library-gallery-grid-v2": { role: "gallery", profile: { density: 3, layout: "grid", contrast: false } },
+  "library-gallery-mosaic-v2": { role: "gallery", profile: { density: 3, layout: "grid", contrast: false } },
+  "library-gallery-filmstrip": { role: "gallery", profile: { density: 2, layout: "grid", contrast: false } },
+  "library-benefits-metrics-v2": { role: "benefits", profile: { density: 3, layout: "split", contrast: false } },
+  "library-benefits-pills-v2": { role: "benefits", profile: { density: 3, layout: "grid", contrast: false } },
+  "library-benefits-numbered-v2": { role: "benefits", profile: { density: 2, layout: "grid", contrast: false } },
+  "library-cta-card-v2": { role: "cta", profile: { density: 1, layout: "focus", contrast: false } },
+  "library-cta-split-v2": { role: "cta", profile: { density: 2, layout: "split", contrast: false } },
+  "library-cta-band": { role: "cta", profile: { density: 1, layout: "split", contrast: true } },
+  "library-reviews-cards-v2": { role: "reviews", profile: { density: 3, layout: "grid", contrast: false } },
+  "library-reviews-wall-v2": { role: "reviews", profile: { density: 3, layout: "grid", contrast: true } },
+  "library-reviews-quotes": { role: "reviews", profile: { density: 1, layout: "focus", contrast: false } },
+  "library-faq-minimal-v2": { role: "faq", profile: { density: 1, layout: "split", contrast: false } },
+  "library-faq-cards-v2": { role: "faq", profile: { density: 3, layout: "grid", contrast: false } },
+  "library-contact-split-v2": { role: "contact", profile: { density: 2, layout: "split", contrast: false } },
+  "library-contact-map-v2": { role: "contact", profile: { density: 2, layout: "split", contrast: false } },
+  "library-contact-card": { role: "contact", profile: { density: 2, layout: "split", contrast: false } },
+  "library-footer-columns-v2": { role: "footer", profile: { density: 3, layout: "grid", contrast: false } },
+  "library-footer-minimal-v2": { role: "footer", profile: { density: 1, layout: "split", contrast: false } },
+};
+
 export const SECTION_REQUIREMENT_LABELS_V2: Record<SectionDataRequirementV2, string> = {
   "business-name": "nombre del negocio",
   "hero-copy": "título y descripción principal",
@@ -115,7 +154,9 @@ export const SECTION_REQUIREMENT_LABELS_V2: Record<SectionDataRequirementV2, str
 };
 
 export const SECTION_REGISTRY_V2: readonly SectionRegistryEntryV2[] = SECTION_LIBRARY_V2.map((section) => {
-  const role = roleForSection(section.key);
+  const composition = SECTION_COMPOSITION[section.key];
+  if (!composition) throw new Error(`El bloque ${section.key} no declara su perfil de composición.`);
+  const role = composition.role;
   const preferredLanguages = DESIGN_LANGUAGE_IDS.filter((language) =>
     COMPOSITION_STAGES.some((stage) => DESIGN_LANGUAGE_PACKS[language].composition[stage].includes(section.key)),
   );
@@ -129,6 +170,7 @@ export const SECTION_REGISTRY_V2: readonly SectionRegistryEntryV2[] = SECTION_LI
     preferredLanguages,
     dataRequirements: [...new Set([...BASE_REQUIREMENTS[role], ...(EXTRA_REQUIREMENTS[section.key] ?? [])])],
     responsive: ALL_VIEWPORTS,
+    composition: composition.profile,
     section,
   };
 });
@@ -137,6 +179,10 @@ const registryByKey = new Map(SECTION_REGISTRY_V2.map((entry) => [entry.key, ent
 
 export function getSectionRegistryEntryV2(key: string): SectionRegistryEntryV2 | null {
   return registryByKey.get(key) ?? null;
+}
+
+export function getSectionCompositionProfileV2(key: string): CompositionProfile | null {
+  return registryByKey.get(key)?.composition ?? null;
 }
 
 export function getSectionDataSignalsV2(value: unknown): SectionDataSignalsV2 {
@@ -195,22 +241,4 @@ export function auditSiteDocumentWithRegistryV2(document: SiteDocumentV2): SiteQ
     }];
   });
   return { passed: base.passed, issues: [...base.issues, ...registryIssues] };
-}
-
-function roleForSection(key: string): CompositionStage {
-  for (const stage of COMPOSITION_STAGES) {
-    if (DESIGN_LANGUAGE_IDS.some((language) => DESIGN_LANGUAGE_PACKS[language].composition[stage].includes(key))) {
-      return stage;
-    }
-  }
-  if (key.includes("hero")) return "hero";
-  if (key.includes("about")) return "about";
-  if (key.includes("services")) return "services";
-  if (key.includes("gallery")) return "gallery";
-  if (key.includes("benefits")) return "benefits";
-  if (key.includes("cta")) return "cta";
-  if (key.includes("reviews")) return "reviews";
-  if (key.includes("faq")) return "faq";
-  if (key.includes("contact")) return "contact";
-  return "footer";
 }
