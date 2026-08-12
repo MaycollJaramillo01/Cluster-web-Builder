@@ -1,5 +1,6 @@
 import { sanitizeLink } from "@/lib/site/links";
 import { getDesignLanguagePack } from "@/lib/site/design-languages";
+import { iconSvg, resolveIconName } from "@/lib/site/v2-icons";
 import {
   normalizeCanvasSectionsV2, normalizeSiteContentV2, normalizeThemeV2, resolveContentSlot,
   type CanvasColumnV2, type CanvasSectionV2, type ResponsiveStyleV2, type SiteContentV2, type StyleTokensV2, type ThemeTokensV2, type WidgetV2,
@@ -207,8 +208,12 @@ function listItemHtml(variant: string, item: Record<string, unknown>, index: num
       return `<article class="flex items-start justify-between gap-6 py-5 first:pt-0 last:pb-0"><div class="min-w-0"><h3 class="${H3}">${title}</h3>${desc ? `<p class="mt-1 max-w-[55ch] text-sm ${MUTED}">${desc}</p>` : ""}</div>${meta ? `<span class="shrink-0 ${HEADING_FONT} text-sm font-semibold ${MUTED}">${meta}</span>` : ""}</article>`;
     case "numbered":
       return `<article class="flex items-start gap-5 py-5 first:pt-0 last:pb-0"><span class="font-mono text-sm font-bold text-[var(--accent)]">${idx}</span><div class="min-w-0"><h3 class="${H3}">${title}</h3>${desc ? `<p class="mt-1 max-w-[55ch] text-sm ${MUTED}">${desc}</p>` : ""}</div></article>`;
-    case "checks":
-      return `<article class="flex items-start gap-3 rounded-[var(--radius)] border border-current/12 bg-current/[0.05] px-4 py-3"><span class="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-[var(--accent)] text-[.62rem] font-black leading-none text-[var(--on-accent)]" aria-hidden="true">✓</span><span class="min-w-0"><span class="block ${HEADING_FONT} text-sm font-semibold">${title}</span>${desc ? `<span class="mt-0.5 block text-xs ${MUTED}">${desc}</span>` : ""}</span></article>`;
+    case "checks": {
+      // El icono se deduce del propio punto, para que seis compromisos no
+      // repitan seis veces la misma palomita.
+      const glyph = iconSvg(resolveIconName(`${item.title ?? ""} ${item.description ?? ""}`), 16);
+      return `<article class="flex items-start gap-2.5 rounded-[var(--radius)] border border-current/12 bg-current/[0.05] px-3.5 py-3"><span class="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-[var(--accent)] text-[var(--on-accent)]">${glyph}</span><span class="min-w-0"><span class="block ${HEADING_FONT} text-sm font-semibold">${title}</span>${desc ? `<span class="mt-0.5 block text-xs ${MUTED}">${desc}</span>` : ""}</span></article>`;
+    }
     case "pills":
     case "badges":
       return `<article class="inline-flex max-w-full items-center gap-2 rounded-[var(--radius)] border border-current/15 bg-current/[0.05] px-4 py-2.5"><span class="${HEADING_FONT} text-sm font-semibold">${title}</span>${desc ? `<span class="text-xs ${MUTED}">${desc}</span>` : ""}</article>`;
