@@ -900,10 +900,15 @@ img{display:block}
 [data-design-language="storm"] .v2-key-library-emergency-band-v2 [data-widget-type="business_info"] a[href^="tel:"]{font-family:var(--heading);font-size:clamp(1.9rem,3.4vw,2.9rem);font-weight:900;line-height:1;letter-spacing:-.02em}
 [data-design-language="storm"] .v2-key-library-emergency-band-v2 [data-widget-type="business_info"] a[href^="mailto:"],[data-design-language="storm"] .v2-key-library-emergency-band-v2 [data-widget-type="business_info"] span{font-size:.82rem;opacity:.75}
 
+/* El lenguaje ofrece varios bloques de galería y el compositor elige según el
+   ritmo de la página: todos deben verse resueltos, no solo el preferido. */
+[data-design-language="storm"] .v2-key-library-gallery-grid-v2,[data-design-language="storm"] .v2-key-library-gallery-mosaic-v2{border-top:2px solid var(--text)}
 [data-design-language="storm"] .v2-key-library-gallery-projects-v2 [data-column-id]:first-child{align-self:start;border-top:5px solid var(--accent);padding-top:1.1rem}
-[data-design-language="storm"] .v2-key-library-gallery-projects-v2 [data-widget-type="gallery"]{gap:.5rem}
-[data-design-language="storm"] .v2-key-library-gallery-projects-v2 figure{border-radius:0;border:2px solid var(--text);background:var(--secondary)}
-[data-design-language="storm"] .v2-key-library-gallery-projects-v2 img{filter:saturate(.72) contrast(1.1)}
+[data-design-language="storm"] .v2-key-library-gallery-projects-v2 [data-widget-type="gallery"],[data-design-language="storm"] .v2-key-library-gallery-grid-v2 [data-widget-type="gallery"],[data-design-language="storm"] .v2-key-library-gallery-mosaic-v2 [data-widget-type="gallery"]{gap:.5rem}
+[data-design-language="storm"] .v2-key-library-gallery-projects-v2 figure,[data-design-language="storm"] .v2-key-library-gallery-grid-v2 figure,[data-design-language="storm"] .v2-key-library-gallery-mosaic-v2 figure{border-radius:0;border:2px solid var(--text);background:var(--secondary)}
+[data-design-language="storm"] .v2-key-library-gallery-projects-v2 img,[data-design-language="storm"] .v2-key-library-gallery-grid-v2 img,[data-design-language="storm"] .v2-key-library-gallery-mosaic-v2 img{filter:saturate(.72) contrast(1.1)}
+/* Con pocas fotos, una rejilla de tres deja un hueco delator en la última fila. */
+[data-design-language="storm"] .v2-key-library-gallery-grid-v2 [data-widget-type="gallery"]{grid-template-columns:repeat(auto-fit,minmax(15rem,1fr))}
 
 /* Nosotros: fotos que se pisan, relato y compromisos marcados uno a uno. */
 [data-design-language="storm"] .v2-key-library-about-showcase-v2{border-bottom:2px solid var(--text)}
