@@ -22,6 +22,20 @@ test("todas las recetas cumplen el contrato funcional mínimo", () => {
 test("el ranking de recetas responde al objetivo y al tipo de negocio", () => {
   const cases = [
     [{ ...onboardingFixture, businessType: "roofing" as const, customBusinessType: "", goal: "quote_forms" as const }, "contractor-pro"],
+    // Mismo tipo de negocio; lo que cambia la receta es la urgencia declarada en los servicios.
+    [{
+      ...onboardingFixture,
+      businessType: "roofing" as const,
+      customBusinessType: "",
+      goal: "calls" as const,
+      services: "Contención de emergencia: Lonas y extracción de agua tras una tormenta.\nExpediente para el seguro: Fotos y mediciones para tu ajustador.",
+    }, "storm-response"],
+    [{
+      ...onboardingFixture,
+      businessType: "other" as const,
+      customBusinessType: "Plomería y climatización",
+      goal: "calls" as const,
+    }, "storm-response"],
     [{ ...onboardingFixture, goal: "sell_products" as const }, "catalog"],
     [{ ...onboardingFixture, businessType: "restaurant" as const, customBusinessType: "", goal: "professional_presence" as const }, "appointments"],
     [{ ...onboardingFixture, businessType: "cleaning" as const, customBusinessType: "", goal: "quote_forms" as const }, "local-leads"],

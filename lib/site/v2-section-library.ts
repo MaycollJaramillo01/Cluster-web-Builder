@@ -22,8 +22,36 @@ export const SECTION_LIBRARY_V2: SectionSeedV2[] = [
   section("library-hero-background-image-v2", "Hero normal: imagen de fondo", "main", [row(column(12, [image("hero.media", "background"), text("hero.subtitle", { desktop: { fontSize: "sm" } }), heading("hero.title", "h1", { desktop: { fontSize: "display", fontWeight: "bold" } }), text("hero.body", { desktop: { fontSize: "lg", width: "content" } }), button()]))], { desktop: { padding: "xl", width: "full", background: "secondary" } }),
   section("library-hero-video-background-v2", "Hero normal: video de fondo", "main", [row(column(12, [widget("video", "hero.media", "background"), text("hero.subtitle", { desktop: { fontSize: "sm" } }), heading("hero.title", "h1", { desktop: { fontSize: "display", fontWeight: "black" } }), text("hero.body", { desktop: { fontSize: "lg", width: "content" } }), button()]))], { desktop: { padding: "xl", width: "full", background: "secondary" } }),
   section("library-hero-centered-v2", "Hero normal: centrado", "main", [row(column(12, [text("hero.subtitle", { desktop: { align: "center", fontSize: "sm" } }), heading("hero.title", "h1", { desktop: { align: "center", fontSize: "display", fontWeight: "bold" } }), text("hero.body", { desktop: { align: "center", fontSize: "lg", width: "content" } }), button()]))], { desktop: { padding: "xl", width: "wide" } }),
+  // Portada a sangre completa sobre la galería del negocio: cada imagen es una
+  // diapositiva y el teléfono viaja dentro del hero, porque en una emergencia
+  // el visitante no debe buscar el canal de contacto en otra sección. Todos los
+  // elementos son widgets sueltos: el editor los selecciona uno por uno.
+  section("library-hero-emergency-v2", "Portada: respuesta de emergencia", "main", [row(column(12, [
+    widget("gallery", "media", "hero-backdrop"),
+    text("hero.subtitle", { desktop: { fontSize: "sm" } }),
+    heading("hero.title", "h1", { desktop: { fontSize: "display", fontWeight: "black" } }),
+    text("hero.body", { desktop: { fontSize: "lg" } }),
+    text("business.type", { desktop: { fontSize: "sm" } }),
+    button(),
+    widget("button", undefined, "outline", { text: "Ver trabajos", link: "#gallery" }),
+    widget("divider"),
+    widget("business_info", undefined, "hotline"),
+  ]))], { desktop: { padding: "none", width: "full", background: "secondary" } }),
 
   section("library-about-split-v2", "Nosotros: imagen + historia", "main", [row(column(5, [image("about.media", "portrait")]), column(7, [text("about.subtitle", { desktop: { fontSize: "sm" } }), heading("about.title"), text("about.body", { desktop: { fontSize: "lg" } }), widget("list", "about.highlights", "badges")]))], { desktop: { padding: "xl" } }),
+  // Nosotros con evidencia: par de fotos superpuestas a la izquierda y, a la
+  // derecha, el relato, los compromisos verificables y la vía de contacto.
+  section("library-about-showcase-v2", "Nosotros: fotos y compromisos", "main", [row(
+    column(6, [widget("gallery", "media", "about-stack")]),
+    column(6, [
+      text("about.subtitle", { desktop: { fontSize: "sm" } }),
+      heading("about.title"),
+      text("about.body"),
+      widget("list", "about.highlights", "checks"),
+      button("contact.ctaText", "hero.ctaLink"),
+      widget("business_info", undefined, "inline"),
+    ]),
+  )], { desktop: { padding: "xl" } }),
   section("library-about-minimal-v2", "Nosotros: texto amplio", "main", [row(column(4, [text("about.subtitle", { desktop: { fontSize: "sm" } })]), column(8, [heading("about.title", "h2", { desktop: { fontSize: "2xl" } }), text("about.body", { desktop: { fontSize: "lg" } })]))], { desktop: { padding: "xl" } }),
 
   section("library-services-cards-v2", "Servicios: tarjetas", "main", [row(column(4, [heading("business.type"), text("about.subtitle")]), column(8, [widget("list", "services", "cards")]))], { desktop: { padding: "lg" } }),
@@ -33,6 +61,7 @@ export const SECTION_LIBRARY_V2: SectionSeedV2[] = [
   section("library-benefits-metrics-v2", "Beneficios: metricas", "main", [row(column(4, [labelHeading("Cómo trabajamos"), labelText("Un proceso claro, medible y explicado desde el inicio.")]), column(8, [widget("list", "benefits", "metrics")]))], { desktop: { padding: "lg" } }),
   section("library-benefits-pills-v2", "Beneficios: pildoras", "main", [row(column(12, [heading("about.title"), widget("list", "benefits", "pills")]))], { desktop: { padding: "lg" } }),
   section("library-benefits-numbered-v2", "Beneficios: numerados", "main", [row(column(12, [widget("list", "benefits", "numbered")]))], { desktop: { padding: "lg" } }),
+  section("library-availability-grid-v2", "Disponibilidad: cobertura y tiempos de respuesta", "main", [row(column(4, [labelHeading("Disponibilidad y respuesta"), labelText("Cobertura, tiempo de llegada y quién responde cuando llamas.")]), column(8, [widget("list", "benefits", "metrics")]))], { desktop: { padding: "lg" } }),
 
   section("library-gallery-grid-v2", "Galeria: grilla", "main", [row(column(12, [widget("gallery", "media", "grid")]))], { desktop: { padding: "xl" } }),
   section("library-gallery-mosaic-v2", "Galeria: mosaico", "main", [row(column(12, [widget("gallery", "media", "mosaic")]))], { desktop: { padding: "xl" } }),
@@ -40,6 +69,9 @@ export const SECTION_LIBRARY_V2: SectionSeedV2[] = [
 
   section("library-cta-card-v2", "CTA: tarjeta centrada", "main", [row(column(12, [heading("contact.title", "h2", { desktop: { align: "center" } }), text("contact.body", { desktop: { align: "center" } }), button("contact.ctaText", "hero.ctaLink")]))], { desktop: { background: "#f4f4f5", padding: "xl", radius: "lg" } }),
   section("library-cta-split-v2", "CTA: texto + contacto", "main", [row(column(7, [heading("contact.title"), text("contact.body")]), column(5, [widget("business_info", undefined, "stacked"), button("contact.ctaText", "hero.ctaLink")]))], { desktop: { padding: "xl" } }),
+  // Fondo "accent" en vez de un color fijo: la banda de alerta sigue la paleta
+  // del cliente y el renderer resuelve el color de texto legible por contraste.
+  section("library-emergency-band-v2", "Emergencia: banda de respuesta inmediata", "main", [row(column(7, [labelText("Emergencia activa"), heading("contact.title"), text("contact.body")]), column(5, [widget("business_info", undefined, "hotline"), button("contact.ctaText", "hero.ctaLink")]))], { desktop: { background: "accent", padding: "lg", width: "wide" } }),
 
   section("library-reviews-cards-v2", "Resenas: tarjetas", "main", [row(column(12, [widget("testimonials", "reviews", "cards")]))], { desktop: { padding: "lg" } }),
   section("library-reviews-wall-v2", "Resenas: muro", "main", [row(column(12, [widget("testimonials", "reviews", "wall")]))], { desktop: { background: "secondary", padding: "xl" } }),
@@ -47,6 +79,7 @@ export const SECTION_LIBRARY_V2: SectionSeedV2[] = [
 
   section("library-faq-minimal-v2", "FAQ: minimal", "main", [row(column(4, [labelHeading("Preguntas frecuentes"), labelText("Lo esencial antes de dar el siguiente paso.")]), column(8, [widget("accordion", "faqs", "minimal")]))], { desktop: { padding: "xl" } }),
   section("library-faq-cards-v2", "FAQ: tarjetas", "main", [row(column(12, [widget("accordion", "faqs", "cards")]))], { desktop: { padding: "lg" } }),
+  section("library-insurance-faq-v2", "Seguros: preguntas del reclamo", "main", [row(column(4, [labelHeading("Seguros y reclamos"), labelText("Cómo documentamos el daño y qué esperar de tu aseguradora.")]), column(8, [widget("accordion", "faqs", "minimal")]))], { desktop: { padding: "xl" } }),
 
   section("library-contact-split-v2", "Contacto: formulario dividido", "main", [row(column(6, [heading("contact.title"), text("contact.body"), widget("social", "social", "buttons")]), column(6, [widget("form", undefined, "split", { buttonSlot: "contact.ctaText" })]))], { desktop: { padding: "xl" } }),
   section("library-contact-map-v2", "Contacto: mapa + formulario", "main", [row(column(6, [widget("map", "business.location", "card"), widget("business_info", undefined, "compact")]), column(6, [widget("form", undefined, "card", { buttonSlot: "contact.ctaText" })]))], { desktop: { padding: "xl" } }),

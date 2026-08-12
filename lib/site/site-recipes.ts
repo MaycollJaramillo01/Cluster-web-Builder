@@ -5,7 +5,7 @@ import {
   type OnboardingInput,
 } from "@/lib/validators/site-onboarding";
 
-export const SITE_RECIPE_IDS = ["contractor-pro", "local-leads", "appointments", "catalog", "portfolio"] as const;
+export const SITE_RECIPE_IDS = ["storm-response", "contractor-pro", "local-leads", "appointments", "catalog", "portfolio"] as const;
 
 export type SiteRecipeId = (typeof SITE_RECIPE_IDS)[number];
 
@@ -25,6 +25,16 @@ export type SiteRecipeRanking = {
 };
 
 export const SITE_RECIPES: Record<SiteRecipeId, SiteRecipe> = {
+  // Orden dictado por la emergencia: quién responde y con qué respaldo, antes
+  // del catálogo. La prueba de trabajo y el seguro llegan cuando el visitante
+  // ya sabe que la llamada será atendida.
+  "storm-response": {
+    id: "storm-response",
+    name: "Respuesta ante emergencias",
+    description: "Abre con la emergencia, presenta al equipo y su disponibilidad, y explica el reclamo de seguro antes de pedir el contacto.",
+    sections: ["hero", "about_us", "benefits", "services", "cta", "gallery", "testimonials", "faq", "contact", "footer"],
+    languageAffinity: { storm: 10, industrial: 2 },
+  },
   "contractor-pro": {
     id: "contractor-pro",
     name: "Contratista profesional",
@@ -64,6 +74,7 @@ export const SITE_RECIPES: Record<SiteRecipeId, SiteRecipe> = {
 
 export function rankSiteRecipes(input: OnboardingInput): SiteRecipeRanking[] {
   const scores: Record<SiteRecipeId, number> = {
+    "storm-response": 0,
     "contractor-pro": 0,
     "local-leads": 1,
     appointments: 0,
@@ -71,6 +82,7 @@ export function rankSiteRecipes(input: OnboardingInput): SiteRecipeRanking[] {
     portfolio: 0,
   };
   const reasons: Record<SiteRecipeId, string[]> = {
+    "storm-response": [],
     "contractor-pro": [],
     "local-leads": [],
     appointments: [],
@@ -112,8 +124,12 @@ export function rankSiteRecipes(input: OnboardingInput): SiteRecipeRanking[] {
   if (input.businessType === "real_estate") {
     add("portfolio", 5, "la oferta se entiende mejor como colección visual");
   }
+  // Los oficios de obra alimentan por igual a las dos recetas de contratista:
+  // comparten base y es la urgencia declarada la que decide entre catálogo
+  // de trabajo y respuesta ante emergencia.
   if (["roofing", "painting", "landscaping"].includes(input.businessType)) {
     add("contractor-pro", 30, "la actividad depende de alcance, evidencia de obra y respuesta local");
+    add("storm-response", 30, "la actividad depende de alcance, evidencia de obra y respuesta local");
   }
 
   const business = resolveBusinessTypeLabel(input).toLocaleLowerCase("es");
@@ -122,6 +138,15 @@ export function rankSiteRecipes(input: OnboardingInput): SiteRecipeRanking[] {
   }
   if (/(roof|techo|siding|gutter|canaleta|contractor|contratista|construction|construc|remodel|restoration|concrete|masonry|hvac|plumb|electric|solar)/.test(business)) {
     add("contractor-pro", 32, "el servicio es propio de un contratista de obra o mantenimiento técnico");
+    add("storm-response", 32, "el servicio es propio de un contratista de obra o mantenimiento técnico");
+  }
+
+  // La urgencia no cabe en el selector de actividad: la declara el propio
+  // listado de servicios, que es donde el contratista escribe "24/7",
+  // "daño por agua" o "trabajamos con tu seguro".
+  const urgency = `${business} ${input.services}`.toLocaleLowerCase("es");
+  if (/(tormenta|storm|granizo|hail|hurac|inunda|flood|emergencia|emergency|24\/7|filtracion|filtración|gotera|leak|restauracion|restauración|restoration|mitigacion|mitigación|mitigation|moho|mold|plomer|fontaner|plumb|hvac|climatizacion|climatización|aire acondicionado|tuberia|tubería|burst|seguro|aseguradora|insurance)/.test(urgency)) {
+    add("storm-response", 40, "el servicio se contrata durante una emergencia con ventana de respuesta y respaldo de seguro");
   }
 
   return SITE_RECIPE_IDS

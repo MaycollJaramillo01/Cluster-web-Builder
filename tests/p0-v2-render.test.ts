@@ -75,6 +75,12 @@ test("renderer V2 bloquea data URLs, mantiene formulario y usa la misma salida p
   assert.match(rendered.html, /Expert Home Repair/);
   assert.match(rendered.html, /data-cluster-form/);
   assert.match(rendered.html, /\/api\/public\/sites\/aa-painting\/leads/);
-  assert.doesNotMatch(rendered.html, /data:image\//);
+  // Lo que se protege es que ningún data URL del CONTENIDO sobreviva al
+  // saneado: ni en el documento ni escondido en otra parte de la salida.
+  // La hoja de estilos sí incrusta iconos SVG propios del motor, que no
+  // provienen del usuario y no pueden llevar datos suyos.
+  assert.doesNotMatch(rendered.body, /data:image\//);
+  assert.doesNotMatch(rendered.head, /data:image\/png/);
+  assert.doesNotMatch(rendered.html, /aGVsbG8=/);
   assert.doesNotMatch(rendered.html, /<img[^>]+src=""/);
 });

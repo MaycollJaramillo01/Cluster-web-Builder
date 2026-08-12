@@ -6,7 +6,7 @@ import { notFound } from "next/navigation";
 import type { DesignLanguageId } from "@/lib/site/design-language-types";
 import { isLocalPreviewRequest } from "@/lib/site/local-preview";
 import { composeSiteSectionsV2 } from "@/lib/site/section-composer";
-import { SITE_RECIPES } from "@/lib/site/site-recipes";
+import { SITE_RECIPES, type SiteRecipeId } from "@/lib/site/site-recipes";
 import type { ThemeTokensV2 } from "@/lib/site/v2-schema";
 import { renderSiteV2 } from "@/lib/site/v2-render";
 
@@ -26,8 +26,18 @@ type DemoSeed = {
   languageName: string;
   summary: string;
   swatch: string;
+  /** Receta funcional a forzar. Sin ella el compositor usa su orden por defecto. */
+  recipe?: SiteRecipeId;
   theme: Partial<ThemeTokensV2>;
   content: unknown;
+};
+
+const DEMO_VISUAL_STYLE: Record<DesignLanguageId, string> = {
+  bauhaus: "bold",
+  swiss: "modern_clean",
+  editorial: "premium_elegant",
+  industrial: "local_trustworthy",
+  storm: "local_trustworthy",
 };
 
 const image = (photoId: number, width = 1600, height = 1000) =>
@@ -269,6 +279,7 @@ const DEMOS: DemoSeed[] = [
     languageName: "Industrial Utility",
     summary: "Jerarquía de obra, evidencia verificable y una ruta corta hacia llamada o cotización.",
     swatch: "#f5a623",
+    recipe: "contractor-pro",
     theme: {
       primary: "#17324d",
       secondary: "#101820",
@@ -341,16 +352,100 @@ const DEMOS: DemoSeed[] = [
       seo: { title: "Cumbre Roofing & Exteriors | Houston, TX", description: "Inspección, reparación y reemplazo de techos residenciales en Houston, Katy y Cypress.", keyword: "roofing Houston" },
     },
   },
+  {
+    slug: "vanguard-storm",
+    name: "Vanguard Storm & Restoration",
+    businessType: "Respuesta a daños por tormenta",
+    language: "storm",
+    languageName: "Storm Response",
+    summary: "Emergencia declarada, disponibilidad medible y el reclamo de seguro explicado antes de pedir el contacto.",
+    swatch: "#ff5a1f",
+    recipe: "storm-response",
+    theme: {
+      primary: "#123a5c",
+      secondary: "#0b1620",
+      accent: "#ff5a1f",
+      background: "#eef1f4",
+      text: "#0b1620",
+      muted: "#5a6672",
+    },
+    content: {
+      business: {
+        name: "Vanguard Storm & Restoration",
+        type: "Respuesta a daños por tormenta",
+        location: "Oklahoma City, Edmond y Norman, Oklahoma",
+        phone: "+1 (405) 555-0172",
+        email: "despacho@vanguardstorm.test",
+      },
+      hero: {
+        subtitle: "Cuadrilla de guardia 24/7",
+        title: "Llegamos antes de que el agua siga avanzando.",
+        body: "Techo, agua, plomería y climatización después de una tormenta. Contenemos el daño, lo documentamos para tu aseguradora y reparamos con alcance por escrito.",
+        ctaText: "Reportar una emergencia",
+        ctaLink: "#contact",
+        media: image(37623622),
+      },
+      about: {
+        subtitle: "Despacho local · Atención en español e inglés",
+        title: "Un despacho que contesta a las 3 de la mañana.",
+        body: "Vanguard atiende viviendas y comercios en el área metropolitana de Oklahoma City. Mantenemos cuadrillas de guardia todo el año porque el daño por tormenta no espera al horario de oficina. Cada llamada entra a un despacho real, no a un buzón: registramos la dirección, el tipo de daño y enviamos la unidad más cercana con material de contención.",
+        media: image(30514132, 1000, 1200),
+        highlights: [
+          { title: "24/7/365", description: "Despacho atendido por personal propio, sin centro de llamadas externo." },
+          { title: "90 minutos", description: "Llegada objetivo dentro del área metropolitana." },
+          { title: "Licencia y póliza", description: "Contratista licenciado y asegurado, verificable antes de firmar." },
+        ],
+      },
+      services: [
+        { title: "Contención inmediata", description: "Lonas, tapado de aberturas y extracción de agua para detener el daño en las primeras horas.", meta: "Primera respuesta" },
+        { title: "Daño por agua y moho", description: "Secado con equipo de medición, control de humedad y retiro de material comprometido.", meta: "Restauración" },
+        { title: "Techo y exteriores", description: "Reparación o reemplazo tras granizo y viento, con canaletas y revestimiento coordinados.", meta: "Roofing" },
+        { title: "Plomería de urgencia", description: "Tubería reventada, fugas bajo losa y reconexión de suministro tras congelamiento.", meta: "Plomería" },
+        { title: "Climatización", description: "Diagnóstico y reposición de equipos HVAC dañados por agua, granizo o descarga eléctrica.", meta: "HVAC" },
+        { title: "Expediente para el seguro", description: "Reporte fotográfico, medición de humedad y alcance detallado listo para tu ajustador.", meta: "Seguros" },
+      ],
+      benefits: [
+        { title: "24/7", description: "Línea de despacho activa todos los días del año" },
+        { title: "90 min", description: "Llegada objetivo en el área metropolitana" },
+        { title: "3 condados", description: "Oklahoma, Cleveland y Canadian" },
+        { title: "1 responsable", description: "Un supervisor asignado desde la llamada" },
+      ],
+      media: [
+        { url: image(37623622, 1400, 1000), alt: "Técnico con equipo de seguridad trabajando sobre un techo" },
+        { url: image(31771166, 1200, 900), alt: "Instalación de shingles en una vivienda" },
+        { url: image(30514132, 1200, 900), alt: "Cuadrilla trabajando en la estructura de un techo" },
+        { url: image(259588, 1200, 900), alt: "Exterior de vivienda residencial ya reparada" },
+      ],
+      reviews: [
+        { name: "Rebecca T.", role: "Propietaria en Edmond", quote: "Llamé a la medianoche y había una cuadrilla lonando el techo antes del amanecer. Eso evitó que el agua llegara al segundo piso.", rating: 5, source: "Reseña de demostración" },
+        { name: "Miguel A.", role: "Propietario en Moore", quote: "El expediente de fotos y mediciones fue justo lo que pidió el ajustador. No tuve que discutir el alcance.", rating: 5, source: "Reseña de demostración" },
+        { name: "Karen y Dave S.", role: "Propietarios en Norman", quote: "Explicaron qué cubría la póliza y qué no antes de empezar. Sin sorpresas al final.", rating: 5, source: "Reseña de demostración" },
+      ],
+      faqs: [
+        { question: "¿Atienden fuera del horario de oficina?", answer: "Sí. El despacho opera 24 horas todos los días del año y la cuadrilla de guardia sale con material de contención en la primera visita." },
+        { question: "¿Qué hago mientras llega la cuadrilla?", answer: "Corta la electricidad de la zona afectada si es seguro hacerlo, cierra la llave de paso si hay fuga y toma fotos del daño antes de mover nada. Te guiamos por teléfono mientras vamos en camino." },
+        { question: "¿Trabajan con mi aseguradora?", answer: "Documentamos el daño con fotos, mediciones de humedad y alcance detallado, y coordinamos la visita del ajustador. La cobertura y el deducible siempre los determina tu póliza, no nosotros." },
+        { question: "¿Puedo elegir a mi contratista aunque el seguro sugiera otro?", answer: "En general sí: la mayoría de las pólizas permiten elegir contratista. Revisa tu documento o pregúntanos y lo verificamos contigo antes de comenzar." },
+        { question: "¿Cuánto tarda una restauración completa?", answer: "La contención ocurre el mismo día. El secado suele tomar de tres a cinco días con medición diaria, y la reparación depende del alcance aprobado; lo entregamos por escrito antes de empezar." },
+      ],
+      contact: {
+        title: "¿Hay daño activo ahora mismo?",
+        body: "Llama y despachamos la unidad de guardia. Si prefieres escribir, indícanos la dirección, el tipo de daño y si el agua sigue entrando.",
+        ctaText: "Enviar reporte",
+      },
+      seo: { title: "Vanguard Storm & Restoration | Oklahoma City, OK", description: "Respuesta 24/7 a daños por tormenta, agua, plomería y HVAC en Oklahoma City, Edmond y Norman.", keyword: "storm damage restoration Oklahoma City" },
+    },
+  },
 ];
 
 function renderDemo(demo: DemoSeed) {
   const composed = composeSiteSectionsV2({
     content: demo.content,
     businessType: demo.businessType,
-    visualStyle: demo.language === "bauhaus" ? "bold" : demo.language === "swiss" ? "modern_clean" : demo.language === "industrial" ? "local_trustworthy" : "premium_elegant",
+    visualStyle: DEMO_VISUAL_STYLE[demo.language],
     designLanguage: demo.language,
     theme: demo.theme,
-    blueprint: demo.language === "industrial" ? SITE_RECIPES["contractor-pro"].sections : undefined,
+    blueprint: demo.recipe ? SITE_RECIPES[demo.recipe].sections : undefined,
   });
 
   return {
@@ -430,7 +525,7 @@ export default async function LocalTestSitesPage({
       <section className="mx-auto w-full max-w-7xl px-5 py-14 sm:px-8 sm:py-20">
         <div className="grid gap-8 border-b border-[#171a17]/25 pb-12 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-end">
           <div>
-            <p className="text-xs font-black uppercase tracking-[0.18em] text-[#315c45]">Cuatro lenguajes, un solo motor</p>
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-[#315c45]">Cinco lenguajes, un solo motor</p>
             <h1 className="mt-4 max-w-4xl text-5xl font-black leading-[0.94] tracking-[-0.055em] sm:text-7xl">
               Sitios de prueba para mirar el sistema en acción.
             </h1>

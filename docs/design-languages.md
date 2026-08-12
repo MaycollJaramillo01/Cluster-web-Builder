@@ -2,11 +2,13 @@
 
 El constructor ya no parte de plantillas completas. Parte de contenido estructurado, un lenguaje visual y una biblioteca de bloques independientes.
 
-## Los tres lenguajes iniciales
+## Los lenguajes disponibles
 
 - Bauhaus UI: geometría directa, contraste fuerte, jerarquías de cartel, bordes duros y composición más expresiva.
 - Swiss Design: retícula rigurosa, tipografía neutral, reglas finas y prioridad absoluta a la claridad.
 - Editorial UI: tipografía expresiva, ritmo amplio, imágenes protagonistas y lectura narrativa.
+- Industrial Utility: jerarquía de obra, evidencia verificable y ruta corta hacia llamada o cotización.
+- Storm Response: lectura de despacho para roofing, restauración, plomería y HVAC. Emergencia visible, disponibilidad declarada y reclamo de seguro explicado.
 
 Cada paquete define cinco cosas distintas:
 
@@ -42,13 +44,17 @@ La fuente también es editable. Al seleccionar un lenguaje se aplica su par reco
 
 ## Selección actual
 
-La selección de lenguaje usa un ranking determinista de costo constante porque solo existen tres opciones. Evalúa el estilo solicitado, el tipo de negocio, el objetivo, la longitud narrativa y la cantidad de medios. El resultado incluye puntaje y razones.
+La selección de lenguaje usa un ranking determinista de costo constante. Evalúa el estilo solicitado, el tipo de negocio, el objetivo, la longitud narrativa y la cantidad de medios. El resultado incluye puntaje y razones.
+
+Industrial y Storm comparten el terreno de los oficios de obra y se separan por la urgencia: un contratista de techos cae en Industrial, y pasa a Storm cuando el negocio se describe con tormenta, granizo, daño por agua, filtración, restauración, plomería, HVAC o emergencia. Storm también gana cuando el objetivo depende de contestar la llamada en el momento.
 
 El compositor representa la página como etapas ordenadas con varios nodos candidatos por lenguaje. Un recorrido exacto elige la ruta global con mejor puntuación y penaliza bloques consecutivos con la misma densidad, composición o contraste. Esos perfiles se declaran en el registro canónico; no se deducen del nombre del bloque. El grafo es pequeño, por lo que no necesita dependencias ni búsqueda aproximada.
 
 ## Recetas funcionales
 
-Las recetas `local-leads`, `appointments`, `catalog` y `portfolio` definen el orden narrativo y una afinidad de lenguaje. Se seleccionan mediante un ranking explicable basado en objetivo y actividad. No contienen HTML, colores ni fuentes: una misma receta puede resolverse en Bauhaus, Swiss o Editorial y siempre conserva las variables del cliente.
+Las recetas `storm-response`, `contractor-pro`, `local-leads`, `appointments`, `catalog` y `portfolio` definen el orden narrativo y una afinidad de lenguaje. Se seleccionan mediante un ranking explicable basado en objetivo y actividad. No contienen HTML, colores ni fuentes: una misma receta puede resolverse en cualquier lenguaje y siempre conserva las variables del cliente.
+
+`contractor-pro` y `storm-response` reciben la misma puntuación base por oficio de obra, así que la urgencia declarada en el listado de servicios es lo único que decide entre ellas. `storm-response` invierte el orden habitual: la disponibilidad va antes que el catálogo de servicios, porque durante una emergencia el visitante primero necesita saber que alguien contesta.
 
 La decisión completa queda fijada en el plan de generación y llega a persistencia. Así, el prompt, el compositor, el editor y el sitio publicado trabajan con la misma receta y el mismo lenguaje visual.
 

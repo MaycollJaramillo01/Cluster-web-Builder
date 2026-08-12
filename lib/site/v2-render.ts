@@ -63,7 +63,7 @@ const GOOGLE_FONT_AXES: Record<string, string> = {
   Anton: "400", Inter: "400;600;700;900", Sora: "400;600;700;800", Outfit: "400;600;700;900",
   "Playfair Display": "400;600;700;900", Nunito: "400;600;700;900", Poppins: "400;500;600;700",
   "Space Grotesk": "400;500;600;700", "Cormorant Garamond": "400;500;600;700", Karla: "400;500;700",
-  "Barlow Condensed": "500;600;700;800;900",
+  "Barlow Condensed": "500;600;700;800;900", Archivo: "400;500;600;700;800;900",
 };
 
 function fontLinksFor(theme: ThemeTokensV2) {
@@ -191,6 +191,7 @@ const LIST_WRAP: Record<string, string> = {
   metrics: "grid gap-8 text-center sm:grid-cols-2 lg:grid-cols-4",
   numbered: "flex flex-col divide-y divide-current/10",
   bento: "grid grid-cols-2 gap-4 sm:grid-cols-6",
+  checks: "grid gap-3 sm:grid-cols-2",
 };
 
 function listItemHtml(variant: string, item: Record<string, unknown>, index: number) {
@@ -206,6 +207,8 @@ function listItemHtml(variant: string, item: Record<string, unknown>, index: num
       return `<article class="flex items-start justify-between gap-6 py-5 first:pt-0 last:pb-0"><div class="min-w-0"><h3 class="${H3}">${title}</h3>${desc ? `<p class="mt-1 max-w-[55ch] text-sm ${MUTED}">${desc}</p>` : ""}</div>${meta ? `<span class="shrink-0 ${HEADING_FONT} text-sm font-semibold ${MUTED}">${meta}</span>` : ""}</article>`;
     case "numbered":
       return `<article class="flex items-start gap-5 py-5 first:pt-0 last:pb-0"><span class="font-mono text-sm font-bold text-[var(--accent)]">${idx}</span><div class="min-w-0"><h3 class="${H3}">${title}</h3>${desc ? `<p class="mt-1 max-w-[55ch] text-sm ${MUTED}">${desc}</p>` : ""}</div></article>`;
+    case "checks":
+      return `<article class="flex items-start gap-3 rounded-[var(--radius)] border border-current/12 bg-current/[0.05] px-4 py-3"><span class="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-[var(--accent)] text-[.62rem] font-black leading-none text-[var(--on-accent)]" aria-hidden="true">✓</span><span class="min-w-0"><span class="block ${HEADING_FONT} text-sm font-semibold">${title}</span>${desc ? `<span class="mt-0.5 block text-xs ${MUTED}">${desc}</span>` : ""}</span></article>`;
     case "pills":
     case "badges":
       return `<article class="inline-flex max-w-full items-center gap-2 rounded-[var(--radius)] border border-current/15 bg-current/[0.05] px-4 py-2.5"><span class="${HEADING_FONT} text-sm font-semibold">${title}</span>${desc ? `<span class="text-xs ${MUTED}">${desc}</span>` : ""}</article>`;
@@ -237,6 +240,45 @@ function galleryHtml(variant: string, items: Record<string, unknown>[], attr: st
   }).filter((figure): figure is { source: string; alt: string; i: number } => Boolean(figure));
   if (!figures.length) return "";
 
+  // Fondo de portada: las imágenes se apilan a sangre completa y se recorren
+  // con la miniatura de la siguiente y dos flechas. Agregar una imagen a la
+  // galería agrega una diapositiva; no hay lista de medios aparte.
+  if (variant === "hero-backdrop") {
+    const slides = figures.map(({ source, alt }, index) =>
+      `<img src="${source}" alt="${escapeHtml(alt)}" loading="${index ? "lazy" : "eager"}" class="v2-hero-slide${index ? "" : " v2-hero-on"} absolute inset-0 -z-10 h-full w-full object-cover">`).join("");
+    const veil = `<span class="absolute inset-0 -z-10 bg-gradient-to-r from-black/85 via-black/60 to-black/25"></span>`;
+    const round = "grid h-11 w-11 place-items-center rounded-full border border-white/45 bg-black/35 text-lg leading-none text-white backdrop-blur transition hover:border-white hover:bg-black/55";
+    // Una miniatura por imagen: se ve cuántas hay y se salta directo a
+    // cualquiera. Al agregar una imagen a la galería aparece su miniatura.
+    const thumbs = figures.map(({ source, alt }, index) =>
+      `<button type="button" data-hero-go="${index}" class="v2-hero-thumb${index ? "" : " v2-hero-thumb-on"} block h-14 w-20 shrink-0 overflow-hidden border-2 p-0 sm:h-16 sm:w-24" aria-label="Ver imagen ${index + 1}${alt ? `: ${escapeHtml(alt)}` : ""}"><img src="${source}" alt="" loading="lazy" class="h-full w-full object-cover"></button>`).join("");
+    // Los mandos son lo único interactivo: el envoltorio es inerte para no
+    // robarle los clics al titular ni a los botones, que quedan por encima.
+    const controls = figures.length > 1
+      ? `<div class="pointer-events-auto absolute bottom-6 right-5 z-10 flex flex-col items-end gap-3 sm:bottom-9 sm:right-9">
+<div class="v2-hero-thumbs v2-scroll-hide flex max-w-[17rem] gap-2 overflow-x-auto sm:max-w-[26rem]">${thumbs}</div>
+<div class="flex items-center gap-2"><button type="button" data-hero-step="-1" class="${round}" aria-label="Imagen anterior">&#8249;</button><button type="button" data-hero-step="1" class="${round}" aria-label="Imagen siguiente">&#8250;</button></div>
+</div>`
+      : "";
+    return `<div ${attr} class="v2-hero-backdrop pointer-events-none absolute inset-0">${slides}${veil}${controls}</div>`;
+  }
+  // Par superpuesto para la sección de nosotros: la segunda foto pisa a la
+  // primera y sobresale por arriba y por abajo. Con una sola imagen se
+  // degrada a una foto suelta en vez de fingir una composición.
+  if (variant === "about-stack") {
+    const [first, second] = figures;
+    const cover = (figure: { source: string; alt: string }) =>
+      `<img src="${figure.source}" alt="${escapeHtml(figure.alt)}" loading="lazy" class="h-full w-full object-cover">`;
+    if (!second) {
+      return `<div ${attr} class="v2-about-stack relative aspect-[4/3] w-full md:aspect-[4/5]"><figure class="absolute inset-0 overflow-hidden rounded-[var(--radius)]">${cover(first)}</figure></div>`;
+    }
+    // La caja marca la altura y las dos fotos se posicionan dentro: la de atrás
+    // queda recogida arriba y abajo, la de adelante la pisa y la desborda.
+    return `<div ${attr} class="v2-about-stack relative aspect-[4/3] w-full md:aspect-[4/5]">
+<figure class="absolute inset-y-[9%] left-0 w-[62%] overflow-hidden rounded-[var(--radius)]">${cover(first)}</figure>
+<figure class="absolute inset-y-0 right-0 z-10 w-[56%] overflow-hidden rounded-[var(--radius)] shadow-2xl ring-8 ring-[var(--bg)]">${cover(second)}</figure>
+</div>`;
+  }
   if (variant === "filmstrip") {
     const cells = figures.map(({ source, alt }, index) => `<figure class="min-w-[78%] shrink-0 snap-start overflow-hidden rounded-[var(--radius)] sm:min-w-[46%] lg:min-w-[31%]"><img src="${source}" alt="${escapeHtml(alt)}" loading="lazy" class="h-[clamp(220px,26vw,360px)] w-full object-cover">${alt ? `<figcaption class="flex items-start justify-between gap-5 pt-3 text-sm ${MUTED}"><span>${escapeHtml(alt)}</span><span class="font-mono text-xs">${String(index + 1).padStart(2, "0")}</span></figcaption>` : ""}</figure>`).join("");
     return `<div ${attr} class="v2-gallery-filmstrip v2-scroll-hide v2-scroll-fade flex cursor-grab snap-x snap-mandatory gap-4 overflow-x-auto">${cells}</div>`;
@@ -412,7 +454,10 @@ ${body ? `<p class="mt-2 ${BODY_P}">${escapeHtml(body)}</p>` : ""}
 function widgetHtml(widget: WidgetV2, content: SiteContentV2, theme: ThemeTokensV2, leadEndpoint: string, editable = false): string {
   const value = valueFor(widget, content);
   const inlineEditable = editable && (widget.type === "heading" || widget.type === "text" || widget.type === "button");
-  const attr = `data-widget-id="${escapeHtml(widget.id)}" data-widget-type="${widget.type}"${inlineEditable ? ' data-editable-text="1"' : ""}`;
+  // El slot viaja al DOM para que las reglas de lenguaje apunten al contenido
+  // ("este párrafo es el subtítulo") en vez de a su posición entre hermanos,
+  // que cambia en cuanto un dato del negocio llega vacío.
+  const attr = `data-widget-id="${escapeHtml(widget.id)}" data-widget-type="${widget.type}"${widget.slot ? ` data-widget-slot="${widget.slot}"` : ""}${inlineEditable ? ' data-editable-text="1"' : ""}`;
   const emptyClass = "grid min-h-[120px] place-items-center rounded-[var(--radius)] border border-dashed border-[var(--text)]/40 p-4 text-[var(--muted)] opacity-70";
   switch (widget.type) {
     case "brand":
@@ -626,6 +671,16 @@ img{display:block}
 [data-design-language] .v2-key-library-hero-split-image-v2 [data-widget-type="text"]{max-width:46ch}
 [data-design-language] .v2-key-library-hero-split-image-v2 [data-widget-type="image"]{height:clamp(25rem,54svh,36rem);aspect-ratio:auto}
 [data-design-language] .v2-key-library-hero-background-image-v2 [data-column-id]{min-height:min(46rem,calc(100svh - 4.5rem))}
+/* Portada de emergencia: el fondo se ancla a la sección (no a la columna), así
+   la imagen llega a los bordes mientras el texto sigue el ancho de lectura.
+   El bloque es full-bleed por definición, en cualquier lenguaje. */
+[data-design-language] .v2-key-library-hero-emergency-v2{overflow:hidden}
+[data-design-language] .v2-key-library-hero-emergency-v2>div{max-width:none}
+[data-design-language] .v2-key-library-hero-emergency-v2 [data-column-id]{min-height:min(48rem,calc(100svh - 4.5rem));padding-inline:max(1.5rem,calc((100% - var(--language-content))/2 + 1.5rem))}
+[data-design-language] .v2-key-library-hero-emergency-v2 [data-widget-type="text"]{max-width:46ch}
+/* La banda de emergencia usa fondo "accent": el botón sólido también es accent
+   y se perdería sobre ella en cualquier lenguaje que la use. */
+[data-design-language] .v2-key-library-emergency-band-v2 [data-widget-type="button"]{background:var(--secondary);border-color:var(--secondary);color:var(--footer-text)}
 
 /* Bauhaus: cartel funcional, geometría visible y contraste material. */
 [data-design-language="bauhaus"] .v2-region-header{border-bottom:3px solid var(--text);box-shadow:none}
@@ -769,6 +824,142 @@ img{display:block}
 [data-design-language="industrial"] .v2-region-footer{border-top:6px solid var(--accent)}
 [data-design-language="industrial"] .v2-region-footer [data-widget-type="brand"] strong{font-size:2.1rem;font-weight:800;text-transform:uppercase}
 
+/* Storm Response: lectura de despacho. Franja de peligro como firma, estado en
+   vivo junto al teléfono y datos operativos en retícula tabular. */
+[data-design-language="storm"]{--storm-hazard:repeating-linear-gradient(135deg,var(--accent) 0 .85rem,color-mix(in srgb,var(--accent) 25%,transparent) .85rem 1.7rem)}
+[data-design-language="storm"] .v2-region-header{background:var(--secondary);color:var(--footer-text);border-bottom:1px solid color-mix(in srgb,var(--footer-text) 16%,transparent);box-shadow:0 12px 32px #00000026}
+[data-design-language="storm"] .v2-region-header::before{content:"";position:absolute;inset:0 0 auto;height:.4rem;background:var(--storm-hazard)}
+[data-design-language="storm"] .v2-region-header>div{max-width:var(--language-content);padding-top:.4rem}
+[data-design-language="storm"] .v2-region-header [data-widget-type="brand"] strong{max-width:16rem;font-size:1.3rem;font-weight:800;line-height:.92;letter-spacing:-.01em;text-transform:uppercase}
+[data-design-language="storm"] [data-widget-type="nav"] .v2-nav-links{gap:1.1rem}
+[data-design-language="storm"] [data-widget-type="nav"] a{text-transform:uppercase;font-size:.67rem;font-weight:700}
+[data-design-language="storm"] [data-widget-type="nav"] .v2-nav-extra{display:inline-flex}
+/* El teléfono es la conversión principal: se muestra como botón, no como dato. */
+[data-design-language="storm"] [data-widget-type="nav"] .v2-nav-phone{background:var(--accent);color:var(--on-accent);padding-inline:1rem;font-size:.85rem;letter-spacing:.01em}
+[data-design-language="storm"] [data-widget-type="nav"] .v2-nav-cta{border:2px solid color-mix(in srgb,var(--footer-text) 45%,transparent);color:var(--footer-text);font-weight:700;letter-spacing:.05em}
+
+[data-design-language="storm"] .v2-key-library-hero-emergency-v2{overflow:hidden;background:var(--secondary)!important}
+[data-design-language="storm"] .v2-key-library-hero-emergency-v2::after{content:"";position:absolute;inset:auto 0 0;z-index:2;height:.75rem;background:var(--storm-hazard)}
+/* Retícula en vez de columna: cada widget ocupa su propio renglón salvo los
+   botones, que se colocan automáticamente en las dos celdas de una misma fila.
+   Con flex-wrap no funcionaba: los max-width de cada widget encogen su tamaño
+   hipotético y varios terminaban compartiendo renglón. */
+[data-design-language="storm"] .v2-key-library-hero-emergency-v2 [data-column-id]{display:grid;grid-template-columns:auto 1fr;justify-items:start;align-content:center;gap:1.35rem 1rem;padding-block:5rem}
+[data-design-language="storm"] .v2-key-library-hero-emergency-v2 [data-column-id]>*{grid-column:1/-1}
+[data-design-language="storm"] .v2-key-library-hero-emergency-v2 [data-column-id]>[data-widget-type="button"]{grid-column:auto}
+[data-design-language="storm"] .v2-key-library-hero-emergency-v2 [data-widget-type="divider"]{width:21rem}
+[data-design-language="storm"] .v2-hero-thumb{border-radius:0}
+[data-design-language="storm"] .v2-hero-thumb.v2-hero-thumb-on{border-color:var(--accent)}
+[data-design-language="storm"] .v2-key-library-hero-emergency-v2 h1{max-width:15ch;font-size:clamp(3rem,5.6vw,5.4rem);font-weight:900;line-height:.9}
+[data-design-language="storm"] .v2-key-library-hero-emergency-v2 [data-widget-type="text"]{opacity:.92}
+/* Chip de estado con el punto en vivo. */
+[data-design-language="storm"] .v2-key-library-hero-emergency-v2 [data-widget-slot="hero.subtitle"]{display:flex;align-items:center;gap:.6rem;width:max-content;max-width:100%;opacity:1;border:1px solid color-mix(in srgb,var(--accent) 55%,transparent);border-radius:999px;background:color-mix(in srgb,var(--accent) 16%,transparent);padding:.5rem 1.05rem;color:var(--accent);font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.14em}
+[data-design-language="storm"] .v2-key-library-hero-emergency-v2 [data-widget-slot="hero.subtitle"]::before{content:"";flex:none;width:.6rem;height:.6rem;border-radius:50%;background:var(--accent);animation:v2-storm-pulse 2.4s cubic-bezier(0,0,.2,1) infinite}
+[data-design-language="storm"] .v2-key-library-hero-emergency-v2 [data-widget-slot="hero.body"]{border-left:3px solid var(--accent);padding-left:1.1rem;font-size:1.05rem}
+/* Chip secundario con la actividad del negocio. */
+[data-design-language="storm"] .v2-key-library-hero-emergency-v2 [data-widget-slot="business.type"]{width:max-content;max-width:100%;opacity:1;border:1px solid color-mix(in srgb,currentColor 38%,transparent);border-radius:999px;padding:.5rem 1.15rem;font-size:.74rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em}
+[data-design-language="storm"] .v2-key-library-hero-emergency-v2 [data-widget-type="button"]:not([data-widget-slot]){border-color:color-mix(in srgb,currentColor 45%,transparent);background:color-mix(in srgb,#000 28%,transparent)}
+[data-design-language="storm"] .v2-key-library-hero-emergency-v2 [data-widget-type="divider"]{max-width:100%;border-color:color-mix(in srgb,currentColor 30%,transparent)}
+/* Bloque de contacto: disco con auricular, el nombre pasa a etiqueta y el
+   teléfono manda. */
+[data-design-language="storm"] .v2-key-library-hero-emergency-v2 [data-widget-type="business_info"]{display:grid;grid-template-columns:2.9rem 1fr;align-items:center;column-gap:1rem;row-gap:0;width:max-content;max-width:100%}
+[data-design-language="storm"] .v2-key-library-hero-emergency-v2 [data-widget-type="business_info"]::before{content:"";grid-row:1/3;width:2.9rem;height:2.9rem;border-radius:50%;background-color:var(--accent);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M6.6 10.8c1.4 2.8 3.8 5.2 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.2.4 2.4.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1C10.6 21 3 13.4 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.4 0 .7-.2 1l-2.3 2.2z'/%3E%3C/svg%3E");background-position:center;background-repeat:no-repeat;background-size:1.2rem}
+[data-design-language="storm"] .v2-key-library-hero-emergency-v2 [data-widget-type="business_info"]>*{grid-column:2}
+[data-design-language="storm"] .v2-key-library-hero-emergency-v2 [data-widget-type="business_info"] strong{font-size:.66rem;font-weight:700;text-transform:uppercase;letter-spacing:.14em;opacity:.7}
+[data-design-language="storm"] .v2-key-library-hero-emergency-v2 [data-widget-type="business_info"] a[href^="tel:"]{font-family:var(--heading);font-size:clamp(1.5rem,2.6vw,2.15rem);font-weight:800;line-height:1.1;letter-spacing:-.01em}
+[data-design-language="storm"] .v2-key-library-hero-emergency-v2 [data-widget-type="business_info"] a[href^="mailto:"],[data-design-language="storm"] .v2-key-library-hero-emergency-v2 [data-widget-type="business_info"] span{font-size:.8rem;opacity:.7}
+
+/* Disponibilidad: los datos se leen como panel operativo, no como tarjetas. */
+[data-design-language="storm"] .v2-key-library-availability-grid-v2,[data-design-language="storm"] .v2-key-library-benefits-metrics-v2{border-bottom:2px solid var(--text);background:color-mix(in srgb,var(--secondary) 4%,var(--bg))}
+[data-design-language="storm"] .v2-key-library-availability-grid-v2 [data-column-id]:first-child,[data-design-language="storm"] .v2-key-library-benefits-metrics-v2 [data-column-id]:first-child{align-self:start;border-top:5px solid var(--accent);padding-top:1.1rem}
+[data-design-language="storm"] .v2-key-library-availability-grid-v2 [data-widget-type="list"],[data-design-language="storm"] .v2-key-library-benefits-metrics-v2 [data-widget-type="list"]{gap:0;text-align:left;border-top:2px solid var(--text);border-left:2px solid var(--text)}
+[data-design-language="storm"] .v2-key-library-availability-grid-v2 [data-widget-type="list"]>article,[data-design-language="storm"] .v2-key-library-benefits-metrics-v2 [data-widget-type="list"]>article{text-align:left;border-right:2px solid var(--text);border-bottom:2px solid var(--text);padding:1.35rem 1.25rem}
+[data-design-language="storm"] .v2-key-library-availability-grid-v2 [data-widget-type="list"] h3,[data-design-language="storm"] .v2-key-library-benefits-metrics-v2 [data-widget-type="list"] h3{font-size:clamp(1.7rem,3vw,2.4rem);font-weight:900;letter-spacing:-.02em}
+[data-design-language="storm"] .v2-key-library-availability-grid-v2 [data-widget-type="list"] p,[data-design-language="storm"] .v2-key-library-benefits-metrics-v2 [data-widget-type="list"] p{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.76rem;line-height:1.5;text-transform:uppercase;letter-spacing:.05em}
+
+[data-design-language="storm"] .v2-key-library-services-cards-v2{border-bottom:2px solid var(--text)}
+[data-design-language="storm"] .v2-key-library-services-cards-v2 [data-column-id]:first-child{align-self:start;border-top:5px solid var(--accent);padding-top:1.1rem}
+[data-design-language="storm"] .v2-key-library-services-cards-v2 [data-widget-type="list"]{gap:1rem}
+[data-design-language="storm"] .v2-key-library-services-cards-v2 [data-widget-type="list"]>article{min-height:13rem;border:2px solid var(--text);border-radius:0;background:var(--bg);padding:1.4rem}
+[data-design-language="storm"] .v2-key-library-services-cards-v2 [data-widget-type="list"]>article>span:first-child{color:var(--accent);font-weight:800}
+[data-design-language="storm"] .v2-key-library-services-cards-v2 [data-widget-type="list"] h3{font-size:1.4rem;font-weight:800;text-transform:uppercase;letter-spacing:-.01em}
+/* :not(:first-child) evita que el servicio sin "meta" convierta su número de
+   índice en la etiqueta inferior de la tarjeta. */
+[data-design-language="storm"] .v2-key-library-services-cards-v2 [data-widget-type="list"]>article>span:last-child:not(:first-child){margin-top:auto;border-top:2px solid var(--accent);padding-top:.6rem;opacity:1;color:var(--accent)}
+
+[data-design-language="storm"] .v2-key-library-emergency-band-v2{position:relative;border-block:2px solid var(--text)}
+[data-design-language="storm"] .v2-key-library-emergency-band-v2::before,[data-design-language="storm"] .v2-key-library-emergency-band-v2::after{content:"";position:absolute;inset-inline:0;height:.55rem;background:repeating-linear-gradient(135deg,var(--on-accent) 0 .85rem,transparent .85rem 1.7rem);opacity:.85}
+[data-design-language="storm"] .v2-key-library-emergency-band-v2::before{top:0}
+[data-design-language="storm"] .v2-key-library-emergency-band-v2::after{bottom:0}
+[data-design-language="storm"] .v2-key-library-emergency-band-v2>div{padding-block:1rem}
+[data-design-language="storm"] .v2-key-library-emergency-band-v2 [data-widget-type="text"]:first-child{width:max-content;max-width:100%;background:var(--on-accent);color:var(--accent);padding:.35rem .7rem;font-size:.68rem;font-weight:800;text-transform:uppercase;letter-spacing:.16em;opacity:1}
+[data-design-language="storm"] .v2-key-library-emergency-band-v2 h2{max-width:17ch;font-size:clamp(2.1rem,3.9vw,3.5rem);font-weight:900}
+[data-design-language="storm"] .v2-key-library-emergency-band-v2 [data-column-id]:last-child{align-items:flex-start;justify-content:center}
+[data-design-language="storm"] .v2-key-library-emergency-band-v2 [data-widget-type="business_info"]{gap:.1rem}
+[data-design-language="storm"] .v2-key-library-emergency-band-v2 [data-widget-type="business_info"] strong{font-size:.66rem;font-weight:700;text-transform:uppercase;letter-spacing:.14em;opacity:.7}
+[data-design-language="storm"] .v2-key-library-emergency-band-v2 [data-widget-type="business_info"] a[href^="tel:"]{font-family:var(--heading);font-size:clamp(1.9rem,3.4vw,2.9rem);font-weight:900;line-height:1;letter-spacing:-.02em}
+[data-design-language="storm"] .v2-key-library-emergency-band-v2 [data-widget-type="business_info"] a[href^="mailto:"],[data-design-language="storm"] .v2-key-library-emergency-band-v2 [data-widget-type="business_info"] span{font-size:.82rem;opacity:.75}
+
+[data-design-language="storm"] .v2-key-library-gallery-projects-v2 [data-column-id]:first-child{align-self:start;border-top:5px solid var(--accent);padding-top:1.1rem}
+[data-design-language="storm"] .v2-key-library-gallery-projects-v2 [data-widget-type="gallery"]{gap:.5rem}
+[data-design-language="storm"] .v2-key-library-gallery-projects-v2 figure{border-radius:0;border:2px solid var(--text);background:var(--secondary)}
+[data-design-language="storm"] .v2-key-library-gallery-projects-v2 img{filter:saturate(.72) contrast(1.1)}
+
+/* Nosotros: fotos que se pisan, relato y compromisos marcados uno a uno. */
+[data-design-language="storm"] .v2-key-library-about-showcase-v2{border-bottom:2px solid var(--text)}
+[data-design-language="storm"] .v2-key-library-about-showcase-v2 [data-column-id]{gap:1.35rem}
+[data-design-language="storm"] .v2-key-library-about-showcase-v2 [data-column-id]:last-child{justify-content:center}
+[data-design-language="storm"] .v2-key-library-about-showcase-v2 [data-widget-slot="about.subtitle"]{width:max-content;max-width:100%;opacity:1;border-bottom:3px solid var(--accent);padding-bottom:.4rem;color:var(--accent);font-size:.74rem;font-weight:800;text-transform:uppercase;letter-spacing:.14em}
+/* Bicolor sin partir el texto: la primera línea conserva el color base y el
+   resto queda en acento. Si el titular cabe en una línea, se ve monocolor. */
+[data-design-language="storm"] .v2-key-library-about-showcase-v2 h2{max-width:18ch;color:var(--accent);font-size:clamp(2.1rem,3.6vw,3.3rem);font-weight:900}
+[data-design-language="storm"] .v2-key-library-about-showcase-v2 h2::first-line{color:var(--text)}
+[data-design-language="storm"] .v2-key-library-about-showcase-v2 [data-widget-slot="about.body"]{max-width:54ch;opacity:.78}
+[data-design-language="storm"] .v2-key-library-about-showcase-v2 [data-widget-type="list"]>article{border-color:color-mix(in srgb,var(--text) 16%,transparent);border-radius:0;background:color-mix(in srgb,var(--accent) 8%,transparent)}
+[data-design-language="storm"] .v2-key-library-about-showcase-v2 [data-widget-type="list"] h3,[data-design-language="storm"] .v2-key-library-about-showcase-v2 [data-widget-type="list"] span{text-transform:none;letter-spacing:0}
+[data-design-language="storm"] .v2-key-library-about-showcase-v2 [data-widget-type="button"]{width:max-content;max-width:100%;gap:.6rem}
+[data-design-language="storm"] .v2-key-library-about-showcase-v2 [data-widget-type="button"]::after{content:"\\2192";font-weight:700}
+[data-design-language="storm"] .v2-key-library-about-showcase-v2 [data-widget-type="business_info"]{gap:.1rem}
+[data-design-language="storm"] .v2-key-library-about-showcase-v2 [data-widget-type="business_info"] strong{font-size:.66rem;font-weight:700;text-transform:uppercase;letter-spacing:.14em;opacity:.6}
+[data-design-language="storm"] .v2-key-library-about-showcase-v2 [data-widget-type="business_info"] a[href^="tel:"]{font-family:var(--heading);font-size:1.5rem;font-weight:800;line-height:1.15}
+[data-design-language="storm"] .v2-key-library-about-showcase-v2 [data-widget-type="business_info"] a[href^="mailto:"],[data-design-language="storm"] .v2-key-library-about-showcase-v2 [data-widget-type="business_info"] span{font-size:.8rem;opacity:.65}
+/* El par de fotos se recorta contra el fondo de la sección, no contra blanco. */
+[data-design-language="storm"] .v2-key-library-about-showcase-v2 figure{border-radius:0}
+[data-design-language="storm"] .v2-key-library-about-showcase-v2 .v2-about-stack figure:last-child{--tw-ring-color:var(--bg);border:2px solid var(--text)}
+
+[data-design-language="storm"] .v2-key-library-about-stats{border-bottom:2px solid var(--text)}
+[data-design-language="storm"] .v2-key-library-about-stats h2{max-width:14ch;font-size:clamp(2.2rem,3.8vw,3.6rem)}
+[data-design-language="storm"] .v2-key-library-about-stats [data-widget-type="list"]{gap:0;text-align:left}
+[data-design-language="storm"] .v2-key-library-about-stats [data-widget-type="list"]>article{text-align:left;border-top:2px solid color-mix(in srgb,var(--text) 28%,transparent);padding:1.1rem 0}
+[data-design-language="storm"] .v2-key-library-about-stats [data-widget-type="list"]>article:first-child{border-top-color:var(--accent)}
+[data-design-language="storm"] .v2-key-library-about-stats [data-widget-type="list"] h3{color:var(--accent);font-size:clamp(1.5rem,2.6vw,2.2rem);font-weight:900}
+
+[data-design-language="storm"] .v2-key-library-reviews-trust-v2 [data-column-id]:first-child{align-self:start;border-top:5px solid var(--accent);padding-top:1.1rem}
+[data-design-language="storm"] .v2-key-library-reviews-trust-v2 figure{border:2px solid var(--text);border-radius:0;background:var(--bg)}
+
+/* Seguros: el acordeón se lee como expediente numerado del reclamo. */
+[data-design-language="storm"] .v2-key-library-insurance-faq-v2{border-top:2px solid var(--text);background:color-mix(in srgb,var(--secondary) 4%,var(--bg))}
+[data-design-language="storm"] .v2-key-library-insurance-faq-v2 [data-column-id]:first-child{align-self:start;border-top:5px solid var(--accent);padding-top:1.1rem}
+[data-design-language="storm"] .v2-key-library-insurance-faq-v2 [data-widget-type="accordion"]{max-width:none;counter-reset:v2-storm-claim;border-top:2px solid var(--text)}
+[data-design-language="storm"] .v2-key-library-insurance-faq-v2 details{counter-increment:v2-storm-claim;border-bottom:1px solid color-mix(in srgb,var(--text) 28%,transparent);padding-block:1.35rem}
+[data-design-language="storm"] .v2-key-library-insurance-faq-v2 summary::before{content:counter(v2-storm-claim,decimal-leading-zero);flex:none;width:2rem;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.78rem;font-weight:700;color:var(--accent)}
+/* El contador y la pregunta van juntos a la izquierda; el signo queda al borde. */
+[data-design-language="storm"] .v2-key-library-insurance-faq-v2 summary{gap:1.1rem;justify-content:flex-start;font-weight:700;text-transform:uppercase;letter-spacing:.01em}
+[data-design-language="storm"] .v2-key-library-insurance-faq-v2 summary>span:last-child{margin-left:auto}
+[data-design-language="storm"] .v2-key-library-insurance-faq-v2 details p{padding-left:3.1rem}
+
+[data-design-language="storm"] .v2-key-library-contact-split-v2{border-top:2px solid var(--text)}
+[data-design-language="storm"] .v2-key-library-contact-split-v2 [data-column-id]:first-child{align-self:start;border-top:5px solid var(--accent);padding-top:1.1rem}
+[data-design-language="storm"] .v2-key-library-contact-split-v2 [data-widget-type="form"]{border:2px solid var(--text);border-radius:0;background:var(--bg)}
+[data-design-language="storm"] .v2-key-library-contact-split-v2 input,[data-design-language="storm"] .v2-key-library-contact-split-v2 textarea{border-radius:0;border-width:2px}
+[data-design-language="storm"] [data-widget-type="button"],[data-design-language="storm"] [data-widget-type="form"] button{border-radius:0;text-transform:uppercase;font-weight:800;letter-spacing:.06em}
+
+[data-design-language="storm"] .v2-region-footer{position:relative;padding-top:2.6rem}
+[data-design-language="storm"] .v2-region-footer::before{content:"";position:absolute;inset:0 0 auto;height:.55rem;background:var(--storm-hazard)}
+[data-design-language="storm"] .v2-region-footer [data-widget-type="brand"] strong{font-size:1.9rem;font-weight:900;text-transform:uppercase}
+
+@keyframes v2-storm-pulse{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--accent) 65%,transparent)}70%{box-shadow:0 0 0 .7rem transparent}100%{box-shadow:0 0 0 0 transparent}}
+
 @media(min-width:1024px){
   [data-design-language="bauhaus"] .v2-key-library-hero-split-image-v2 [data-row-id]>[data-column-id]:first-child{grid-column:span 7/span 7}
   [data-design-language="bauhaus"] .v2-key-library-hero-split-image-v2 [data-row-id]>[data-column-id]:last-child{grid-column:span 5/span 5}
@@ -778,10 +969,12 @@ img{display:block}
   [data-design-language="editorial"] .v2-key-library-hero-split-image-v2 [data-row-id]>[data-column-id]:last-child{grid-column:span 7/span 7}
   [data-design-language="industrial"] .v2-key-library-hero-split-image-v2 [data-row-id]>[data-column-id]:first-child{grid-column:span 7/span 7}
   [data-design-language="industrial"] .v2-key-library-hero-split-image-v2 [data-row-id]>[data-column-id]:last-child{grid-column:span 5/span 5}
+  [data-design-language="storm"] .v2-key-library-availability-grid-v2 [data-widget-type="list"],[data-design-language="storm"] .v2-key-library-benefits-metrics-v2 [data-widget-type="list"]{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 @media(max-width:1023px){
   [data-design-language] .v2-key-library-hero-split-image-v2{min-height:auto;padding-block:4rem}
   [data-design-language] .v2-key-library-hero-split-image-v2 [data-widget-type="image"]{height:auto;aspect-ratio:4/3}
+  [data-design-language] .v2-key-library-hero-emergency-v2 [data-column-id]{min-height:min(42rem,calc(100svh - 4rem))}
   [data-design-language="bauhaus"] .v2-key-library-hero-split-image-v2::before{width:6rem;height:6rem;right:1rem;top:1rem}
   [data-design-language="bauhaus"] .v2-key-library-hero-split-image-v2::after{display:none}
   [data-design-language="swiss"] .v2-key-library-hero-split-image-v2::before,[data-design-language="editorial"] .v2-key-library-hero-split-image-v2::before{position:static;display:block;margin-bottom:1.75rem}
@@ -789,6 +982,7 @@ img{display:block}
   [data-design-language="swiss"] .v2-key-library-services-editorial-v2 [data-widget-type="list"],[data-design-language="editorial"] .v2-key-library-services-editorial-v2 [data-widget-type="list"]{grid-template-columns:1fr}
   [data-design-language="editorial"] .v2-key-library-services-editorial-v2 article:nth-child(2){margin-top:0}
   [data-design-language="industrial"] .v2-key-library-hero-split-image-v2 [data-widget-type="image"]{box-shadow:8px 8px 0 var(--accent)}
+  [data-design-language="storm"] .v2-key-library-emergency-band-v2 [data-column-id]:last-child{margin-top:1.5rem}
 }
 @media(max-width:640px){
   [data-design-language] .v2-region-main{padding-block:3.5rem}
@@ -811,9 +1005,26 @@ img{display:block}
   [data-design-language="industrial"] .v2-key-library-hero-split-image-v2 h1{font-size:clamp(2.85rem,13.5vw,3.85rem);line-height:.86}
   [data-design-language="industrial"] .v2-key-library-services-cards-v2 [data-widget-type="list"]{border-left:0}
   [data-design-language="industrial"] .v2-key-library-services-cards-v2 [data-widget-type="list"]>article{min-height:auto;border-left:2px solid var(--text)}
+  [data-design-language="storm"] .v2-region-header [data-widget-type="brand"] strong{max-width:11rem;font-size:1rem}
+  [data-design-language="storm"] [data-widget-type="nav"].v2-nav-open .v2-nav-links{background:var(--secondary);color:var(--footer-text);border-bottom:.4rem solid var(--accent)}
+  [data-design-language="storm"] [data-widget-type="nav"] .v2-nav-phone,[data-design-language="storm"] [data-widget-type="nav"] .v2-nav-cta{width:100%;margin-top:.45rem}
+  /* mobileSafetyCss reinyecta padding lateral con !important; aquí estorba
+     porque la imagen debe llegar al borde de la pantalla. */
+  [data-design-language] .v2-key-library-hero-emergency-v2{padding-inline:0!important}
+  /* Sin espacio para la tira: quedan solo las flechas, y el contenido reserva
+     el hueco inferior para no cruzarse con ellas. */
+  [data-design-language] .v2-key-library-hero-emergency-v2 .v2-hero-thumbs{display:none}
+  /* En móvil cada botón toma su propio renglón completo. */
+  [data-design-language="storm"] .v2-key-library-hero-emergency-v2 [data-column-id]{grid-template-columns:minmax(0,1fr);justify-items:stretch;gap:1.1rem;padding-block:3.5rem 6.5rem}
+  [data-design-language="storm"] .v2-key-library-hero-emergency-v2 [data-column-id]>[data-widget-type="button"]{grid-column:1/-1}
+  [data-design-language="storm"] .v2-key-library-hero-emergency-v2 h1{font-size:clamp(2.5rem,11vw,3.5rem);line-height:.92;max-width:100%}
+  [data-design-language="storm"] .v2-key-library-hero-emergency-v2 [data-widget-type="divider"]{width:100%}
+  [data-design-language="storm"] .v2-key-library-availability-grid-v2 [data-widget-type="list"],[data-design-language="storm"] .v2-key-library-benefits-metrics-v2 [data-widget-type="list"]{border-left:0}
+  [data-design-language="storm"] .v2-key-library-availability-grid-v2 [data-widget-type="list"]>article,[data-design-language="storm"] .v2-key-library-benefits-metrics-v2 [data-widget-type="list"]>article{border-left:2px solid var(--text)}
+  [data-design-language="storm"] .v2-key-library-insurance-faq-v2 details p{padding-left:0}
   [data-design-language="industrial"] .v2-key-library-contact-split-v2 [data-widget-type="form"]{box-shadow:6px 6px 0 var(--accent)}
 }
-@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.v2-reveal{transition:none!important;transform:none!important}}`;
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.v2-reveal{transition:none!important;transform:none!important}[data-design-language="storm"] .v2-key-library-hero-emergency-v2 [data-widget-type="text"]:first-child::before{animation:none}}`;
   return `${themeVars}\n${V2_TAILWIND_CSS}\n${languageCss}`;
 }
 
@@ -914,6 +1125,25 @@ targets.forEach(function(el){io.observe(el);});
 })();`;
 }
 
+// Recorrido manual del fondo de portada. Sin reproducción automática: la
+// portada no debe moverse sola detrás del texto que el visitante está leyendo.
+function heroBackdropScript() {
+  return `document.querySelectorAll('.v2-hero-backdrop').forEach(function(root){
+var slides=root.querySelectorAll('.v2-hero-slide');
+if(slides.length<2)return;
+var thumbs=root.querySelectorAll('.v2-hero-thumb');
+var current=0;
+function show(index){
+current=(index+slides.length)%slides.length;
+for(var i=0;i<slides.length;i++)slides[i].classList.toggle('v2-hero-on',i===current);
+for(var j=0;j<thumbs.length;j++){thumbs[j].classList.toggle('v2-hero-thumb-on',j===current);thumbs[j].setAttribute('aria-current',j===current?'true':'false');}}
+function bind(selector,resolve){root.querySelectorAll(selector).forEach(function(control){control.addEventListener('click',function(event){event.preventDefault();event.stopPropagation();show(resolve(control));});});}
+bind('[data-hero-step]',function(control){return current+(Number(control.getAttribute('data-hero-step'))||1);});
+bind('[data-hero-go]',function(control){return Number(control.getAttribute('data-hero-go'))||0;});
+show(0);
+});`;
+}
+
 // Motor de puntos del hero animado (puerto vanilla del efecto de canvas):
 // cada punto crece con un retraso proporcional a su distancia al centro y
 // luego titila. Respeta prefers-reduced-motion dejando el campo estático.
@@ -985,8 +1215,10 @@ export function renderSiteV2(input: RenderSiteV2Input): RenderedSiteV2 {
   let mainCounter = 0;
   const body = `<div id="top" data-design-language="${theme.language}" class="v2-motion-${theme.motion} flex min-h-dvh flex-col bg-[var(--bg)] text-[var(--text)]" style="font-family:var(--body)">${sections.map((section) => sectionHtml(section, content, theme, input.leadEndpoint, input.editable, section.region === "main" ? mainCounter++ : 0)).join("")}${input.showBranding ? `<div class="p-4 text-center text-xs text-[var(--muted)]">Creado con Cluster</div>` : ""}</div>${structuredDataHtml}`;
   const css = `${baseCss(theme)}${dynamicCss(sections)}${mobileSafetyCss}${input.editable ? editorCss : ""}`;
-  const hasPixelHero = sections.some((section) => section.rows.some((row) => row.columns.some((column) => column.widgets.some((widget) => widget.type === "hero_pixel"))));
-  const script = `${formScript()}${navScript()}${galleryScript()}${input.editable ? "" : revealScript()}${hasPixelHero ? pixelHeroScript() : ""}${input.editable ? editorScript() : ""}`;
+  const allWidgets = sections.flatMap((section) => section.rows.flatMap((row) => row.columns.flatMap((column) => column.widgets)));
+  const hasPixelHero = allWidgets.some((widget) => widget.type === "hero_pixel");
+  const hasHeroBackdrop = allWidgets.some((widget) => widget.type === "gallery" && widget.variant === "hero-backdrop");
+  const script = `${formScript()}${navScript()}${galleryScript()}${input.editable ? "" : revealScript()}${hasPixelHero ? pixelHeroScript() : ""}${hasHeroBackdrop ? heroBackdropScript() : ""}${input.editable ? editorScript() : ""}`;
   const head = [
     `<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">`,
     fontLinksFor(theme),

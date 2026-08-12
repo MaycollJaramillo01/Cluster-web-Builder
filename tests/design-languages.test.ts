@@ -11,6 +11,7 @@ import {
 } from "../lib/site/design-languages";
 import { DESIGN_LANGUAGE_IDS } from "../lib/site/design-language-types";
 import { composeSiteSectionsV2 } from "../lib/site/section-composer";
+import { SITE_RECIPES } from "../lib/site/site-recipes";
 import { renderSiteV2 } from "../lib/site/v2-render";
 import { SECTION_LIBRARY_V2 } from "../lib/site/v2-section-library";
 import { normalizeSiteContentV2, normalizeThemeV2 } from "../lib/site/v2-schema";
@@ -52,8 +53,8 @@ const content = normalizeSiteContentV2({
   ],
 });
 
-test("el sistema expone Bauhaus, Swiss, Editorial e Industrial", () => {
-  assert.deepEqual(DESIGN_LANGUAGE_IDS, ["bauhaus", "swiss", "editorial", "industrial"]);
+test("el sistema expone Bauhaus, Swiss, Editorial, Industrial y Storm Response", () => {
+  assert.deepEqual(DESIGN_LANGUAGE_IDS, ["bauhaus", "swiss", "editorial", "industrial", "storm"]);
   assert.deepEqual(Object.keys(DESIGN_LANGUAGE_PACKS), [...DESIGN_LANGUAGE_IDS]);
 });
 
@@ -76,6 +77,8 @@ test("el ranking usa señales de estilo y negocio sin aleatoriedad", () => {
   assert.equal(selectDesignLanguage({ visualStyle: "modern_clean", businessType: "software" }).id, "swiss");
   assert.equal(selectDesignLanguage({ visualStyle: "premium_elegant", businessType: "arquitectura" }).id, "editorial");
   assert.equal(selectDesignLanguage({ visualStyle: "local_trustworthy", businessType: "roofing contractor" }).id, "industrial");
+  assert.equal(selectDesignLanguage({ visualStyle: "local_trustworthy", businessType: "storm damage restoration" }).id, "storm");
+  assert.equal(selectDesignLanguage({ businessType: "emergency plumbing and HVAC" }).id, "storm");
   assert.equal(selectDesignLanguage({ languageAffinity: { editorial: 5 } }).id, "editorial");
   assert.deepEqual(
     rankDesignLanguages({ visualStyle: "premium_elegant", businessType: "arquitectura" }),
@@ -152,6 +155,46 @@ test("el renderer identifica el lenguaje y emite sus reglas globales", () => {
   assert.match(rendered.body, /v2-region-footer/);
   assert.match(rendered.css, /\[data-design-language="bauhaus"\]/);
   assert.match(rendered.css, /--language-rule:3px/);
+});
+
+test("Storm Response arma los tres pilares: emergencia, disponibilidad y seguros", () => {
+  const document = composeSiteSectionsV2({
+    content,
+    businessType: "storm damage restoration",
+    designLanguage: "storm",
+    blueprint: SITE_RECIPES["storm-response"].sections,
+  });
+  const keys = document.sections.map((section) => section.key);
+  assert.ok(keys.includes("library-hero-emergency-v2"), `sin hero de emergencia: ${keys.join(">")}`);
+  assert.ok(keys.includes("library-availability-grid-v2"), `sin bloque de disponibilidad: ${keys.join(">")}`);
+  assert.ok(keys.includes("library-emergency-band-v2"), `sin banda de emergencia: ${keys.join(">")}`);
+  assert.ok(keys.includes("library-insurance-faq-v2"), `sin bloque de seguros: ${keys.join(">")}`);
+  // Nosotros va inmediatamente debajo de la portada, y la disponibilidad antes
+  // que el catálogo: primero quién responde, luego qué se hace.
+  assert.equal(keys[2], "library-about-showcase-v2", `nosotros no quedó bajo el hero: ${keys.join(">")}`);
+  assert.ok(keys.indexOf("library-about-showcase-v2") < keys.indexOf("library-availability-grid-v2"));
+  assert.ok(keys.indexOf("library-availability-grid-v2") < keys.findIndex((key) => key.includes("services")));
+
+  const rendered = renderSiteV2({ ...document, leadEndpoint: "/api/leads" });
+  assert.match(rendered.body, /data-design-language="storm"/);
+  assert.match(rendered.css, /\[data-design-language="storm"\]/);
+  assert.match(rendered.css, /--language-rule:2px/);
+  assert.match(rendered.css, /v2-storm-pulse/);
+  // El teléfono viaja en el hero y en la banda, no solo en el encabezado.
+  assert.ok(rendered.body.match(/href="tel:/g)!.length >= 3);
+});
+
+test("la banda de emergencia nunca deja el botón invisible sobre el acento", () => {
+  const document = composeSiteSectionsV2({
+    content,
+    designLanguage: "storm",
+    blueprint: SITE_RECIPES["storm-response"].sections,
+  });
+  const rendered = renderSiteV2({ ...document, leadEndpoint: "/api/leads" });
+  assert.match(
+    rendered.css,
+    /\[data-design-language\] \.v2-key-library-emergency-band-v2 \[data-widget-type="button"\]\{background:var\(--secondary\)/,
+  );
 });
 
 test("Industrial conserva la paleta y expone conversión directa en el encabezado", () => {

@@ -183,6 +183,40 @@ export const DESIGN_LANGUAGE_PACKS: Record<DesignLanguageId, DesignLanguagePack>
       footer: ["library-footer-columns-v2", "library-footer-minimal-v2"],
     },
   },
+  storm: {
+    id: "storm",
+    name: "Storm Response",
+    description: "Lectura de despacho: emergencia visible, disponibilidad declarada y reclamo de seguro explicado.",
+    principles: ["Emergencia primero", "Disponibilidad declarada", "Reclamo documentado"],
+    dials: { designVariance: 5, motionIntensity: 2, visualDensity: 7 },
+    themeDefaults: {
+      headingFont: "Archivo, Arial, Helvetica, sans-serif",
+      bodyFont: "Inter, Arial, sans-serif",
+      headingCase: "uppercase",
+      radius: "none",
+      motion: "subtle",
+    },
+    grammar: {
+      contentWidth: "1280px",
+      ruleWidth: "2px",
+      headingTracking: "-.032em",
+      headingLineHeight: ".88",
+      bodyLineHeight: "1.6",
+      navTracking: ".09em",
+    },
+    composition: {
+      hero: ["library-hero-emergency-v2", "library-hero-background-image-v2", "library-hero-centered-v2"],
+      about: ["library-about-showcase-v2", "library-about-stats", "library-about-split-v2"],
+      services: ["library-services-cards-v2", "library-services-bento"],
+      gallery: ["library-gallery-projects-v2", "library-gallery-grid-v2"],
+      benefits: ["library-availability-grid-v2", "library-benefits-metrics-v2", "library-benefits-numbered-v2"],
+      cta: ["library-emergency-band-v2", "library-cta-band"],
+      reviews: ["library-reviews-trust-v2", "library-reviews-cards-v2"],
+      faq: ["library-insurance-faq-v2", "library-faq-minimal-v2"],
+      contact: ["library-contact-split-v2", "library-contact-map-v2"],
+      footer: ["library-footer-columns-v2", "library-footer-minimal-v2"],
+    },
+  },
 };
 
 export type CompositionGraphStage = {
@@ -296,7 +330,7 @@ const STYLE_AFFINITIES: Record<string, Partial<Record<DesignLanguageId, number>>
   creative: { bauhaus: 9 },
   modern_clean: { swiss: 9 },
   corporate: { swiss: 9 },
-  local_trustworthy: { swiss: 6, industrial: 4 },
+  local_trustworthy: { swiss: 6, industrial: 4, storm: 5 },
   premium_elegant: { editorial: 9 },
   minimalist: { editorial: 6, swiss: 4 },
 };
@@ -311,6 +345,9 @@ const BUSINESS_AFFINITIES: Array<{
   { language: "swiss", pattern: /software|tech|legal|law|medical|clinic|consult|account|service|servicio/, score: 4, reason: "actividad orientada a claridad y confianza" },
   { language: "editorial", pattern: /architect|arquitect|fashion|moda|hotel|restaurant|restaurante|real_estate|inmobil|studio|estudio|art|arte/, score: 4, reason: "actividad con narrativa e imagen de marca" },
   { language: "industrial", pattern: /roof|roofing|techo|siding|gutter|canaleta|construction|construc|contractor|contratista|remodel|restoration|concrete|masonry|hvac|plumb|electric|solar|painting|pintura/, score: 12, reason: "actividad de obra que convierte mediante confianza, alcance y respuesta rápida" },
+  // Gana sobre Industrial cuando la actividad se activa por un evento: la
+  // urgencia, la disponibilidad y el reclamo de seguro mandan sobre el catálogo.
+  { language: "storm", pattern: /storm|tormenta|hail|granizo|hurac|flood|inunda|water_damage|dano_por_agua|leak|filtracion|gotera|mitigation|mitigacion|restoration|restauracion|emergency|emergencia|24_7|plumb|plomeria|fontaner|hvac|climatizacion|aire_acondicionado|mold|moho|burst|tuberia/, score: 18, reason: "actividad de emergencia que se decide por disponibilidad y respaldo del seguro" },
 ];
 
 export function getDesignLanguagePack(id: DesignLanguageId): DesignLanguagePack {
@@ -329,8 +366,8 @@ export function applyDesignLanguage(
 }
 
 export function rankDesignLanguages(signals: DesignLanguageSignals): DesignLanguageRanking[] {
-  const scores: Record<DesignLanguageId, number> = { bauhaus: 0, swiss: 1, editorial: 0, industrial: 0 };
-  const reasons: Record<DesignLanguageId, string[]> = { bauhaus: [], swiss: [], editorial: [], industrial: [] };
+  const scores: Record<DesignLanguageId, number> = { bauhaus: 0, swiss: 1, editorial: 0, industrial: 0, storm: 0 };
+  const reasons: Record<DesignLanguageId, string[]> = { bauhaus: [], swiss: [], editorial: [], industrial: [], storm: [] };
   const visualStyle = normalizeSignal(signals.visualStyle);
   const businessType = normalizeSignal(signals.businessType);
   const goal = normalizeSignal(signals.goal);
@@ -367,6 +404,8 @@ export function rankDesignLanguages(signals: DesignLanguageSignals): DesignLangu
     reasons.swiss.push("objetivo centrado en conversión directa");
     scores.industrial += 3;
     reasons.industrial.push("objetivo centrado en llamada o cotización inmediata");
+    scores.storm += 4;
+    reasons.storm.push("objetivo que depende de responder la llamada en el momento");
   }
   if ((signals.aboutLength ?? 0) >= 500) {
     scores.editorial += 2;

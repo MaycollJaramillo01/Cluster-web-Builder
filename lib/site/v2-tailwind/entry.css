@@ -38,6 +38,32 @@
     transform: translateY(-7px) rotate(-45deg);
   }
 
+  /* Portada con fondo conmutable: las diapositivas se apilan y solo la activa
+     es visible. El cambio lo dispara heroBackdropScript() en v2-render.ts. */
+  .v2-hero-slide {
+    opacity: 0;
+    transition: opacity 0.7s ease;
+  }
+  .v2-hero-slide.v2-hero-on {
+    opacity: 1;
+  }
+  /* Tira de miniaturas: la activa recupera color y borde pleno. */
+  .v2-hero-thumb {
+    border-color: rgba(255, 255, 255, 0.35);
+    opacity: 0.6;
+    transition: opacity 0.25s ease, border-color 0.25s ease;
+  }
+  .v2-hero-thumb:hover,
+  .v2-hero-thumb.v2-hero-thumb-on {
+    border-color: #fff;
+    opacity: 1;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .v2-hero-slide {
+      transition: none;
+    }
+  }
+
   /* Portada de puntos animados: texto con relleno degradado sutil. */
   .v2-pxh-title em,
   .v2-pxh-title strong {
