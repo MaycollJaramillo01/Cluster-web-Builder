@@ -249,6 +249,24 @@ function galleryHtml(variant: string, items: Record<string, unknown>[], attr: st
   // la primera de cada par es el antes y la segunda el después, que es como el
   // contratista las sube. Una foto suelta al final se descarta en vez de
   // quedar emparejada con nada.
+  // Portada entera como comparador: el visitante arrastra y la pantalla
+  // completa pasa del antes al despues. El texto vive encima, sobre un velo
+  // que lo mantiene legible sea cual sea la foto que quede debajo.
+  if (variant === "before-after-hero") {
+    const [before, after] = figures;
+    if (!after) return "";
+    const chip = "absolute top-5 z-10 rounded-full px-3.5 py-1.5 text-[.64rem] font-bold uppercase tracking-[.16em] backdrop-blur sm:top-8";
+    return `<div ${attr} class="v2-ba v2-ba-hero pointer-events-none absolute inset-0">
+<img src="${after.source}" alt="${escapeHtml(after.alt)}" loading="eager" class="absolute inset-0 -z-10 h-full w-full object-cover">
+<img src="${before.source}" alt="${escapeHtml(before.alt)}" loading="eager" class="v2-ba-before absolute inset-0 -z-10 h-full w-full object-cover">
+<span class="absolute inset-0 -z-10 bg-gradient-to-r from-black/90 via-black/55 to-black/20"></span>
+<span class="absolute inset-0 -z-10 bg-gradient-to-t from-black/70 via-transparent to-transparent"></span>
+<span class="${chip} left-5 bg-black/60 text-white sm:left-8">Antes</span>
+<span class="${chip} right-5 bg-[var(--accent)]/90 text-[var(--on-accent)] sm:right-8">Después</span>
+<input type="range" min="0" max="100" value="58" class="v2-ba-range pointer-events-auto absolute inset-0 z-20 h-full w-full" aria-label="Arrastrar para comparar el antes y el después de la portada">
+<span class="v2-ba-line pointer-events-none absolute inset-y-0 z-10 -ml-px w-0.5 bg-white/90 shadow-[0_0_18px_rgba(0,0,0,.45)]"><span class="v2-ba-grip absolute top-1/2 left-1/2 grid h-14 w-14 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-white text-lg font-black tracking-[-.1em] text-black shadow-[0_10px_30px_rgba(0,0,0,.35)]">&#8249;&#8250;</span></span>
+</div>`;
+  }
   if (variant === "before-after" || variant === "before-after-single") {
     const pairs = figures.reduce<Array<[typeof figures[number], typeof figures[number]]>>((all, figure, index) => {
       if (index % 2 === 1) all.push([figures[index - 1], figure]);
@@ -1019,14 +1037,25 @@ img{display:block}
 [data-design-language="makeover"] [data-widget-type="nav"] .v2-nav-cta{border-radius:999px;background:var(--accent);color:var(--on-accent);font-weight:700}
 [data-design-language="makeover"] [data-widget-type="button"],[data-design-language="makeover"] [data-widget-type="form"] button{border-radius:999px;padding-inline:1.6rem;font-weight:700;letter-spacing:0}
 
-[data-design-language="makeover"] .v2-key-library-hero-transform-v2{background:var(--secondary)!important;color:var(--footer-text)!important}
-[data-design-language="makeover"] .v2-key-library-hero-transform-v2 h1{max-width:14ch;font-size:clamp(2.6rem,4.8vw,4.4rem);letter-spacing:-.04em;line-height:1.02}
-[data-design-language="makeover"] .v2-key-library-hero-transform-v2 [data-widget-slot="hero.subtitle"]{width:max-content;max-width:100%;opacity:1;border-radius:999px;background:color-mix(in srgb,var(--accent) 18%,transparent);padding:.5rem 1.1rem;color:var(--accent);font-size:.74rem;font-weight:700;text-transform:uppercase;letter-spacing:.12em}
-[data-design-language="makeover"] .v2-key-library-hero-transform-v2 [data-widget-slot="hero.body"]{opacity:.82}
-[data-design-language="makeover"] .v2-key-library-hero-transform-v2 [data-widget-type="business_info"]{gap:.1rem;margin-top:.4rem}
-[data-design-language="makeover"] .v2-key-library-hero-transform-v2 [data-widget-type="business_info"] strong{font-size:.66rem;font-weight:600;text-transform:uppercase;letter-spacing:.14em;opacity:.6}
-[data-design-language="makeover"] .v2-key-library-hero-transform-v2 [data-widget-type="business_info"] a[href^="tel:"]{font-family:var(--heading);font-size:1.5rem;font-weight:700;color:var(--accent)}
-[data-design-language="makeover"] .v2-key-library-hero-transform-v2 [data-widget-type="business_info"] a[href^="mailto:"],[data-design-language="makeover"] .v2-key-library-hero-transform-v2 [data-widget-type="business_info"] span{font-size:.8rem;opacity:.65}
+/* Portada-comparador: el bloque es a sangre completa por definición, en
+   cualquier lenguaje que lo use. */
+[data-design-language] .v2-key-library-hero-transform-v2{overflow:hidden}
+[data-design-language] .v2-key-library-hero-transform-v2>div{max-width:none}
+[data-design-language] .v2-key-library-hero-transform-v2 [data-column-id]{min-height:min(50rem,calc(100svh - 4.5rem));justify-content:center;padding-inline:max(1.5rem,calc((100% - var(--language-content))/2 + 1.5rem))}
+
+[data-design-language="makeover"] .v2-key-library-hero-transform-v2{background:var(--secondary)!important;color:#fff!important}
+[data-design-language="makeover"] .v2-key-library-hero-transform-v2 [data-column-id]{gap:1.5rem;padding-block:6rem;max-width:none}
+/* El texto ocupa la mitad izquierda: la derecha queda libre para que se vea
+   el cambio de una foto a otra. */
+[data-design-language="makeover"] .v2-key-library-hero-transform-v2 [data-column-id]>*{max-width:min(34rem,52%)}
+[data-design-language="makeover"] .v2-key-library-hero-transform-v2 h1{max-width:min(15ch,52%);font-size:clamp(2.8rem,5.4vw,5rem);letter-spacing:-.045em;line-height:.98;text-shadow:0 2px 24px rgba(0,0,0,.35)}
+[data-design-language="makeover"] .v2-key-library-hero-transform-v2 [data-widget-slot="hero.subtitle"]{width:max-content;opacity:1;border:1px solid rgba(255,255,255,.3);border-radius:999px;background:rgba(255,255,255,.12);padding:.55rem 1.15rem;color:#fff;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.14em;backdrop-filter:blur(6px)}
+[data-design-language="makeover"] .v2-key-library-hero-transform-v2 [data-widget-slot="hero.body"]{opacity:.9;text-shadow:0 1px 12px rgba(0,0,0,.4)}
+[data-design-language="makeover"] .v2-key-library-hero-transform-v2 [data-widget-type="button"]{width:max-content;box-shadow:0 12px 30px rgba(0,0,0,.28)}
+[data-design-language="makeover"] .v2-key-library-hero-transform-v2 [data-widget-type="business_info"]{gap:.1rem;margin-top:.3rem}
+[data-design-language="makeover"] .v2-key-library-hero-transform-v2 [data-widget-type="business_info"] strong{font-size:.64rem;font-weight:600;text-transform:uppercase;letter-spacing:.14em;opacity:.7}
+[data-design-language="makeover"] .v2-key-library-hero-transform-v2 [data-widget-type="business_info"] a[href^="tel:"]{font-family:var(--heading);font-size:1.6rem;font-weight:700;color:var(--accent);text-shadow:0 1px 12px rgba(0,0,0,.4)}
+[data-design-language="makeover"] .v2-key-library-hero-transform-v2 [data-widget-type="business_info"] a[href^="mailto:"],[data-design-language="makeover"] .v2-key-library-hero-transform-v2 [data-widget-type="business_info"] span{font-size:.8rem;opacity:.75}
 
 [data-design-language="makeover"] .v2-key-library-gallery-before-after-v2{background:color-mix(in srgb,var(--accent) 10%,var(--bg))}
 [data-design-language="makeover"] .v2-key-library-gallery-before-after-v2 [data-column-id]:first-child{align-self:start}
@@ -1126,6 +1155,14 @@ img{display:block}
   [data-design-language="storm"] .v2-key-library-availability-grid-v2 [data-widget-type="list"],[data-design-language="storm"] .v2-key-library-benefits-metrics-v2 [data-widget-type="list"]{border-left:0}
   [data-design-language="storm"] .v2-key-library-availability-grid-v2 [data-widget-type="list"]>article,[data-design-language="storm"] .v2-key-library-benefits-metrics-v2 [data-widget-type="list"]>article{border-left:2px solid var(--text)}
   [data-design-language="storm"] .v2-key-library-insurance-faq-v2 details p{padding-left:0}
+  /* En móvil el texto cubre casi todo el ancho, así que el velo pasa a ser
+     vertical y el tirador baja para no quedar bajo el titular. */
+  [data-design-language] .v2-key-library-hero-transform-v2{padding-inline:0!important}
+  [data-design-language="makeover"] .v2-key-library-hero-transform-v2 [data-column-id]{padding-block:4.5rem 3.5rem;gap:1.15rem}
+  [data-design-language="makeover"] .v2-key-library-hero-transform-v2 [data-column-id]>*,[data-design-language="makeover"] .v2-key-library-hero-transform-v2 h1{max-width:100%}
+  [data-design-language="makeover"] .v2-key-library-hero-transform-v2 h1{font-size:clamp(2.4rem,10.5vw,3.4rem)}
+  [data-design-language="makeover"] .v2-key-library-hero-transform-v2 [data-widget-type="button"]{width:100%}
+  [data-design-language="makeover"] .v2-ba-hero .v2-ba-grip{height:3rem;width:3rem;font-size:1rem}
   [data-design-language="industrial"] .v2-key-library-contact-split-v2 [data-widget-type="form"]{box-shadow:6px 6px 0 var(--accent)}
 }
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.v2-reveal{transition:none!important;transform:none!important}[data-design-language="storm"] .v2-key-library-hero-emergency-v2 [data-widget-type="text"]:first-child::before{animation:none}}`;

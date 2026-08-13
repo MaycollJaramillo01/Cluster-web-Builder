@@ -38,16 +38,16 @@ export const SECTION_LIBRARY_V2: SectionSeedV2[] = [
     widget("business_info", undefined, "hotline"),
   ]))], { desktop: { padding: "none", width: "full", background: "secondary" } }),
 
-  section("library-hero-transform-v2", "Portada: transformación comparada", "main", [row(
-    column(6, [
-      text("hero.subtitle", { desktop: { fontSize: "sm" } }),
-      heading("hero.title", "h1", { desktop: { fontSize: "display", fontWeight: "bold" } }),
-      text("hero.body", { desktop: { fontSize: "lg" } }),
-      button(),
-      widget("business_info", undefined, "hotline"),
-    ]),
-    column(6, [widget("gallery", "media", "before-after-single")]),
-  )], { desktop: { padding: "xl", width: "wide" } }),
+  // La portada no enseña la transformación: la portada ES la transformación.
+  // El comparador ocupa la pantalla completa y el texto va encima.
+  section("library-hero-transform-v2", "Portada: transformación a pantalla completa", "main", [row(column(12, [
+    widget("gallery", "media", "before-after-hero"),
+    text("hero.subtitle", { desktop: { fontSize: "sm" } }),
+    heading("hero.title", "h1", { desktop: { fontSize: "display", fontWeight: "bold" } }),
+    text("hero.body", { desktop: { fontSize: "lg" } }),
+    button(),
+    widget("business_info", undefined, "hotline"),
+  ]))], { desktop: { padding: "none", background: "secondary" } }),
 
   section("library-about-split-v2", "Nosotros: imagen + historia", "main", [row(column(5, [image("about.media", "portrait")]), column(7, [text("about.subtitle", { desktop: { fontSize: "sm" } }), heading("about.title"), text("about.body", { desktop: { fontSize: "lg" } }), widget("list", "about.highlights", "badges")]))], { desktop: { padding: "xl" } }),
   // Nosotros con evidencia: par de fotos superpuestas a la izquierda y, a la
