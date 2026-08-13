@@ -38,6 +38,19 @@ export const SECTION_LIBRARY_V2: SectionSeedV2[] = [
     widget("business_info", undefined, "hotline"),
   ]))], { desktop: { padding: "none", width: "full", background: "secondary" } }),
 
+  // Titular monumental sobre foto a sangre completa, con el mapa de la zona
+  // real del negocio a la derecha. El mapa no es un adorno: consulta en vivo
+  // la ubicación que escribió el cliente, así que cambia con cada sitio.
+  section("library-hero-atlas-v2", "Portada: titular monumental con mapa en vivo", "main", [row(column(12, [
+    image("hero.media", "background"),
+    text("hero.subtitle", { desktop: { fontSize: "sm" } }),
+    heading("hero.title", "h1", { desktop: { fontSize: "display", fontWeight: "black" } }),
+    widget("map", "business.location", "hero"),
+    text("hero.body"),
+    widget("business_info", undefined, "hotline"),
+    button(),
+  ]))], { desktop: { padding: "none", background: "secondary" } }),
+
   // La portada no enseña la transformación: la portada ES la transformación.
   // El comparador ocupa la pantalla completa y el texto va encima.
   section("library-hero-transform-v2", "Portada: transformación a pantalla completa", "main", [row(column(12, [

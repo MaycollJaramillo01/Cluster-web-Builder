@@ -95,6 +95,8 @@ const EXTRA_REQUIREMENTS: Record<string, readonly SectionDataRequirementV2[]> = 
   "library-emergency-band-v2": ["contact-channel"],
   // Un comparador necesita el par completo, y el hero ademas su canal de contacto.
   "library-hero-transform-v2": ["gallery-media", "contact-channel"],
+  // El mapa del hero consulta la ubicacion real: sin ella el bloque pierde su mitad derecha.
+  "library-hero-atlas-v2": ["hero-media", "location", "contact-channel"],
   "library-gallery-before-after-v2": ["gallery-media"],
   "library-service-area-v2": ["location", "contact-channel"],
   "library-split-hero": ["hero-media"],
@@ -115,6 +117,7 @@ const SECTION_COMPOSITION: Record<string, { role: CompositionStage; profile: Com
   "library-hero-centered-v2": { role: "hero", profile: { density: 1, layout: "focus", contrast: false } },
   "library-hero-emergency-v2": { role: "hero", profile: { density: 3, layout: "focus", contrast: true } },
   "library-hero-transform-v2": { role: "hero", profile: { density: 2, layout: "split", contrast: true } },
+  "library-hero-atlas-v2": { role: "hero", profile: { density: 3, layout: "split", contrast: true } },
   "library-split-hero": { role: "hero", profile: { density: 2, layout: "split", contrast: false } },
   "library-pixel-hero": { role: "hero", profile: { density: 2, layout: "focus", contrast: true } },
   "library-poster-hero": { role: "hero", profile: { density: 1, layout: "focus", contrast: true } },

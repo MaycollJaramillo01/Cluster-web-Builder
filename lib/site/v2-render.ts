@@ -1037,6 +1037,34 @@ img{display:block}
 [data-design-language="makeover"] [data-widget-type="nav"] .v2-nav-cta{border-radius:999px;background:var(--accent);color:var(--on-accent);font-weight:700}
 [data-design-language="makeover"] [data-widget-type="button"],[data-design-language="makeover"] [data-widget-type="form"] button{border-radius:999px;padding-inline:1.6rem;font-weight:700;letter-spacing:0}
 
+/* Portada monumental: foto a sangre completa, titular gigante a la izquierda y
+   el mapa de la zona real a la derecha. */
+[data-design-language] .v2-key-library-hero-atlas-v2{overflow:hidden}
+[data-design-language] .v2-key-library-hero-atlas-v2>div{max-width:none}
+[data-design-language="makeover"] .v2-key-library-hero-atlas-v2 [data-column-id]{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);grid-template-rows:auto auto 1fr auto;align-items:start;gap:1.1rem 3rem;min-height:min(52rem,calc(100svh - 4.5rem));padding-block:5.5rem 3.5rem;padding-inline:max(1.5rem,calc((100% - var(--language-content))/2 + 1.5rem))}
+[data-design-language="makeover"] .v2-key-library-hero-atlas-v2 [data-widget-slot="hero.subtitle"]{grid-area:1/1;width:max-content;opacity:1;border:1px solid rgba(255,255,255,.32);border-radius:999px;background:rgba(255,255,255,.14);padding:.55rem 1.15rem;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.14em;backdrop-filter:blur(6px)}
+/* El titular alterna color por linea sin partir el texto: un degradado
+   repetido del alto de una linea, recortado sobre la tipografia. */
+[data-design-language="makeover"] .v2-key-library-hero-atlas-v2 h1{grid-area:2/1;max-width:11ch;font-size:clamp(3rem,7.4vw,7rem);font-weight:900;line-height:.86;letter-spacing:-.05em;text-transform:uppercase;text-shadow:0 4px 30px rgba(0,0,0,.4)}
+@supports (-webkit-background-clip:text){
+  [data-design-language="makeover"] .v2-key-library-hero-atlas-v2 h1{color:transparent;-webkit-background-clip:text;background-clip:text;background-image:repeating-linear-gradient(180deg,#fff 0 .86em,var(--accent) .86em 1.72em);text-shadow:none;filter:drop-shadow(0 4px 26px rgba(0,0,0,.45))}
+}
+[data-design-language="makeover"] .v2-key-library-hero-atlas-v2 [data-widget-slot="hero.body"]{grid-area:3/2;align-self:start;max-width:34ch;font-size:.92rem;opacity:.9;text-shadow:0 1px 12px rgba(0,0,0,.45)}
+[data-design-language="makeover"] .v2-key-library-hero-atlas-v2 [data-widget-type="business_info"]{grid-area:4/1;align-self:end;gap:.1rem}
+[data-design-language="makeover"] .v2-key-library-hero-atlas-v2 [data-widget-type="business_info"] strong{font-size:.64rem;font-weight:600;text-transform:uppercase;letter-spacing:.14em;opacity:.7}
+[data-design-language="makeover"] .v2-key-library-hero-atlas-v2 [data-widget-type="business_info"] a[href^="tel:"]{font-family:var(--heading);font-size:1.65rem;font-weight:700;color:var(--accent)}
+[data-design-language="makeover"] .v2-key-library-hero-atlas-v2 [data-widget-type="business_info"] a[href^="mailto:"],[data-design-language="makeover"] .v2-key-library-hero-atlas-v2 [data-widget-type="business_info"] span{font-size:.78rem;opacity:.75}
+[data-design-language="makeover"] .v2-key-library-hero-atlas-v2 [data-widget-type="button"]{grid-area:4/2;align-self:end;justify-self:end;width:max-content;padding-inline:2rem;font-size:1rem;box-shadow:0 14px 34px rgba(0,0,0,.32)}
+[data-design-language="makeover"] .v2-key-library-hero-atlas-v2 [data-widget-type="button"]::after{content:"\\2197";margin-left:.7rem;font-weight:700}
+/* Panel del mapa: cristal sobre la foto, con la zona real consultada en vivo. */
+[data-design-language="makeover"] .v2-key-library-hero-atlas-v2 [data-widget-type="map"]{grid-area:2/2;align-self:start;overflow:hidden;border:1px solid rgba(255,255,255,.28);border-radius:calc(var(--radius) * 1.2);background:rgba(255,255,255,.1);box-shadow:0 24px 60px rgba(0,0,0,.35);backdrop-filter:blur(8px)}
+[data-design-language="makeover"] .v2-key-library-hero-atlas-v2 [data-widget-type="map"] iframe{min-height:15rem;filter:grayscale(.25) contrast(1.05)}
+[data-design-language="makeover"] .v2-key-library-hero-atlas-v2 [data-widget-type="map"] a{padding:1rem 1.15rem;color:#fff}
+[data-design-language="makeover"] .v2-key-library-hero-atlas-v2 [data-widget-type="map"] a:hover{background:rgba(255,255,255,.08)}
+[data-design-language="makeover"] .v2-key-library-hero-atlas-v2 [data-widget-type="map"] a span:first-child{color:var(--accent);font-size:.64rem;font-weight:700;text-transform:uppercase;letter-spacing:.14em;opacity:1}
+[data-design-language="makeover"] .v2-key-library-hero-atlas-v2 [data-widget-type="map"] strong{font-size:1.02rem;font-weight:600}
+[data-design-language="makeover"] .v2-key-library-hero-atlas-v2 [data-widget-type="map"] small{opacity:.7}
+
 /* Portada-comparador: el bloque es a sangre completa por definición, en
    cualquier lenguaje que lo use. */
 [data-design-language] .v2-key-library-hero-transform-v2{overflow:hidden}
@@ -1157,7 +1185,14 @@ img{display:block}
   [data-design-language="storm"] .v2-key-library-insurance-faq-v2 details p{padding-left:0}
   /* En móvil el texto cubre casi todo el ancho, así que el velo pasa a ser
      vertical y el tirador baja para no quedar bajo el titular. */
-  [data-design-language] .v2-key-library-hero-transform-v2{padding-inline:0!important}
+  [data-design-language] .v2-key-library-hero-transform-v2,[data-design-language] .v2-key-library-hero-atlas-v2{padding-inline:0!important}
+  /* En móvil la retícula se deshace: todo a una columna y el mapa después del
+     titular, que es el orden en el que se lee. */
+  [data-design-language="makeover"] .v2-key-library-hero-atlas-v2 [data-column-id]{grid-template-columns:minmax(0,1fr);grid-template-rows:none;gap:1.15rem;padding-block:4.5rem 3rem}
+  [data-design-language="makeover"] .v2-key-library-hero-atlas-v2 [data-column-id]>*{grid-area:auto!important;justify-self:stretch!important;align-self:auto!important}
+  [data-design-language="makeover"] .v2-key-library-hero-atlas-v2 h1{max-width:100%;font-size:clamp(2.6rem,12vw,4rem)}
+  [data-design-language="makeover"] .v2-key-library-hero-atlas-v2 [data-widget-type="button"]{width:100%}
+  [data-design-language="makeover"] .v2-key-library-hero-atlas-v2 [data-widget-type="map"] iframe{min-height:12rem}
   [data-design-language="makeover"] .v2-key-library-hero-transform-v2 [data-column-id]{padding-block:4.5rem 3.5rem;gap:1.15rem}
   [data-design-language="makeover"] .v2-key-library-hero-transform-v2 [data-column-id]>*,[data-design-language="makeover"] .v2-key-library-hero-transform-v2 h1{max-width:100%}
   [data-design-language="makeover"] .v2-key-library-hero-transform-v2 h1{font-size:clamp(2.4rem,10.5vw,3.4rem)}

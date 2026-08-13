@@ -241,7 +241,7 @@ export const DESIGN_LANGUAGE_PACKS: Record<DesignLanguageId, DesignLanguagePack>
     composition: {
       // Cada etapa usa un bloque que trae su propio encabezado: una lista suelta
       // sin quien la presente es lo que hace que una pagina parezca generica.
-      hero: ["library-hero-transform-v2", "library-hero-split-image-v2", "library-hero-centered-v2"],
+      hero: ["library-hero-atlas-v2", "library-hero-transform-v2", "library-hero-split-image-v2", "library-hero-centered-v2"],
       about: ["library-about-showcase-v2", "library-about-split-v2", "library-about-minimal-v2"],
       services: ["library-services-cards-v2", "library-services-catalog-v2"],
       gallery: ["library-gallery-before-after-v2", "library-gallery-mosaic-v2", "library-gallery-grid-v2"],
