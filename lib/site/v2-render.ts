@@ -663,9 +663,24 @@ function sectionHtml(section: CanvasSectionV2, content: SiteContentV2, theme: Th
   return `<section id="${escapeHtml(section.key)}" class="v2-section v2-region-${section.region} relative ${padding} ${chrome} v2-key-${key}${reveal}" data-section-id="${escapeHtml(section.id)}"${revealStyle}><div class="${innerClass}">${rows}</div></section>`;
 }
 
+// El ancho de una SECCIÓN limita su contenido, nunca su caja: aplicarlo al
+// elemento recorta el fondo en una franja centrada y deja el color flotando
+// con márgenes a los lados. Quién manda sobre el ancho de lectura es la
+// gramática del lenguaje (--language-content) y el contenedor interior.
+// En filas, columnas y widgets el token sigue funcionando igual.
+function sectionBoxStyle(style?: ResponsiveStyleV2): ResponsiveStyleV2 | undefined {
+  if (!style) return style;
+  const withoutWidth = (tokens?: StyleTokensV2) => {
+    if (!tokens || tokens.width === undefined) return tokens;
+    const { width: _ignored, ...rest } = tokens;
+    return rest;
+  };
+  return { desktop: withoutWidth(style.desktop), tablet: withoutWidth(style.tablet), mobile: withoutWidth(style.mobile) };
+}
+
 function dynamicCss(sections: CanvasSectionV2[]) {
   return sections.map((section) => {
-    const sectionRule = responsiveCss(`[data-section-id="${section.id.replace(/[^a-zA-Z0-9_-]/g, "")}"]`, section.style);
+    const sectionRule = responsiveCss(`[data-section-id="${section.id.replace(/[^a-zA-Z0-9_-]/g, "")}"]`, sectionBoxStyle(section.style));
     const children = section.rows.flatMap((row) => [responsiveCss(`[data-row-id="${row.id.replace(/[^a-zA-Z0-9_-]/g, "")}"]`, row.style), ...row.columns.flatMap((column) => [responsiveCss(`[data-column-id="${column.id.replace(/[^a-zA-Z0-9_-]/g, "")}"]`, column.style), ...column.widgets.map((widget) => responsiveCss(widgetSelector(widget), widget.style))])]);
     return sectionRule + children.join("");
   }).join("");

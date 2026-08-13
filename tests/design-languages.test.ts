@@ -211,3 +211,16 @@ test("Industrial conserva la paleta y expone conversión directa en el encabezad
   assert.match(rendered.css, /\[data-design-language="industrial"\]/);
   assert.match(rendered.css, /--language-rule:2px/);
 });
+
+test("ninguna sección recorta su propia caja: el fondo llega a los bordes", () => {
+  for (const languageId of DESIGN_LANGUAGE_IDS) {
+    const document = composeSiteSectionsV2({ content, designLanguage: languageId });
+    const rendered = renderSiteV2({ ...document, leadEndpoint: "/api/leads" });
+    // Un max-width en la caja de la sección deja el color flotando en una
+    // franja centrada; el ancho de lectura lo pone la gramática del lenguaje.
+    const recortadas = [...rendered.css.matchAll(/\[data-section-id="[\w-]+"\]\{([^}]*)\}/g)]
+      .filter((match) => /max-width:\d/.test(match[1]));
+    assert.equal(recortadas.length, 0, `${languageId}: ${recortadas.length} secciones con la caja recortada`);
+    assert.match(rendered.css, /\.v2-section>div\{max-width:var\(--language-content\)\}/);
+  }
+});
