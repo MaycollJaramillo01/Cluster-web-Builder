@@ -72,6 +72,11 @@ export const SECTION_LIBRARY_V2: SectionSeedV2[] = [
   section("library-benefits-metrics-v2", "Beneficios: metricas", "main", [row(column(4, [labelHeading("Cómo trabajamos"), labelText("Un proceso claro, medible y explicado desde el inicio.")]), column(8, [widget("list", "benefits", "metrics")]))], { desktop: { padding: "lg" } }),
   section("library-benefits-pills-v2", "Beneficios: pildoras", "main", [row(column(12, [heading("about.title"), widget("list", "benefits", "pills")]))], { desktop: { padding: "lg" } }),
   section("library-benefits-numbered-v2", "Beneficios: numerados", "main", [row(column(12, [widget("list", "benefits", "numbered")]))], { desktop: { padding: "lg" } }),
+  // Los pasos sueltos no dicen nada: necesitan quien los presente.
+  section("library-process-steps-v2", "Proceso: pasos con encabezado", "main", [row(
+    column(4, [labelHeading("Cómo trabajamos"), labelText("Cuatro pasos, en el mismo orden, en cada trabajo.")]),
+    column(8, [widget("list", "benefits", "numbered")]),
+  )], { desktop: { padding: "xl" } }),
   section("library-availability-grid-v2", "Disponibilidad: cobertura y tiempos de respuesta", "main", [row(column(4, [labelHeading("Disponibilidad y respuesta"), labelText("Cobertura, tiempo de llegada y quién responde cuando llamas.")]), column(8, [widget("list", "benefits", "metrics")]))], { desktop: { padding: "lg" } }),
 
   section("library-gallery-grid-v2", "Galeria: grilla", "main", [row(column(12, [widget("gallery", "media", "grid")]))], { desktop: { padding: "xl" } }),
@@ -86,6 +91,12 @@ export const SECTION_LIBRARY_V2: SectionSeedV2[] = [
 
   section("library-cta-card-v2", "CTA: tarjeta centrada", "main", [row(column(12, [heading("contact.title", "h2", { desktop: { align: "center" } }), text("contact.body", { desktop: { align: "center" } }), button("contact.ctaText", "hero.ctaLink")]))], { desktop: { background: "#f4f4f5", padding: "xl", radius: "lg" } }),
   section("library-cta-split-v2", "CTA: texto + contacto", "main", [row(column(7, [heading("contact.title"), text("contact.body")]), column(5, [widget("business_info", undefined, "stacked"), button("contact.ctaText", "hero.ctaLink")]))], { desktop: { padding: "xl" } }),
+  // Cierre con mapa en lugar de repetir el titular del formulario: el visitante
+  // comprueba que trabajas en su zona antes de escribir.
+  section("library-service-area-v2", "Cobertura: zona de trabajo con mapa", "main", [row(
+    column(5, [labelHeading("Dónde trabajamos"), labelText("Atendemos esta zona y sus alrededores. Si tu dirección queda cerca del límite, pregúntanos."), widget("business_info", undefined, "stacked"), button("hero.ctaText", "hero.ctaLink")]),
+    column(7, [widget("map", "business.location", "card")]),
+  )], { desktop: { padding: "xl" } }),
   // Fondo "accent" en vez de un color fijo: la banda de alerta sigue la paleta
   // del cliente y el renderer resuelve el color de texto legible por contraste.
   section("library-emergency-band-v2", "Emergencia: banda de respuesta inmediata", "main", [row(column(7, [labelText("Emergencia activa"), heading("contact.title"), text("contact.body")]), column(5, [widget("business_info", undefined, "hotline"), button("contact.ctaText", "hero.ctaLink")]))], { desktop: { background: "accent", padding: "lg", width: "wide" } }),

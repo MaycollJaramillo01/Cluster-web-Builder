@@ -96,6 +96,7 @@ const EXTRA_REQUIREMENTS: Record<string, readonly SectionDataRequirementV2[]> = 
   // Un comparador necesita el par completo, y el hero ademas su canal de contacto.
   "library-hero-transform-v2": ["gallery-media", "contact-channel"],
   "library-gallery-before-after-v2": ["gallery-media"],
+  "library-service-area-v2": ["location", "contact-channel"],
   "library-split-hero": ["hero-media"],
   "library-about-split-v2": ["about-media"],
   // El par superpuesto necesita dos fotos reales para existir.
@@ -135,10 +136,12 @@ const SECTION_COMPOSITION: Record<string, { role: CompositionStage; profile: Com
   "library-benefits-pills-v2": { role: "benefits", profile: { density: 3, layout: "grid", contrast: false } },
   "library-benefits-numbered-v2": { role: "benefits", profile: { density: 2, layout: "grid", contrast: false } },
   "library-availability-grid-v2": { role: "benefits", profile: { density: 3, layout: "split", contrast: false } },
+  "library-process-steps-v2": { role: "benefits", profile: { density: 2, layout: "split", contrast: false } },
   "library-cta-card-v2": { role: "cta", profile: { density: 1, layout: "focus", contrast: false } },
   "library-cta-split-v2": { role: "cta", profile: { density: 2, layout: "split", contrast: false } },
   "library-cta-band": { role: "cta", profile: { density: 1, layout: "split", contrast: true } },
   "library-emergency-band-v2": { role: "cta", profile: { density: 2, layout: "split", contrast: true } },
+  "library-service-area-v2": { role: "cta", profile: { density: 2, layout: "split", contrast: false } },
   "library-reviews-cards-v2": { role: "reviews", profile: { density: 3, layout: "grid", contrast: false } },
   "library-reviews-wall-v2": { role: "reviews", profile: { density: 3, layout: "grid", contrast: true } },
   "library-reviews-trust-v2": { role: "reviews", profile: { density: 2, layout: "split", contrast: false } },

@@ -239,14 +239,17 @@ export const DESIGN_LANGUAGE_PACKS: Record<DesignLanguageId, DesignLanguagePack>
       navTracking: ".02em",
     },
     composition: {
+      // Cada etapa usa un bloque que trae su propio encabezado: una lista suelta
+      // sin quien la presente es lo que hace que una pagina parezca generica.
       hero: ["library-hero-transform-v2", "library-hero-split-image-v2", "library-hero-centered-v2"],
       about: ["library-about-showcase-v2", "library-about-split-v2", "library-about-minimal-v2"],
       services: ["library-services-cards-v2", "library-services-catalog-v2"],
       gallery: ["library-gallery-before-after-v2", "library-gallery-mosaic-v2", "library-gallery-grid-v2"],
-      benefits: ["library-benefits-numbered-v2", "library-benefits-metrics-v2"],
-      cta: ["library-cta-card-v2", "library-cta-split-v2"],
-      reviews: ["library-reviews-cards-v2", "library-reviews-quotes"],
-      faq: ["library-faq-cards-v2", "library-faq-minimal-v2"],
+      benefits: ["library-process-steps-v2", "library-benefits-metrics-v2"],
+      // El cierre lleva mapa: repetir el titular del formulario no aporta nada.
+      cta: ["library-service-area-v2", "library-cta-split-v2"],
+      reviews: ["library-reviews-trust-v2", "library-reviews-cards-v2"],
+      faq: ["library-faq-minimal-v2", "library-faq-cards-v2"],
       contact: ["library-contact-split-v2", "library-contact-map-v2"],
       footer: ["library-footer-columns-v2", "library-footer-minimal-v2"],
     },

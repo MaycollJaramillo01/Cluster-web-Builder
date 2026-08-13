@@ -993,8 +993,11 @@ img{display:block}
 
 /* Before & After: superficies limpias, esquinas suaves y el acento claro como
    protagonista sobre el tono profundo. Todo apunta al comparador. */
-[data-design-language="makeover"] .v2-region-header{background:var(--secondary);color:var(--footer-text);box-shadow:0 10px 30px #0000001f}
-[data-design-language="makeover"] .v2-region-header [data-widget-type="brand"] strong{font-size:1.3rem;font-weight:700;letter-spacing:-.03em}
+[data-design-language="makeover"] .v2-region-header{background:var(--secondary);color:var(--footer-text);border-bottom:1px solid color-mix(in srgb,var(--footer-text) 14%,transparent);box-shadow:0 10px 30px #0000001f}
+[data-design-language="makeover"] .v2-region-header>div{padding-block:.35rem}
+/* Punto de acento antes del nombre: da presencia al encabezado sin cargarlo. */
+[data-design-language="makeover"] .v2-region-header [data-widget-type="brand"]::before{content:"";width:.7rem;height:.7rem;border-radius:999px;background:var(--accent);flex:none}
+[data-design-language="makeover"] .v2-region-header [data-widget-type="brand"] strong{font-size:1.35rem;font-weight:700;letter-spacing:-.03em}
 [data-design-language="makeover"] [data-widget-type="nav"] a{font-size:.82rem;font-weight:500}
 [data-design-language="makeover"] [data-widget-type="nav"] .v2-nav-extra{display:inline-flex}
 [data-design-language="makeover"] [data-widget-type="nav"] .v2-nav-phone{color:var(--accent);font-weight:700}
@@ -1025,6 +1028,23 @@ img{display:block}
 [data-design-language="makeover"] .v2-key-library-cta-card-v2 [data-widget-type="button"]{background:var(--secondary);color:var(--footer-text)}
 [data-design-language="makeover"] [data-widget-type="testimonials"] figure,[data-design-language="makeover"] [data-widget-type="accordion"] details{border-color:transparent;background:color-mix(in srgb,var(--accent) 14%,transparent)}
 [data-design-language="makeover"] [data-widget-type="form"]{border-color:transparent;background:color-mix(in srgb,var(--accent) 12%,transparent)}
+
+/* Toda etapa se presenta igual: rotulo en acento sobre el fondo profundo,
+   titular grande y texto de lectura real. Sin esto las secciones parecian
+   listas sueltas flotando. */
+[data-design-language="makeover"] .v2-region-main [data-column-id]:first-child>[data-widget-type="heading"]:first-child{position:relative;padding-top:1.4rem;font-size:clamp(1.8rem,3.2vw,2.7rem)}
+[data-design-language="makeover"] .v2-region-main [data-column-id]:first-child>[data-widget-type="heading"]:first-child::before{content:"";position:absolute;top:0;left:0;width:3.5rem;height:.4rem;border-radius:999px;background:var(--accent)}
+[data-design-language="makeover"] .v2-region-main [data-widget-type="text"]{font-size:1.02rem;opacity:.86}
+[data-design-language="makeover"] .v2-key-library-contact-split-v2 [data-column-id]:first-child{align-self:center}
+[data-design-language="makeover"] .v2-key-library-contact-split-v2 h2{max-width:14ch}
+
+/* Cobertura: el mapa cierra la pagina en vez de repetir el formulario. */
+[data-design-language="makeover"] .v2-key-library-service-area-v2{background:var(--secondary)!important;color:var(--footer-text)!important}
+[data-design-language="makeover"] .v2-key-library-service-area-v2 [data-column-id]:first-child{align-self:center}
+[data-design-language="makeover"] .v2-key-library-service-area-v2 [data-widget-type="business_info"] a[href^="tel:"]{font-family:var(--heading);font-size:1.4rem;font-weight:700;color:var(--accent)}
+[data-design-language="makeover"] .v2-key-library-service-area-v2 [data-widget-type="map"]{overflow:hidden;border-radius:var(--radius);background:color-mix(in srgb,var(--footer-text) 8%,transparent)}
+[data-design-language="makeover"] .v2-key-library-service-area-v2 [data-widget-type="map"] iframe{min-height:24rem}
+[data-design-language="makeover"] .v2-key-library-service-area-v2 [data-widget-type="map"] a{color:var(--footer-text)}
 [data-design-language="makeover"] .v2-region-footer [data-widget-type="brand"] strong{font-size:1.8rem;font-weight:700;letter-spacing:-.03em}
 
 @keyframes v2-storm-pulse{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--accent) 65%,transparent)}70%{box-shadow:0 0 0 .7rem transparent}100%{box-shadow:0 0 0 0 transparent}}

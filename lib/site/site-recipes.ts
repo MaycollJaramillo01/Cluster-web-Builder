@@ -41,7 +41,7 @@ export const SITE_RECIPES: Record<SiteRecipeId, SiteRecipe> = {
     id: "before-after",
     name: "Antes y después",
     description: "Abre con la transformación comparada, explica el trabajo y lleva a un presupuesto sin fricción.",
-    sections: ["hero", "gallery", "services", "benefits", "about_us", "testimonials", "faq", "contact", "cta", "footer"],
+    sections: ["hero", "gallery", "services", "benefits", "about_us", "testimonials", "faq", "cta", "contact", "footer"],
     languageAffinity: { makeover: 10 },
   },
   "contractor-pro": {
