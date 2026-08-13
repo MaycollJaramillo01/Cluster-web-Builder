@@ -45,7 +45,7 @@ export const SECTION_LIBRARY_V2: SectionSeedV2[] = [
     image("hero.media", "background"),
     text("hero.subtitle", { desktop: { fontSize: "sm" } }),
     heading("hero.title", "h1", { desktop: { fontSize: "display", fontWeight: "black" } }),
-    widget("map", "business.location", "hero"),
+    widget("map", "business.location", "atlas"),
     text("hero.body"),
     widget("business_info", undefined, "hotline"),
     button(),

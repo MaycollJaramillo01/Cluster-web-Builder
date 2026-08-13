@@ -525,7 +525,7 @@ function widgetHtml(widget: WidgetV2, content: SiteContentV2, theme: ThemeTokens
       const variant = widget.variant || "cover";
       if (variant === "background") {
         if (!source) return editable ? `<div ${attr} class="${emptyClass} absolute inset-0">Agrega una imagen</div>` : "";
-        return `<img ${attr} src="${escapeHtml(source)}" alt="${escapeHtml(widget.data?.alt as string || content.business.name)}" loading="eager" class="v2-media-bg absolute inset-0 -z-10 h-full w-full object-cover">`;
+        return `<img ${attr} src="${escapeHtml(source)}" alt="${escapeHtml(widget.data?.alt as string || content.business.name)}" loading="eager" class="v2-media-bg absolute inset-0 -z-20 h-full w-full object-cover">`;
       }
       if (!source) return editable ? `<div ${attr} class="${emptyClass}">Agrega una imagen</div>` : "";
       return `<img ${attr} class="${IMAGE_VARIANT[variant] ?? IMAGE_VARIANT.cover}" src="${escapeHtml(source)}" alt="${escapeHtml(widget.data?.alt as string || content.business.name)}" loading="lazy">`;
@@ -535,9 +535,9 @@ function widgetHtml(widget: WidgetV2, content: SiteContentV2, theme: ThemeTokens
       const background = widget.variant === "background";
       if (!source) return editable ? `<div ${attr} class="${emptyClass}${background ? " absolute inset-0" : ""}">Agrega un video</div>` : "";
       const youtube = source.match(/(?:youtu\.be\/|youtube\.com\/watch\?v=)([\w-]{6,20})/i)?.[1];
-      const bgClass = background ? "v2-media-bg absolute inset-0 -z-10 h-full w-full" : "aspect-video w-full rounded-[var(--radius)] bg-[#09090b]";
+      const bgClass = background ? "v2-media-bg absolute inset-0 -z-20 h-full w-full" : "aspect-video w-full rounded-[var(--radius)] bg-[#09090b]";
       if (youtube) return `<iframe ${attr} class="${bgClass} border-0" src="https://www.youtube-nocookie.com/embed/${escapeHtml(youtube)}${background ? "?autoplay=1&mute=1&loop=1&controls=0" : ""}" title="Video" loading="lazy" allowfullscreen></iframe>`;
-      if (!/\.(?:mp4|webm)(?:$|[?#])/i.test(source)) return `<img ${attr} class="${background ? "v2-media-bg absolute inset-0 -z-10 h-full w-full object-cover" : IMAGE_VARIANT.cover}" src="${escapeHtml(source)}" alt="${escapeHtml(content.business.name)}" loading="lazy">`;
+      if (!/\.(?:mp4|webm)(?:$|[?#])/i.test(source)) return `<img ${attr} class="${background ? "v2-media-bg absolute inset-0 -z-20 h-full w-full object-cover" : IMAGE_VARIANT.cover}" src="${escapeHtml(source)}" alt="${escapeHtml(content.business.name)}" loading="lazy">`;
       return `<video ${attr} class="${bgClass} object-cover" src="${escapeHtml(source)}" ${background ? "autoplay muted loop playsinline" : "controls"} preload="metadata"></video>`;
     }
     case "button": {
@@ -596,6 +596,24 @@ function widgetHtml(widget: WidgetV2, content: SiteContentV2, theme: ThemeTokens
       const location = String(value || content.business.location);
       if (!location.trim()) return editable ? `<div ${attr} class="${emptyClass}">Agrega la ubicación</div>` : "";
       const query = encodeURIComponent(location);
+      // Variante "atlas": panel de puntos dibujado con CSS en vez del embed de
+      // Google, que trae su propia interfaz (controles, avisos, enlaces) y se
+      // ve como un widget pegado encima del diseño. La zona sigue siendo la que
+      // escribió el cliente, y el mapa real queda a un clic.
+      if (widget.variant === "atlas") {
+        const zonas = location.split(/\s*(?:,| y )\s*/).map((part) => part.trim()).filter(Boolean).slice(0, 4);
+        const puntos = zonas.map((zona, index) => `<li class="flex items-center gap-2.5"><span class="v2-atlas-dot h-2 w-2 shrink-0 rounded-full bg-[var(--accent)]"${index ? ` style="animation-delay:${index * 0.6}s"` : ""}></span><span class="truncate text-sm font-medium">${escapeHtml(zona)}</span></li>`).join("");
+        return `<div ${attr} class="v2-atlas relative overflow-hidden rounded-[var(--radius)] p-5 sm:p-6">
+<span class="v2-atlas-grid pointer-events-none absolute inset-0"></span>
+<div class="relative flex items-start justify-between gap-4">
+<span class="text-[.62rem] font-bold uppercase tracking-[.16em] text-[var(--accent)]">Zona de trabajo</span>
+<span class="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[var(--accent)] text-[var(--on-accent)]">${iconSvg("pin", 18)}</span>
+</div>
+<p class="relative mt-3 ${HEADING_FONT} text-lg font-semibold leading-snug">${escapeHtml(location)}</p>
+${puntos ? `<ul class="relative mt-4 flex flex-col gap-2">${puntos}</ul>` : ""}
+<a class="relative mt-5 inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-[var(--accent)] no-underline" href="https://www.google.com/maps/search/?api=1&query=${query}" target="_blank" rel="noreferrer">Ver en el mapa &#8599;</a>
+</div>`;
+      }
       return `<div ${attr} class="grid overflow-hidden rounded-[var(--radius)] bg-current/[0.05]"><iframe class="min-h-[280px] w-full border-0" title="Mapa de ${escapeHtml(content.business.name)}" src="https://maps.google.com/maps?q=${query}&output=embed" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe><a class="flex flex-col gap-1 p-5 no-underline hover:bg-current/[0.04]" href="https://www.google.com/maps/search/?api=1&query=${query}" target="_blank" rel="noreferrer"><span class="text-sm ${MUTED}">Ubicación</span><strong>${escapeHtml(location)}</strong><small class="${MUTED}">Abrir en Google Maps ↗</small></a></div>`;
     }
     case "hero_pixel": {
@@ -652,7 +670,10 @@ function columnHtml(column: CanvasColumnV2, content: SiteContentV2, theme: Theme
     : isHeaderColumn
       ? "flex min-w-0 flex-col justify-center gap-2"
       : "flex min-w-0 flex-col gap-5";
-  const scrim = hasBg ? `<div class="pointer-events-none absolute inset-0 -z-10 bg-black/55"></div>` : "";
+  // El velo va en -z-10 y la foto en -z-20: con ambos en la misma capa la
+  // imagen se pintaba encima por orden del DOM y el texto quedaba ilegible
+  // sobre cualquier foto clara. El desenfoque separa fondo de contenido.
+  const scrim = hasBg ? `<div class="pointer-events-none absolute inset-0 -z-10 bg-black/55 backdrop-blur-[3px]"></div>` : "";
   return `<div class="${span} ${layoutClasses}" data-column-id="${escapeHtml(column.id)}">${scrim}${widgets}</div>`;
 }
 
@@ -1042,6 +1063,9 @@ img{display:block}
 [data-design-language] .v2-key-library-hero-atlas-v2{overflow:hidden}
 [data-design-language] .v2-key-library-hero-atlas-v2>div{max-width:none}
 [data-design-language="makeover"] .v2-key-library-hero-atlas-v2 [data-column-id]{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);grid-template-rows:auto auto 1fr auto;align-items:start;gap:1.1rem 3rem;min-height:min(52rem,calc(100svh - 4.5rem));padding-block:5.5rem 3.5rem;padding-inline:max(1.5rem,calc((100% - var(--language-content))/2 + 1.5rem))}
+/* Refuerzo del velo: la foto de portada suele ser clara y el texto va encima.
+   Oscurece por la izquierda, que es donde vive el titular. */
+[data-design-language="makeover"] .v2-key-library-hero-atlas-v2 [data-column-id]::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;background:linear-gradient(90deg,rgba(0,0,0,.72) 0%,rgba(0,0,0,.5) 55%,rgba(0,0,0,.3) 100%)}
 [data-design-language="makeover"] .v2-key-library-hero-atlas-v2 [data-widget-slot="hero.subtitle"]{grid-area:1/1;width:max-content;opacity:1;border:1px solid rgba(255,255,255,.32);border-radius:999px;background:rgba(255,255,255,.14);padding:.55rem 1.15rem;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.14em;backdrop-filter:blur(6px)}
 /* El titular alterna color por linea sin partir el texto: un degradado
    repetido del alto de una linea, recortado sobre la tipografia. */
@@ -1056,14 +1080,8 @@ img{display:block}
 [data-design-language="makeover"] .v2-key-library-hero-atlas-v2 [data-widget-type="business_info"] a[href^="mailto:"],[data-design-language="makeover"] .v2-key-library-hero-atlas-v2 [data-widget-type="business_info"] span{font-size:.78rem;opacity:.75}
 [data-design-language="makeover"] .v2-key-library-hero-atlas-v2 [data-widget-type="button"]{grid-area:4/2;align-self:end;justify-self:end;width:max-content;padding-inline:2rem;font-size:1rem;box-shadow:0 14px 34px rgba(0,0,0,.32)}
 [data-design-language="makeover"] .v2-key-library-hero-atlas-v2 [data-widget-type="button"]::after{content:"\\2197";margin-left:.7rem;font-weight:700}
-/* Panel del mapa: cristal sobre la foto, con la zona real consultada en vivo. */
-[data-design-language="makeover"] .v2-key-library-hero-atlas-v2 [data-widget-type="map"]{grid-area:2/2;align-self:start;overflow:hidden;border:1px solid rgba(255,255,255,.28);border-radius:calc(var(--radius) * 1.2);background:rgba(255,255,255,.1);box-shadow:0 24px 60px rgba(0,0,0,.35);backdrop-filter:blur(8px)}
-[data-design-language="makeover"] .v2-key-library-hero-atlas-v2 [data-widget-type="map"] iframe{min-height:15rem;filter:grayscale(.25) contrast(1.05)}
-[data-design-language="makeover"] .v2-key-library-hero-atlas-v2 [data-widget-type="map"] a{padding:1rem 1.15rem;color:#fff}
-[data-design-language="makeover"] .v2-key-library-hero-atlas-v2 [data-widget-type="map"] a:hover{background:rgba(255,255,255,.08)}
-[data-design-language="makeover"] .v2-key-library-hero-atlas-v2 [data-widget-type="map"] a span:first-child{color:var(--accent);font-size:.64rem;font-weight:700;text-transform:uppercase;letter-spacing:.14em;opacity:1}
-[data-design-language="makeover"] .v2-key-library-hero-atlas-v2 [data-widget-type="map"] strong{font-size:1.02rem;font-weight:600}
-[data-design-language="makeover"] .v2-key-library-hero-atlas-v2 [data-widget-type="map"] small{opacity:.7}
+/* Panel de zona: cristal negro sobre la foto, con la retícula de puntos. */
+[data-design-language="makeover"] .v2-key-library-hero-atlas-v2 [data-widget-type="map"]{grid-area:2/2;align-self:start;border:1px solid rgba(255,255,255,.22);background:rgba(0,0,0,.5);box-shadow:0 24px 60px rgba(0,0,0,.45);backdrop-filter:blur(14px)}
 
 /* Portada-comparador: el bloque es a sangre completa por definición, en
    cualquier lenguaje que lo use. */

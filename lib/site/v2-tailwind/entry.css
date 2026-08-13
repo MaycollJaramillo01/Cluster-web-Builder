@@ -99,6 +99,23 @@
     outline-offset: 3px;
   }
 
+  /* Panel de zona: retícula de puntos como la de un mapa esquemático, dibujada
+     con CSS. El punto de cada zona late suavemente para que el panel no
+     parezca una imagen fija. */
+  .v2-atlas-grid {
+    background-image: radial-gradient(currentColor 1px, transparent 1px);
+    background-size: 12px 12px;
+    opacity: 0.16;
+  }
+  .v2-atlas-dot {
+    animation: v2-atlas-ping 3s ease-out infinite;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .v2-atlas-dot {
+      animation: none;
+    }
+  }
+
   /* Portada de puntos animados: texto con relleno degradado sutil. */
   .v2-pxh-title em,
   .v2-pxh-title strong {
@@ -136,6 +153,20 @@
   }
 }
 
+@keyframes v2-atlas-ping {
+  0% {
+    box-shadow: 0 0 0 0 currentColor;
+    opacity: 1;
+  }
+  70% {
+    box-shadow: 0 0 0 0.55rem transparent;
+    opacity: 0.75;
+  }
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+    opacity: 1;
+  }
+}
 @keyframes v2-pxh-marquee {
   to {
     transform: translateX(calc(-50% - 1.5rem));
