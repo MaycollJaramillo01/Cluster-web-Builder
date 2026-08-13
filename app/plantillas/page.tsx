@@ -1,10 +1,8 @@
 import type { Metadata } from "next";
-import { headers } from "next/headers";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import type { DesignLanguageId } from "@/lib/site/design-language-types";
-import { isLocalPreviewRequest } from "@/lib/site/local-preview";
 import { composeSiteSectionsV2 } from "@/lib/site/section-composer";
 import { getColorPalettePair } from "@/lib/site/color-palettes";
 import { SITE_RECIPES, type SiteRecipeId } from "@/lib/site/site-recipes";
@@ -14,9 +12,15 @@ import { renderSiteV2 } from "@/lib/site/v2-render";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Sitios de prueba | Cluster",
-  description: "Laboratorio local de composiciones generadas por Cluster.",
-  robots: { index: false, follow: false },
+  title: "Plantillas para negocios de servicio | Cluster",
+  description: "Seis lenguajes visuales para contratistas, oficios y servicios locales. Cada sitio se compone con contenido real, no con una plantilla rellenada.",
+  robots: { index: true, follow: true },
+  openGraph: {
+    title: "Plantillas para negocios de servicio | Cluster",
+    description: "Seis lenguajes visuales para contratistas, oficios y servicios locales.",
+    type: "website",
+    locale: "es_ES",
+  },
 };
 
 type DemoSeed = {
@@ -551,14 +555,11 @@ function renderDemo(demo: DemoSeed) {
   };
 }
 
-export default async function LocalTestSitesPage({
+export default async function TemplateGalleryPage({
   searchParams,
 }: {
   searchParams: Promise<{ site?: string | string[]; viewport?: string | string[] }>;
 }) {
-  const host = (await headers()).get("host");
-  if (!isLocalPreviewRequest(host)) notFound();
-
   const params = await searchParams;
   const requested = params.site;
   const slug = Array.isArray(requested) ? requested[0] : requested;
@@ -574,14 +575,14 @@ export default async function LocalTestSitesPage({
       <main className="flex h-dvh flex-col overflow-hidden bg-[#111411] text-white">
         <header className="flex h-16 shrink-0 items-center justify-between gap-4 border-b border-white/15 px-4 sm:px-6">
           <Link
-            href="/sitios-prueba-local"
+            href="/plantillas"
             className="inline-flex min-h-11 items-center font-semibold text-white underline decoration-white/35 underline-offset-4 transition-colors hover:decoration-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
           >
-            Volver al laboratorio
+            Volver a las plantillas
           </Link>
           <div className="flex min-w-0 items-center gap-4 sm:gap-6">
             <Link
-              href={`/sitios-prueba-local?site=${demo.slug}${mobileViewport ? "" : "&viewport=mobile"}`}
+              href={`/plantillas?site=${demo.slug}${mobileViewport ? "" : "&viewport=mobile"}`}
               prefetch={false}
               className="inline-flex min-h-11 items-center text-xs font-bold uppercase tracking-[0.1em] text-white/70 underline decoration-white/30 underline-offset-4 transition-colors hover:text-white hover:decoration-white"
             >
@@ -609,22 +610,32 @@ export default async function LocalTestSitesPage({
     <main className="min-h-dvh bg-[#f3f1ea] text-[#171a17]">
       <header className="border-b border-[#171a17]/20">
         <div className="mx-auto flex min-h-16 w-full max-w-7xl items-center justify-between gap-4 px-5 sm:px-8">
-          <p className="text-sm font-black uppercase tracking-[0.16em]">Cluster / Laboratorio</p>
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#526057]">Solo en este dispositivo</p>
+          <Link href="/" className="text-sm font-black uppercase tracking-[0.16em] no-underline">Cluster</Link>
+          <Link
+            href="/register"
+            className="inline-flex min-h-11 items-center border-2 border-[#171a17] bg-[#171a17] px-4 text-xs font-black uppercase tracking-[0.1em] text-white no-underline transition-colors hover:bg-transparent hover:text-[#171a17] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#315c45]"
+          >
+            Crear mi sitio
+          </Link>
         </div>
       </header>
 
       <section className="mx-auto w-full max-w-7xl px-5 py-14 sm:px-8 sm:py-20">
         <div className="grid gap-8 border-b border-[#171a17]/25 pb-12 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-end">
           <div>
-            <p className="text-xs font-black uppercase tracking-[0.18em] text-[#315c45]">Cinco lenguajes, un solo motor</p>
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-[#315c45]">Seis lenguajes, un solo motor</p>
             <h1 className="mt-4 max-w-4xl text-5xl font-black leading-[0.94] tracking-[-0.055em] sm:text-7xl">
-              Sitios de prueba para mirar el sistema en acción.
+              Plantillas para negocios que se contratan por su trabajo.
             </h1>
           </div>
-          <p className="max-w-lg text-base leading-7 text-[#526057]">
-            Cada sitio usa contenido, paleta y tipografía propios. Los bloques y su secuencia fueron elegidos por el compositor real de Cluster.
-          </p>
+          <div className="max-w-lg">
+            <p className="text-base leading-7 text-[#526057]">
+              Cada sitio usa contenido, paleta y tipografía propios. Los bloques y su secuencia fueron elegidos por el compositor real de Cluster, no por una plantilla rellenada.
+            </p>
+            <p className="mt-4 text-sm leading-6 text-[#7a8580]">
+              Los negocios que aparecen son ejemplos: los nombres, teléfonos y reseñas se crearon para esta muestra.
+            </p>
+          </div>
         </div>
 
         <div className="divide-y divide-[#171a17]/20">
@@ -653,7 +664,7 @@ export default async function LocalTestSitesPage({
                 <p className="mt-2 text-sm font-semibold uppercase tracking-[0.1em] text-[#526057]">{demo.businessType}</p>
                 <p className="mt-5 max-w-md text-base leading-7 text-[#454d47]">{demo.summary}</p>
                 <Link
-                  href={`/sitios-prueba-local?site=${demo.slug}`}
+                  href={`/plantillas?site=${demo.slug}`}
                   prefetch={false}
                   className="mt-8 inline-flex min-h-11 items-center border-2 border-[#171a17] bg-[#171a17] px-5 py-2.5 text-sm font-black uppercase tracking-[0.08em] text-white transition-colors hover:bg-transparent hover:text-[#171a17] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#315c45]"
                 >
