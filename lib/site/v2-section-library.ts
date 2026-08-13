@@ -38,6 +38,17 @@ export const SECTION_LIBRARY_V2: SectionSeedV2[] = [
     widget("business_info", undefined, "hotline"),
   ]))], { desktop: { padding: "none", width: "full", background: "secondary" } }),
 
+  section("library-hero-transform-v2", "Portada: transformación comparada", "main", [row(
+    column(6, [
+      text("hero.subtitle", { desktop: { fontSize: "sm" } }),
+      heading("hero.title", "h1", { desktop: { fontSize: "display", fontWeight: "bold" } }),
+      text("hero.body", { desktop: { fontSize: "lg" } }),
+      button(),
+      widget("business_info", undefined, "hotline"),
+    ]),
+    column(6, [widget("gallery", "media", "before-after-single")]),
+  )], { desktop: { padding: "xl", width: "wide" } }),
+
   section("library-about-split-v2", "Nosotros: imagen + historia", "main", [row(column(5, [image("about.media", "portrait")]), column(7, [text("about.subtitle", { desktop: { fontSize: "sm" } }), heading("about.title"), text("about.body", { desktop: { fontSize: "lg" } }), widget("list", "about.highlights", "badges")]))], { desktop: { padding: "xl" } }),
   // Nosotros con evidencia: par de fotos superpuestas a la izquierda y, a la
   // derecha, el relato, los compromisos verificables y la vía de contacto.
@@ -65,6 +76,12 @@ export const SECTION_LIBRARY_V2: SectionSeedV2[] = [
 
   section("library-gallery-grid-v2", "Galeria: grilla", "main", [row(column(12, [widget("gallery", "media", "grid")]))], { desktop: { padding: "xl" } }),
   section("library-gallery-mosaic-v2", "Galeria: mosaico", "main", [row(column(12, [widget("gallery", "media", "mosaic")]))], { desktop: { padding: "xl" } }),
+  // La prueba es la transformación: el visitante arrastra y ve el mismo lugar
+  // antes y después, en vez de creer en una foto suelta.
+  section("library-gallery-before-after-v2", "Galería: antes y después", "main", [row(
+    column(4, [labelHeading("Transformaciones reales"), labelText("Arrastra para ver el mismo lugar antes y después del trabajo.")]),
+    column(8, [widget("gallery", "media", "before-after")]),
+  )], { desktop: { padding: "xl" } }),
   section("library-gallery-projects-v2", "Galería: proyectos documentados", "main", [row(column(4, [labelHeading("Trabajo reciente"), labelText("Proyectos reales para evaluar terminación, orden y alcance.")]), column(8, [widget("gallery", "media", "mosaic")]))], { desktop: { padding: "xl" } }),
 
   section("library-cta-card-v2", "CTA: tarjeta centrada", "main", [row(column(12, [heading("contact.title", "h2", { desktop: { align: "center" } }), text("contact.body", { desktop: { align: "center" } }), button("contact.ctaText", "hero.ctaLink")]))], { desktop: { background: "#f4f4f5", padding: "xl", radius: "lg" } }),

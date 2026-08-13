@@ -217,6 +217,40 @@ export const DESIGN_LANGUAGE_PACKS: Record<DesignLanguageId, DesignLanguagePack>
       footer: ["library-footer-columns-v2", "library-footer-minimal-v2"],
     },
   },
+  makeover: {
+    id: "makeover",
+    name: "Before & After",
+    description: "La prueba es la transformación: superficies limpias, contraste de dos tonos y comparación arrastrable.",
+    principles: ["Ver para creer", "Superficie impecable", "Un paso hacia el presupuesto"],
+    dials: { designVariance: 6, motionIntensity: 4, visualDensity: 4 },
+    themeDefaults: {
+      headingFont: "Outfit, Arial, Helvetica, sans-serif",
+      bodyFont: "Inter, Arial, sans-serif",
+      headingCase: "none",
+      radius: "lg",
+      motion: "subtle",
+    },
+    grammar: {
+      contentWidth: "1180px",
+      ruleWidth: "1px",
+      headingTracking: "-.035em",
+      headingLineHeight: "1",
+      bodyLineHeight: "1.65",
+      navTracking: ".02em",
+    },
+    composition: {
+      hero: ["library-hero-transform-v2", "library-hero-split-image-v2", "library-hero-centered-v2"],
+      about: ["library-about-showcase-v2", "library-about-split-v2", "library-about-minimal-v2"],
+      services: ["library-services-cards-v2", "library-services-catalog-v2"],
+      gallery: ["library-gallery-before-after-v2", "library-gallery-mosaic-v2", "library-gallery-grid-v2"],
+      benefits: ["library-benefits-numbered-v2", "library-benefits-metrics-v2"],
+      cta: ["library-cta-card-v2", "library-cta-split-v2"],
+      reviews: ["library-reviews-cards-v2", "library-reviews-quotes"],
+      faq: ["library-faq-cards-v2", "library-faq-minimal-v2"],
+      contact: ["library-contact-split-v2", "library-contact-map-v2"],
+      footer: ["library-footer-columns-v2", "library-footer-minimal-v2"],
+    },
+  },
 };
 
 export type CompositionGraphStage = {
@@ -348,6 +382,9 @@ const BUSINESS_AFFINITIES: Array<{
   // Gana sobre Industrial cuando la actividad se activa por un evento: la
   // urgencia, la disponibilidad y el reclamo de seguro mandan sobre el catálogo.
   { language: "storm", pattern: /storm|tormenta|hail|granizo|hurac|flood|inunda|water_damage|dano_por_agua|leak|filtracion|gotera|mitigation|mitigacion|restoration|restauracion|emergency|emergencia|24_7|plumb|plomeria|fontaner|hvac|climatizacion|aire_acondicionado|mold|moho|burst|tuberia/, score: 18, reason: "actividad de emergencia que se decide por disponibilidad y respaldo del seguro" },
+  // Gana sobre Industrial en los oficios que se contratan por el resultado
+  // visible: el antes y el después vende más que el alcance de obra.
+  { language: "makeover", pattern: /pintura|paint|pintor|limpieza|cleaning|clean|aseo|piso|suelo|floor|azulejo|tile|alfombra|carpet|lavado|hidrolav|presion|pressure|power_wash|wash|pulido|encerado|sellado|detailing|fachada/, score: 16, reason: "actividad que se contrata por el resultado visible sobre la superficie" },
 ];
 
 export function getDesignLanguagePack(id: DesignLanguageId): DesignLanguagePack {
@@ -366,8 +403,8 @@ export function applyDesignLanguage(
 }
 
 export function rankDesignLanguages(signals: DesignLanguageSignals): DesignLanguageRanking[] {
-  const scores: Record<DesignLanguageId, number> = { bauhaus: 0, swiss: 1, editorial: 0, industrial: 0, storm: 0 };
-  const reasons: Record<DesignLanguageId, string[]> = { bauhaus: [], swiss: [], editorial: [], industrial: [], storm: [] };
+  const scores: Record<DesignLanguageId, number> = { bauhaus: 0, swiss: 1, editorial: 0, industrial: 0, storm: 0, makeover: 0 };
+  const reasons: Record<DesignLanguageId, string[]> = { bauhaus: [], swiss: [], editorial: [], industrial: [], storm: [], makeover: [] };
   const visualStyle = normalizeSignal(signals.visualStyle);
   const businessType = normalizeSignal(signals.businessType);
   const goal = normalizeSignal(signals.goal);

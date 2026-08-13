@@ -1,4 +1,4 @@
-export const DESIGN_LANGUAGE_IDS = ["bauhaus", "swiss", "editorial", "industrial", "storm"] as const;
+export const DESIGN_LANGUAGE_IDS = ["bauhaus", "swiss", "editorial", "industrial", "storm", "makeover"] as const;
 
 export type DesignLanguageId = (typeof DESIGN_LANGUAGE_IDS)[number];
 

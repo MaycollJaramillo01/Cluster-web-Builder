@@ -6,6 +6,7 @@ import { notFound } from "next/navigation";
 import type { DesignLanguageId } from "@/lib/site/design-language-types";
 import { isLocalPreviewRequest } from "@/lib/site/local-preview";
 import { composeSiteSectionsV2 } from "@/lib/site/section-composer";
+import { getColorPalettePair } from "@/lib/site/color-palettes";
 import { SITE_RECIPES, type SiteRecipeId } from "@/lib/site/site-recipes";
 import type { ThemeTokensV2 } from "@/lib/site/v2-schema";
 import { renderSiteV2 } from "@/lib/site/v2-render";
@@ -38,7 +39,10 @@ const DEMO_VISUAL_STYLE: Record<DesignLanguageId, string> = {
   editorial: "premium_elegant",
   industrial: "local_trustworthy",
   storm: "local_trustworthy",
+  makeover: "modern_clean",
 };
+
+const ATLANTIC_SKY = getColorPalettePair("atlantic-sky")!;
 
 const image = (photoId: number, width = 1600, height = 1000) =>
   `https://images.pexels.com/photos/${photoId}/pexels-photo-${photoId}.jpeg?auto=compress&cs=tinysrgb&fit=crop&w=${width}&h=${height}`;
@@ -434,6 +438,94 @@ const DEMOS: DemoSeed[] = [
         ctaText: "Enviar reporte",
       },
       seo: { title: "Vanguard Storm & Restoration | Oklahoma City, OK", description: "Respuesta 24/7 a daños por tormenta, agua, plomería y HVAC en Oklahoma City, Edmond y Norman.", keyword: "storm damage restoration Oklahoma City" },
+    },
+  },
+  {
+    slug: "brightline-exteriores",
+    name: "Brightline Exterior Care",
+    businessType: "Lavado a presión y pintura exterior",
+    language: "makeover",
+    languageName: "Before & After",
+    summary: "La transformación como argumento: comparación arrastrable, dos tonos y una ruta corta al presupuesto.",
+    swatch: "#C4F8FF",
+    recipe: "before-after",
+    // Paleta "atlantic-sky" de COLOR_PALETTE_PAIRS.
+    theme: {
+      primary: ATLANTIC_SKY.deep.hex,
+      secondary: ATLANTIC_SKY.deep.hex,
+      accent: ATLANTIC_SKY.light.hex,
+      background: "#f6fdff",
+      text: "#0a2233",
+      muted: "#5b7686",
+    },
+    content: {
+      business: {
+        name: "Brightline Exterior Care",
+        type: "Lavado a presión y pintura exterior",
+        location: "Tampa, Brandon y Riverview, Florida",
+        phone: "+1 (813) 555-0139",
+        email: "hola@brightlineexterior.test",
+      },
+      hero: {
+        subtitle: "Presupuesto sin costo",
+        title: "La misma casa. Otra primera impresión.",
+        body: "Lavado a presión, pintura exterior y recuperación de superficies para viviendas y comercios. Fotografiamos cada trabajo antes y después, sin retoques.",
+        ctaText: "Pedir presupuesto",
+        ctaLink: "#contact",
+        media: image(259588),
+      },
+      about: {
+        subtitle: "Cuadrilla propia · Tampa Bay",
+        title: "Trabajamos hasta que la diferencia se nota desde la acera.",
+        body: "Brightline atiende viviendas, condominios y locales en Tampa Bay. Ajustamos presión y producto al material de cada superficie, protegemos plantas y ventanas antes de empezar, y dejamos el perímetro enjuagado. Si el resultado no se nota en la foto, no lo cobramos como terminado.",
+        media: image(31771166, 1000, 1200),
+        highlights: [
+          { title: "Presupuesto sin costo", description: "Visita y medición incluidas" },
+          { title: "Licenciados y asegurados", description: "Verificable antes de firmar" },
+          { title: "Presión según material", description: "Sin dañar madera ni sellos" },
+          { title: "Protección previa", description: "Plantas y ventanas cubiertas" },
+          { title: "Fotos antes y después", description: "Del mismo ángulo, sin retoque" },
+          { title: "Perímetro enjuagado", description: "Nos vamos sin dejar rastro" },
+        ],
+      },
+      services: [
+        { title: "Lavado a presión", description: "Aceras, entradas, terrazas y muros con la presión adecuada para cada material.", meta: "Exterior" },
+        { title: "Lavado suave de techo", description: "Retiro de manchas y moho sin levantar tejas ni forzar los sellos.", meta: "Techos" },
+        { title: "Pintura exterior", description: "Preparación, sellado de grietas y acabado con garantía por escrito.", meta: "Pintura" },
+        { title: "Recuperación de concreto", description: "Manchas de aceite, óxido y sarro en cocheras y estacionamientos.", meta: "Concreto" },
+        { title: "Canaletas y fascia", description: "Limpieza interior y exterior con revisión de bajantes.", meta: "Mantenimiento" },
+        { title: "Mantenimiento programado", description: "Visitas semestrales para conservar el resultado sin volver a empezar.", meta: "Plan anual" },
+      ],
+      benefits: [
+        { title: "Medimos", description: "Visitamos, identificamos el material y calculamos el trabajo real." },
+        { title: "Protegemos", description: "Cubrimos plantas, luminarias y ventanas antes de encender el equipo." },
+        { title: "Trabajamos", description: "Ajustamos presión y producto por superficie, sin fórmula única." },
+        { title: "Comparamos", description: "Fotografiamos el mismo ángulo antes y después y te lo entregamos." },
+      ],
+      media: [
+        { url: image(259588, 1400, 1000), alt: "Exterior de vivienda residencial con entrada de concreto" },
+        { url: image(30514132, 1400, 1000), alt: "Cuadrilla trabajando en el exterior de una vivienda" },
+        { url: image(37623622, 1400, 1000), alt: "Técnico con equipo de seguridad sobre una cubierta" },
+        { url: image(31771166, 1400, 1000), alt: "Superficie de tejado recién intervenida" },
+      ],
+      reviews: [
+        { name: "Danielle P.", role: "Propietaria en Brandon", quote: "Mandaron las fotos del mismo ángulo antes y después. La entrada parecía otra y no hubo que discutir nada.", rating: 5, source: "Reseña de demostración" },
+        { name: "Hector V.", role: "Administrador de condominio", quote: "Coordinaron por edificios para no bloquear estacionamientos. Terminaron en el plazo que dieron.", rating: 5, source: "Reseña de demostración" },
+        { name: "Susan M.", role: "Propietaria en Riverview", quote: "Cubrieron las plantas antes de empezar y al final enjuagaron todo el perímetro.", rating: 5, source: "Reseña de demostración" },
+      ],
+      faqs: [
+        { question: "¿El lavado a presión puede dañar mi casa?", answer: "Si se usa presión de más, sí. Por eso ajustamos el equipo al material: el concreto admite presión alta, pero la madera, el vinilo y el techo se tratan con lavado suave y producto." },
+        { question: "¿Cuánto dura el resultado?", answer: "En Florida, entre doce y dieciocho meses según sombra y humedad. Ofrecemos visitas semestrales para conservarlo sin repetir el trabajo completo." },
+        { question: "¿Necesito estar en casa?", answer: "No es necesario si tenemos acceso al agua y al área de trabajo. Te enviamos las fotos del antes y del después al terminar." },
+        { question: "¿Qué pasa con mis plantas?", answer: "Las cubrimos antes de empezar y las enjuagamos al terminar. Si alguna zona es delicada, la trabajamos a mano." },
+        { question: "¿El presupuesto tiene costo?", answer: "No. Visitamos, medimos y entregamos el precio por escrito antes de que decidas." },
+      ],
+      contact: {
+        title: "Cuéntanos qué superficie quieres recuperar.",
+        body: "Indícanos la dirección y qué te gustaría mejorar. Pasamos a medir y te enviamos el precio por escrito, sin compromiso.",
+        ctaText: "Pedir presupuesto",
+      },
+      seo: { title: "Brightline Exterior Care | Tampa, FL", description: "Lavado a presión, lavado suave de techo y pintura exterior en Tampa, Brandon y Riverview.", keyword: "pressure washing Tampa" },
     },
   },
 ];

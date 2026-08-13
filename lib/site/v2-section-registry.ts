@@ -93,6 +93,9 @@ const EXTRA_REQUIREMENTS: Record<string, readonly SectionDataRequirementV2[]> = 
   // contacto visible no cumple su función.
   "library-hero-emergency-v2": ["gallery-media", "contact-channel"],
   "library-emergency-band-v2": ["contact-channel"],
+  // Un comparador necesita el par completo, y el hero ademas su canal de contacto.
+  "library-hero-transform-v2": ["gallery-media", "contact-channel"],
+  "library-gallery-before-after-v2": ["gallery-media"],
   "library-split-hero": ["hero-media"],
   "library-about-split-v2": ["about-media"],
   // El par superpuesto necesita dos fotos reales para existir.
@@ -110,6 +113,7 @@ const SECTION_COMPOSITION: Record<string, { role: CompositionStage; profile: Com
   "library-hero-video-background-v2": { role: "hero", profile: { density: 2, layout: "focus", contrast: true } },
   "library-hero-centered-v2": { role: "hero", profile: { density: 1, layout: "focus", contrast: false } },
   "library-hero-emergency-v2": { role: "hero", profile: { density: 3, layout: "focus", contrast: true } },
+  "library-hero-transform-v2": { role: "hero", profile: { density: 2, layout: "split", contrast: true } },
   "library-split-hero": { role: "hero", profile: { density: 2, layout: "split", contrast: false } },
   "library-pixel-hero": { role: "hero", profile: { density: 2, layout: "focus", contrast: true } },
   "library-poster-hero": { role: "hero", profile: { density: 1, layout: "focus", contrast: true } },
@@ -125,6 +129,7 @@ const SECTION_COMPOSITION: Record<string, { role: CompositionStage; profile: Com
   "library-gallery-grid-v2": { role: "gallery", profile: { density: 3, layout: "grid", contrast: false } },
   "library-gallery-mosaic-v2": { role: "gallery", profile: { density: 3, layout: "grid", contrast: false } },
   "library-gallery-projects-v2": { role: "gallery", profile: { density: 2, layout: "split", contrast: false } },
+  "library-gallery-before-after-v2": { role: "gallery", profile: { density: 3, layout: "split", contrast: false } },
   "library-gallery-filmstrip": { role: "gallery", profile: { density: 2, layout: "grid", contrast: false } },
   "library-benefits-metrics-v2": { role: "benefits", profile: { density: 3, layout: "split", contrast: false } },
   "library-benefits-pills-v2": { role: "benefits", profile: { density: 3, layout: "grid", contrast: false } },

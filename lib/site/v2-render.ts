@@ -245,6 +245,29 @@ function galleryHtml(variant: string, items: Record<string, unknown>[], attr: st
   }).filter((figure): figure is { source: string; alt: string; i: number } => Boolean(figure));
   if (!figures.length) return "";
 
+  // Comparador antes/despues. Las fotos se toman de dos en dos de la galería:
+  // la primera de cada par es el antes y la segunda el después, que es como el
+  // contratista las sube. Una foto suelta al final se descarta en vez de
+  // quedar emparejada con nada.
+  if (variant === "before-after" || variant === "before-after-single") {
+    const pairs = figures.reduce<Array<[typeof figures[number], typeof figures[number]]>>((all, figure, index) => {
+      if (index % 2 === 1) all.push([figures[index - 1], figure]);
+      return all;
+    }, []);
+    if (!pairs.length) return "";
+    const shown = variant === "before-after-single" ? pairs.slice(0, 1) : pairs;
+    const chip = "absolute top-3 z-10 rounded-full px-3 py-1 text-[.62rem] font-bold uppercase tracking-[.14em]";
+    const cards = shown.map(([before, after], index) => `<figure class="v2-ba relative isolate overflow-hidden rounded-[var(--radius)]">
+<img src="${after.source}" alt="${escapeHtml(after.alt)}" loading="${index ? "lazy" : "eager"}" class="block aspect-[4/3] w-full object-cover">
+<img src="${before.source}" alt="${escapeHtml(before.alt)}" loading="${index ? "lazy" : "eager"}" class="v2-ba-before absolute inset-0 h-full w-full object-cover">
+<span class="${chip} left-3 bg-black/70 text-white">Antes</span>
+<span class="${chip} right-3 bg-[var(--accent)] text-[var(--on-accent)]">Después</span>
+<input type="range" min="0" max="100" value="50" class="v2-ba-range absolute inset-0 z-20 h-full w-full" aria-label="Comparar antes y después: ${escapeHtml(after.alt || `transformación ${index + 1}`)}">
+<span class="v2-ba-line pointer-events-none absolute inset-y-0 z-10 -ml-px w-0.5 bg-white shadow-[0_0_0_1px_rgba(0,0,0,.25)]"><span class="v2-ba-grip absolute top-1/2 left-1/2 grid h-10 w-10 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-white text-sm font-black text-black shadow-lg">&#8942;</span></span>
+</figure>`).join("");
+    if (variant === "before-after-single") return `<div ${attr}>${cards}</div>`;
+    return `<div ${attr} class="grid gap-5 sm:grid-cols-2">${cards}</div>`;
+  }
   // Fondo de portada: las imágenes se apilan a sangre completa y se recorren
   // con la miniatura de la siguiente y dos flechas. Agregar una imagen a la
   // galería agrega una diapositiva; no hay lista de medios aparte.
@@ -968,6 +991,42 @@ img{display:block}
 [data-design-language="storm"] .v2-region-footer::before{content:"";position:absolute;inset:0 0 auto;height:.55rem;background:var(--storm-hazard)}
 [data-design-language="storm"] .v2-region-footer [data-widget-type="brand"] strong{font-size:1.9rem;font-weight:900;text-transform:uppercase}
 
+/* Before & After: superficies limpias, esquinas suaves y el acento claro como
+   protagonista sobre el tono profundo. Todo apunta al comparador. */
+[data-design-language="makeover"] .v2-region-header{background:var(--secondary);color:var(--footer-text);box-shadow:0 10px 30px #0000001f}
+[data-design-language="makeover"] .v2-region-header [data-widget-type="brand"] strong{font-size:1.3rem;font-weight:700;letter-spacing:-.03em}
+[data-design-language="makeover"] [data-widget-type="nav"] a{font-size:.82rem;font-weight:500}
+[data-design-language="makeover"] [data-widget-type="nav"] .v2-nav-extra{display:inline-flex}
+[data-design-language="makeover"] [data-widget-type="nav"] .v2-nav-phone{color:var(--accent);font-weight:700}
+[data-design-language="makeover"] [data-widget-type="nav"] .v2-nav-cta{border-radius:999px;background:var(--accent);color:var(--on-accent);font-weight:700}
+[data-design-language="makeover"] [data-widget-type="button"],[data-design-language="makeover"] [data-widget-type="form"] button{border-radius:999px;padding-inline:1.6rem;font-weight:700;letter-spacing:0}
+
+[data-design-language="makeover"] .v2-key-library-hero-transform-v2{background:var(--secondary)!important;color:var(--footer-text)!important}
+[data-design-language="makeover"] .v2-key-library-hero-transform-v2 h1{max-width:14ch;font-size:clamp(2.6rem,4.8vw,4.4rem);letter-spacing:-.04em;line-height:1.02}
+[data-design-language="makeover"] .v2-key-library-hero-transform-v2 [data-widget-slot="hero.subtitle"]{width:max-content;max-width:100%;opacity:1;border-radius:999px;background:color-mix(in srgb,var(--accent) 18%,transparent);padding:.5rem 1.1rem;color:var(--accent);font-size:.74rem;font-weight:700;text-transform:uppercase;letter-spacing:.12em}
+[data-design-language="makeover"] .v2-key-library-hero-transform-v2 [data-widget-slot="hero.body"]{opacity:.82}
+[data-design-language="makeover"] .v2-key-library-hero-transform-v2 [data-widget-type="business_info"]{gap:.1rem;margin-top:.4rem}
+[data-design-language="makeover"] .v2-key-library-hero-transform-v2 [data-widget-type="business_info"] strong{font-size:.66rem;font-weight:600;text-transform:uppercase;letter-spacing:.14em;opacity:.6}
+[data-design-language="makeover"] .v2-key-library-hero-transform-v2 [data-widget-type="business_info"] a[href^="tel:"]{font-family:var(--heading);font-size:1.5rem;font-weight:700;color:var(--accent)}
+[data-design-language="makeover"] .v2-key-library-hero-transform-v2 [data-widget-type="business_info"] a[href^="mailto:"],[data-design-language="makeover"] .v2-key-library-hero-transform-v2 [data-widget-type="business_info"] span{font-size:.8rem;opacity:.65}
+
+[data-design-language="makeover"] .v2-key-library-gallery-before-after-v2{background:color-mix(in srgb,var(--accent) 10%,var(--bg))}
+[data-design-language="makeover"] .v2-key-library-gallery-before-after-v2 [data-column-id]:first-child{align-self:start}
+[data-design-language="makeover"] .v2-key-library-gallery-before-after-v2 h2{max-width:12ch;font-size:clamp(1.9rem,3.4vw,2.9rem)}
+[data-design-language="makeover"] .v2-ba{box-shadow:0 18px 40px #00000026}
+
+[data-design-language="makeover"] .v2-key-library-services-cards-v2 [data-column-id]:first-child{align-self:start}
+[data-design-language="makeover"] .v2-key-library-services-cards-v2 [data-widget-type="list"]>article{border-color:transparent;background:var(--bg);box-shadow:0 10px 30px #00000014}
+[data-design-language="makeover"] .v2-key-library-services-cards-v2 [data-widget-type="list"]>article>span:first-child{display:grid;place-items:center;width:2.4rem;height:2.4rem;border-radius:999px;background:color-mix(in srgb,var(--accent) 30%,transparent);color:var(--text)}
+[data-design-language="makeover"] .v2-key-library-benefits-numbered-v2{background:var(--secondary)!important;color:var(--footer-text)!important}
+[data-design-language="makeover"] .v2-key-library-benefits-numbered-v2 article{border-color:color-mix(in srgb,var(--footer-text) 18%,transparent)}
+[data-design-language="makeover"] .v2-key-library-benefits-numbered-v2 article>span:first-child{color:var(--accent)}
+[data-design-language="makeover"] .v2-key-library-cta-card-v2{background:var(--accent)!important;color:var(--on-accent)!important;border-radius:0}
+[data-design-language="makeover"] .v2-key-library-cta-card-v2 [data-widget-type="button"]{background:var(--secondary);color:var(--footer-text)}
+[data-design-language="makeover"] [data-widget-type="testimonials"] figure,[data-design-language="makeover"] [data-widget-type="accordion"] details{border-color:transparent;background:color-mix(in srgb,var(--accent) 14%,transparent)}
+[data-design-language="makeover"] [data-widget-type="form"]{border-color:transparent;background:color-mix(in srgb,var(--accent) 12%,transparent)}
+[data-design-language="makeover"] .v2-region-footer [data-widget-type="brand"] strong{font-size:1.8rem;font-weight:700;letter-spacing:-.03em}
+
 @keyframes v2-storm-pulse{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--accent) 65%,transparent)}70%{box-shadow:0 0 0 .7rem transparent}100%{box-shadow:0 0 0 0 transparent}}
 
 @media(min-width:1024px){
@@ -1135,6 +1194,18 @@ targets.forEach(function(el){io.observe(el);});
 })();`;
 }
 
+// El comparador ya funciona sin JS (el range nativo arrastra y responde al
+// teclado); esto solo traduce su valor a la variable que recorta la foto.
+function beforeAfterScript() {
+  return `document.querySelectorAll('.v2-ba').forEach(function(card){
+var range=card.querySelector('.v2-ba-range');
+if(!range)return;
+function sync(){card.style.setProperty('--ba',range.value+'%');}
+range.addEventListener('input',sync);
+sync();
+});`;
+}
+
 // Recorrido manual del fondo de portada. Sin reproducción automática: la
 // portada no debe moverse sola detrás del texto que el visitante está leyendo.
 function heroBackdropScript() {
@@ -1228,7 +1299,8 @@ export function renderSiteV2(input: RenderSiteV2Input): RenderedSiteV2 {
   const allWidgets = sections.flatMap((section) => section.rows.flatMap((row) => row.columns.flatMap((column) => column.widgets)));
   const hasPixelHero = allWidgets.some((widget) => widget.type === "hero_pixel");
   const hasHeroBackdrop = allWidgets.some((widget) => widget.type === "gallery" && widget.variant === "hero-backdrop");
-  const script = `${formScript()}${navScript()}${galleryScript()}${input.editable ? "" : revealScript()}${hasPixelHero ? pixelHeroScript() : ""}${hasHeroBackdrop ? heroBackdropScript() : ""}${input.editable ? editorScript() : ""}`;
+  const hasBeforeAfter = allWidgets.some((widget) => widget.type === "gallery" && widget.variant?.startsWith("before-after"));
+  const script = `${formScript()}${navScript()}${galleryScript()}${input.editable ? "" : revealScript()}${hasPixelHero ? pixelHeroScript() : ""}${hasHeroBackdrop ? heroBackdropScript() : ""}${hasBeforeAfter ? beforeAfterScript() : ""}${input.editable ? editorScript() : ""}`;
   const head = [
     `<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">`,
     fontLinksFor(theme),

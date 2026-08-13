@@ -53,8 +53,8 @@ const content = normalizeSiteContentV2({
   ],
 });
 
-test("el sistema expone Bauhaus, Swiss, Editorial, Industrial y Storm Response", () => {
-  assert.deepEqual(DESIGN_LANGUAGE_IDS, ["bauhaus", "swiss", "editorial", "industrial", "storm"]);
+test("el sistema expone los seis lenguajes visuales", () => {
+  assert.deepEqual(DESIGN_LANGUAGE_IDS, ["bauhaus", "swiss", "editorial", "industrial", "storm", "makeover"]);
   assert.deepEqual(Object.keys(DESIGN_LANGUAGE_PACKS), [...DESIGN_LANGUAGE_IDS]);
 });
 
@@ -79,6 +79,10 @@ test("el ranking usa señales de estilo y negocio sin aleatoriedad", () => {
   assert.equal(selectDesignLanguage({ visualStyle: "local_trustworthy", businessType: "roofing contractor" }).id, "industrial");
   assert.equal(selectDesignLanguage({ visualStyle: "local_trustworthy", businessType: "storm damage restoration" }).id, "storm");
   assert.equal(selectDesignLanguage({ businessType: "emergency plumbing and HVAC" }).id, "storm");
+  // Oficios de superficie: la prueba es el resultado visible, no el alcance de obra.
+  assert.equal(selectDesignLanguage({ businessType: "pressure washing y limpieza de fachadas" }).id, "makeover");
+  assert.equal(selectDesignLanguage({ businessType: "pintura residencial" }).id, "makeover");
+  assert.equal(selectDesignLanguage({ businessType: "instalación de pisos" }).id, "makeover");
   assert.equal(selectDesignLanguage({ languageAffinity: { editorial: 5 } }).id, "editorial");
   assert.deepEqual(
     rankDesignLanguages({ visualStyle: "premium_elegant", businessType: "arquitectura" }),

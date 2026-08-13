@@ -38,7 +38,12 @@ test("el ranking de recetas responde al objetivo y al tipo de negocio", () => {
     }, "storm-response"],
     [{ ...onboardingFixture, goal: "sell_products" as const }, "catalog"],
     [{ ...onboardingFixture, businessType: "restaurant" as const, customBusinessType: "", goal: "professional_presence" as const }, "appointments"],
-    [{ ...onboardingFixture, businessType: "cleaning" as const, customBusinessType: "", goal: "quote_forms" as const }, "local-leads"],
+    // Pintura y limpieza se juzgan por el resultado sobre la superficie, no por
+    // el alcance de obra: su receta es la comparación.
+    [{ ...onboardingFixture, businessType: "cleaning" as const, customBusinessType: "", goal: "quote_forms" as const }, "before-after"],
+    [{ ...onboardingFixture, businessType: "painting" as const, customBusinessType: "", goal: "quote_forms" as const }, "before-after"],
+    [{ ...onboardingFixture, businessType: "other" as const, customBusinessType: "Pressure washing de fachadas", goal: "calls" as const }, "before-after"],
+    [{ ...onboardingFixture, businessType: "landscaping" as const, customBusinessType: "", goal: "quote_forms" as const }, "contractor-pro"],
     [{ ...onboardingFixture, businessType: "other" as const, customBusinessType: "Estudio de fotografía", goal: "show_services" as const }, "portfolio"],
   ] as const;
 

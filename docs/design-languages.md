@@ -9,6 +9,7 @@ El constructor ya no parte de plantillas completas. Parte de contenido estructur
 - Editorial UI: tipografía expresiva, ritmo amplio, imágenes protagonistas y lectura narrativa.
 - Industrial Utility: jerarquía de obra, evidencia verificable y ruta corta hacia llamada o cotización.
 - Storm Response: lectura de despacho para roofing, restauración, plomería y HVAC. Emergencia visible, disponibilidad declarada y reclamo de seguro explicado.
+- Before & After: para pintura, limpieza, pisos y lavado a presión. La prueba es la transformación, con comparación arrastrable y contraste de dos tonos.
 
 Cada paquete define cinco cosas distintas:
 
@@ -52,7 +53,9 @@ El compositor representa la página como etapas ordenadas con varios nodos candi
 
 ## Recetas funcionales
 
-Las recetas `storm-response`, `contractor-pro`, `local-leads`, `appointments`, `catalog` y `portfolio` definen el orden narrativo y una afinidad de lenguaje. Se seleccionan mediante un ranking explicable basado en objetivo y actividad. No contienen HTML, colores ni fuentes: una misma receta puede resolverse en cualquier lenguaje y siempre conserva las variables del cliente.
+Las recetas `storm-response`, `before-after`, `contractor-pro`, `local-leads`, `appointments`, `catalog` y `portfolio` definen el orden narrativo y una afinidad de lenguaje. Se seleccionan mediante un ranking explicable basado en objetivo y actividad. No contienen HTML, colores ni fuentes: una misma receta puede resolverse en cualquier lenguaje y siempre conserva las variables del cliente.
+
+Los oficios se reparten por cómo se decide la contratación, no por su gremio: obra y mantenimiento técnico van a `contractor-pro`, la emergencia a `storm-response`, y los que se juzgan por el resultado sobre la superficie (pintura, limpieza, pisos, lavado a presión) a `before-after`.
 
 `contractor-pro` y `storm-response` reciben la misma puntuación base por oficio de obra, así que la urgencia declarada en el listado de servicios es lo único que decide entre ellas. `storm-response` invierte el orden habitual: la disponibilidad va antes que el catálogo de servicios, porque durante una emergencia el visitante primero necesita saber que alguien contesta.
 

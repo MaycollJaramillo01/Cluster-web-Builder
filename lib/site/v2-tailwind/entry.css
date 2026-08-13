@@ -64,6 +64,41 @@
     }
   }
 
+  /* Comparador antes/despues. La foto "despues" es la base y la de "antes" se
+     recorta hasta el punto que marca --ba. El control es un input range real
+     puesto encima: invisible, pero arrastrable y operable con el teclado. */
+  .v2-ba {
+    --ba: 50%;
+  }
+  .v2-ba-before {
+    clip-path: inset(0 calc(100% - var(--ba)) 0 0);
+  }
+  .v2-ba-line {
+    left: var(--ba);
+  }
+  .v2-ba-range {
+    -webkit-appearance: none;
+    appearance: none;
+    background: transparent;
+    cursor: ew-resize;
+    margin: 0;
+  }
+  .v2-ba-range::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 3rem;
+    height: 100%;
+  }
+  .v2-ba-range::-moz-range-thumb {
+    width: 3rem;
+    height: 100%;
+    border: 0;
+    background: transparent;
+  }
+  .v2-ba-range:focus-visible ~ .v2-ba-line .v2-ba-grip {
+    outline: 3px solid var(--accent);
+    outline-offset: 3px;
+  }
+
   /* Portada de puntos animados: texto con relleno degradado sutil. */
   .v2-pxh-title em,
   .v2-pxh-title strong {
